@@ -1,2 +1,4 @@
 [deps]
+LightXML = "9c8b4983-aa76-5018-a973-4c85ecc9e179"
+SPICE = "5bab7191-041a-5c2e-a744-024b9c3a5062"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

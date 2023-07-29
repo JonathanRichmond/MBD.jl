@@ -1,2 +1,9 @@
+using MBD
 using Test
-@test 1 == 1
+
+include("../src/spice/BodyName.jl")
+
+@testset "Constructors" begin
+    @test MBD.SystemData <: MBD.AbstractSystemData
+    @test_throws ArgumentError MBD.SystemData("Earth", "Mars")
+end
