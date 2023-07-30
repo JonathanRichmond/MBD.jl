@@ -9,8 +9,12 @@ module MBD
 
 import LightXML
 
-const BODY_DATA_FILE = "test/body_data.xml"
 const GRAVITY = 6.67384e-20
+
+"""
+Abstract type for dynamics models
+"""
+abstract type AbstractDynamicsModel end
 
 """
 Abstract type for system objects
@@ -55,7 +59,7 @@ mutable struct BodyData
     function BodyData(name::String)
         this = new()
 
-        dataFile::String = BODY_DATA_FILE
+        dataFile::String = joinpath(@__DIR__,"body_data.xml")
         bodyName = BodyName(name)
         id::Int64 = getIDCode(bodyName)
         try
@@ -90,7 +94,7 @@ mutable struct BodyData
 end
 
 """
-    SystemData(p1, p2)
+    CR3BPSystemData(p1, p2)
 
 CR3BP system object
 
@@ -98,16 +102,16 @@ CR3BP system object
 - `p1::String`: Name of first primary
 - `p2::String`: Name of second primary
 """
-mutable struct SystemData <: AbstractSystemData
+mutable struct CR3BPSystemData <: AbstractSystemData
     charLength::Float64             # Characteristic length [km]
     charMass::Float64               # Characteristic mass [kg]
     charTime::Float64               # Characteritic time [s]
     numPrimaries::Int64             # Number of primaries that must exist in this system
-    params::Vector{Float64}          # Other system parameters
+    params::Vector{Float64}         # Other system parameters
     primaryNames::Vector{String}    # Primary names
     primarySpiceIDs::Vector{Int64}  # Primary SPICE IDs
 
-    function SystemData(p1::String, p2::String)
+    function CR3BPSystemData(p1::String, p2::String)
         this = new()
 
         p1Data = BodyData(p1)
@@ -123,6 +127,22 @@ mutable struct SystemData <: AbstractSystemData
         this.params = [p2Data.gravParam/totalGravParam]
         
         return this
+    end
+end
+
+"""
+    CR3BPDynamicsModel(systemData)
+
+CR3BP dynamics model object
+
+# Arguments
+- `systemData::CR3BPSystemData`: CR3BP system object
+"""
+struct CR3BPDynamicsModel <: AbstractDynamicsModel
+    systemData::CR3BPSystemData     # CR3BP system object
+
+    function CR3BPDynamicsModel(systemData::CR3BPSystemData)
+        return new(systemData)
     end
 end
 
