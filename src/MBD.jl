@@ -7,14 +7,25 @@ U: 7/29/23
 """
 module MBD
 
+import Base: ==
 import LightXML
 
 const GRAVITY = 6.67384e-20
 
 """
+Enumerated type for EOMs
+"""
+@enum EquationType FULL SIMPLE STM
+
+"""
 Abstract type for dynamics models
 """
 abstract type AbstractDynamicsModel end
+
+"""
+Abstract type for EOMs
+"""
+abstract type AbstractEquationsOfMotion end
 
 """
 Abstract type for system objects
@@ -129,6 +140,7 @@ mutable struct CR3BPSystemData <: AbstractSystemData
         return this
     end
 end
+Base.:(==)(systemData1::CR3BPSystemData, systemData2::CR3BPSystemData) = (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs)
 
 """
     CR3BPDynamicsModel(systemData)
@@ -145,7 +157,30 @@ struct CR3BPDynamicsModel <: AbstractDynamicsModel
         return new(systemData)
     end
 end
+Base.:(==)(dynamicsModel1::CR3BPDynamicsModel, dynamicsModel2::CR3BPDynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
 
+"""
+    CR3BPEquationsOfMotion(equationType, dynamicsModel)
+
+CR3BP EOM object
+
+# Arguments
+- `equationType::EquationType`: EOM type
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+"""
+struct CR3BPEquationsOfMotion <: AbstractEquationsOfMotion
+    dim::Int64                      # State vector dimension
+    equationType::EquationType      # EOM type
+    mu::Float64                     # CR3BP system mass ratio
+
+    function CR3BPEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
+        return new(getStateSize(dynamicsModel, equationType), equationType, getMassRatio(dynamicsModel.systemData))
+    end
+end
+
+include("CR3BP/DynamicsModel.jl")
+include("CR3BP/EquationsOfMotion.jl")
+include("CR3BP/SystemData.jl")
 include("spice/BodyName.jl")
 
 end # module MBD
