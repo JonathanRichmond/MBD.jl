@@ -21,7 +21,7 @@ Return time derivative of state vector
 - `q::Vector{Float64}`: State vector [ndim]
 - `t::Float64`: Time [ndim]
 """
-function computeDerivatives!(EOMs::CR3BPEquationsOfMotion, qdot::Vector{Float64}, q::Vector{Float64}, t::Float64)
+function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::CR3BPEquationsOfMotion, t::Float64)
     omm::Float64 = 1-EOMs.mu
     r_13::Float64 = sqrt((q[1]+EOMs.mu)^2+q[2]^2+q[3]^2)
     r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)

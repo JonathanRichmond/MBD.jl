@@ -8,7 +8,7 @@ U: 7/29/23
 module MBD
 
 import Base: ==
-import LightXML
+import DifferentialEquations, LightXML
 
 const GRAVITY = 6.67384e-20
 
@@ -16,6 +16,11 @@ const GRAVITY = 6.67384e-20
 Enumerated type for EOMs
 """
 @enum EquationType FULL SIMPLE STM
+
+"""
+Enumerated type for integrator
+"""
+@enum IntegratorType AB AM BS DP5 DP8
 
 """
 Abstract type for dynamics models
@@ -26,6 +31,11 @@ abstract type AbstractDynamicsModel end
 Abstract type for EOMs
 """
 abstract type AbstractEquationsOfMotion end
+
+"""
+Abstract type for events
+"""
+abstract type AbstractEvent end
 
 """
 Abstract type for system objects
@@ -41,7 +51,7 @@ Body name object
 - `name::String`: Name of body
 """
 struct BodyName
-    name::String                    # Name
+    name::String                            # Name
 
     function BodyName(name)
         return new(name)
@@ -57,15 +67,15 @@ Body object
 - `name::String`: Name of body
 """
 mutable struct BodyData
-    bodyRadius::Float64             # Body mean radius [km]
-    gravParam::Float64              # Gravitational parameter [kg^3/s^2]
-    inc::Float64                    # Orbit inclination relative to Ecliptic J2000 frame [rad]
-    mass::Float64                   # Mass [kg]
-    name::String                    # Name
-    orbitRadius::Float64            # Orbit mean radius [km]
-    parentSpiceID::Int64            # Parent body SPICE ID
-    RAAN::Float64                   # Orbit Right-Ascension of Ascending Node relative to Ecliptic J2000 frame [rad]
-    spiceID::Int64                  # SPICE ID
+    bodyRadius::Float64                     # Body mean radius [km]
+    gravParam::Float64                      # Gravitational parameter [kg^3/s^2]
+    inc::Float64                            # Orbit inclination relative to Ecliptic J2000 frame [rad]
+    mass::Float64                           # Mass [kg]
+    name::String                            # Name
+    orbitRadius::Float64                    # Orbit mean radius [km]
+    parentSpiceID::Int64                    # Parent body SPICE ID
+    RAAN::Float64                           # Orbit Right-Ascension of Ascending Node relative to Ecliptic J2000 frame [rad]
+    spiceID::Int64                          # SPICE ID
 
     function BodyData(name::String)
         this = new()
@@ -114,13 +124,13 @@ CR3BP system object
 - `p2::String`: Name of second primary
 """
 mutable struct CR3BPSystemData <: AbstractSystemData
-    charLength::Float64             # Characteristic length [km]
-    charMass::Float64               # Characteristic mass [kg]
-    charTime::Float64               # Characteritic time [s]
-    numPrimaries::Int64             # Number of primaries that must exist in this system
-    params::Vector{Float64}         # Other system parameters
-    primaryNames::Vector{String}    # Primary names
-    primarySpiceIDs::Vector{Int64}  # Primary SPICE IDs
+    charLength::Float64                     # Characteristic length [km]
+    charMass::Float64                       # Characteristic mass [kg]
+    charTime::Float64                       # Characteritic time [s]
+    numPrimaries::Int64                     # Number of primaries that must exist in this system
+    params::Vector{Float64}                 # Other system parameters
+    primaryNames::Vector{String}            # Primary names
+    primarySpiceIDs::Vector{Int64}          # Primary SPICE IDs
 
     function CR3BPSystemData(p1::String, p2::String)
         this = new()
@@ -151,7 +161,7 @@ CR3BP dynamics model object
 - `systemData::CR3BPSystemData`: CR3BP system object
 """
 struct CR3BPDynamicsModel <: AbstractDynamicsModel
-    systemData::CR3BPSystemData     # CR3BP system object
+    systemData::CR3BPSystemData             # CR3BP system object
 
     function CR3BPDynamicsModel(systemData::CR3BPSystemData)
         return new(systemData)
@@ -169,18 +179,76 @@ CR3BP EOM object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
 struct CR3BPEquationsOfMotion <: AbstractEquationsOfMotion
-    dim::Int64                      # State vector dimension
-    equationType::EquationType      # EOM type
-    mu::Float64                     # CR3BP system mass ratio
+    dim::Int64                              # State vector dimension
+    equationType::EquationType              # EOM type
+    mu::Float64                             # CR3BP system mass ratio
 
     function CR3BPEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
         return new(getStateSize(dynamicsModel, equationType), equationType, getMassRatio(dynamicsModel.systemData))
     end
 end
+Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
+
+"""
+    IntegratorFactory()
+
+Integrator object
+"""
+mutable struct IntegratorFactory
+    integrator                              # Integrator object
+    integratorType::IntegratorType          # Integrator type
+    numSteps::Int64                         # Number of steps for multi-step method
+
+    function IntegratorFactory()
+        return new(DifferentialEquations.DP8(), DP8, 3)
+    end
+end
+
+"""
+    Propagator()
+
+Propagator object
+"""
+mutable struct Propagator
+    absTol::Float64                         # Absolute tolerance
+    equationType::EquationType              # EOM type
+    events::Vector{AbstractEvent}           # Integration events
+    integratorFactory::IntegratorFactory    # Integrator object
+    maxEvaluationCount::Int64               # Maximum number of equation evaluations
+    maxStep::Int64                          # Maximum step size
+    minEventTime::Float64                   # Minimum time between initial time and first event occurrence
+    relTol::Float64                         # Relative tolerance
+
+    function Propagator()
+        return new(1E-14, SIMPLE, [], IntegratorFactory(), typemax(Int64), 100, 1E-12, 1E-12)
+    end
+end
+Base.:(==)(propagator1::Propagator, propagator2::Propagator) = ((propagator1.equationType == propagator2.equationType) && (propagator1.events == propagator2.events))
+
+"""
+    Arc(dynamicsModel)
+
+Arc object
+
+# Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+"""
+mutable struct Arc
+    dynamicsModel::AbstractDynamicsModel    # Dynamics model object
+    params::Vector{Float64}                 # System parameters
+    states::Vector{Vector{Float64}}         # State vectors along arc [ndim]
+    times::Vector{Float64}                  # Times along arc [ndim]
+
+    function Arc(dynamicsModel::AbstractDynamicsModel)
+        return new(dynamicsModel, [], [[]], [])
+    end
+end
+Base.:(==)(arc1::Arc, arc2::Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.params == arc2.params) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
 
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
 include("CR3BP/SystemData.jl")
+include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
 
 end # module MBD
