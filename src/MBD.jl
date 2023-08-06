@@ -245,10 +245,35 @@ mutable struct Arc
 end
 Base.:(==)(arc1::Arc, arc2::Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.params == arc2.params) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
 
+"""
+    Variable(data, freeVarMask)
+
+Variable object
+
+# Arguments
+- `data::Vector{Float64}`: Data values
+- `freeVarMask::Vector{Bool}`: Free variable mask
+"""
+mutable struct Variable
+    data::Vector{Float64}                   # Data values
+    freeVarMask::Vector{Bool}               # Free variable mask
+    name::String                            # Name
+
+    function Variable(data::Vector{Float64}, freeVarMask::Vector{Bool})
+        (length(freeVarMask) == length(data)) || throw(ArgumentError("Free variable mask length, $(length(freeVarMask)), must match data values length, $(length(data))"))
+
+        return new(copy(data), copy(freeVarMask), "")
+    end
+end
+Base.:(==)(variable1::Variable, variable2::Variable) = ((variable1.data == variable2.data) && (variable1.freeVarMask == variable2.freeVarMask))
+
+include("corrections/Variable.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
 include("CR3BP/SystemData.jl")
+include("propagation/Arc.jl")
 include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
+include("utilities/UtilityFunctions.jl")
 
 end # module MBD

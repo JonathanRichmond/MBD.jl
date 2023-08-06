@@ -24,13 +24,13 @@ Return propagated arc
 """
 function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
-    #isempty(params) || setParameters!(arcOut, params)
+    isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
     q::Vector{Float64} = copy(q0)
     for tIndex::Int64 in 2:length(tSpan)
         if tIndex > 2
-            #q = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
-            #deleteStateAndTime!(arcOut, getStateCount(arcOut))
+            q = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
+            deleteStateAndTime!(arcOut, getStateCount(arcOut))
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]

@@ -1,11 +1,14 @@
 using MBD
 using Test
 
+include("../src/corrections/Variable.jl")
 include("../src/CR3BP/DynamicsModel.jl")
 include("../src/CR3BP/EquationsOfMotion.jl")
 include("../src/CR3BP/SystemData.jl")
+include("../src/propagation/Arc.jl")
 include("../src/propagation/Propagator.jl")
 include("../src/spice/BodyName.jl")
+include("../src/utilities/UtilityFunctions.jl")
 
 @testset "Files" begin
     @test isfile("../src/body_data.xml")
@@ -16,6 +19,12 @@ end
     @test_throws ArgumentError MBD.CR3BPSystemData("Earth", "Mars")
     @test MBD.CR3BPDynamicsModel <: MBD.AbstractDynamicsModel
     @test MBD.CR3BPEquationsOfMotion <: MBD.AbstractEquationsOfMotion
+    @test_throws ArgumentError MBD.Variable([1.0, 1.0], [true, false, true])
+end
+
+@testset "Deep Copy" begin
+    variable = MBD.Variable([1.0, 2.0], [true, false])
+    @test MBD.deepClone(variable) == variable
 end
 
 @testset "BodyName" begin
@@ -74,6 +83,43 @@ end
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
-    @test arc.states[60] == [-2.6985427953764827, 1.6414206860460856, 0, 0.5136679523797875, 4.9939829755428615, 0]
-    @test arc.times[59] == 2.7348634602445325
+    @test arc.states[end] == [-2.6985427953764827, 1.6414206860460856, 0, 0.5136679523797875, 4.9939829755428615, 0]
+    @test arc.times[end-1] == 2.7348634602445325
+end
+
+@testset "Arc" begin
+    propagator = MBD.Propagator()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
+    @test getStateByIndex(arc, -1) == [-2.6985427953764827, 1.6414206860460856, 0, 0.5136679523797875, 4.9939829755428615, 0]
+    @test getTimeByIndex(arc, -1) == 2.743
+    deleteStateAndTime!(arc, 59)
+    @test getStateCount(arc) == 59
+    @test arc.states[59] == [-2.6985427953764827, 1.6414206860460856, 0, 0.5136679523797875, 4.9939829755428615, 0]
+    @test arc.times[59] == 2.743
+    @test_throws BoundsError deleteStateAndTime!(arc, 60)
+    @test_throws BoundsError getStateByIndex(arc, 60)
+    @test_throws BoundsError getTimeByIndex(arc, 60)
+    setParameters!(arc, systemData.params)
+    @test arc.params == systemData.params
+end
+
+@testset "Variable" begin
+    variable = MBD.Variable([1.0, 2.0, 3.0], [true, false, true])
+    @test getData(variable) == [1.0, 2.0, 3.0]
+    @test getFreeVariableMask(variable) == [true, false, true]
+    @test getFreeVariableData(variable) == [1.0, 3.0]
+    @test getNumberFreeVariables(variable) == 2
+end
+
+@testset "Utility Functions" begin
+    @test_throws ArgumentError maskData([true], [1.0 2.0 3.0; 4.0 5.0 6.0])
+    mask1 = [true, false, true]
+    data = [1.0 2.0 3.0; 4.0 5.0 6.0]
+    @test maskData(mask1, data) == [1.0 3.0; 4.0 6.0]
+    mask2 = [false, false, false]
+    @test size(maskData(mask2, data)) == (1, 0)
+    mask3 = [true, true, true]
+    @test maskData(mask3, data) == data
 end
