@@ -6,7 +6,26 @@ C: 9/7/22
 U: 8/5/23
 """
 
-export maskData
+export checkIndices, maskData, updatePointer
+
+"""
+    checkIndices(stateIndices, stateSize)
+
+Throw error if indices are invalid
+
+# Arguments
+- `stateIndices::Vector{Int64}`: Indices of state vector
+- `stateSize::Int64`: Number of state get_elements_by_tagname
+"""
+function checkIndices(stateIndices::Vector{Int64}, stateSize::Int64)
+    state::Vector{Float64} = zeros(Float64, stateSize)
+    for i::Int64 in 1:length(stateIndices)
+        ((stateIndices[i] < 1) || (stateIndices[i] > stateSize)) && throw(BoundsError(state, stateIndices[i]))
+        for j in 1:length(stateIndices)
+            ((i != j) && (stateIndices[i] == stateIndices[j])) && throw(ArgumentError("Index $(stateIndices[i]) is included more than once"))
+        end
+    end
+end
 
 """
     maskData(mask, data)
@@ -37,4 +56,26 @@ function maskData(mask::Vector{Bool}, data::Matrix{Float64})
 
         return maskedData
     end
+end
+
+"""
+    updatePointer(item, copiedObjectMap, forceMatch)
+
+Return item with updated pointer
+
+# Arguments
+- `item::Any`: item
+- `copiedObjectMap::Dict`: Map between old and new objects
+- `forceMatch::Bool`: Force match?
+"""
+function updatePointer(item::Any, copiedObjectMap::Dict, forceMatch::Bool)
+    contains::Bool = false
+    for key in keys(copiedObjectMap)
+        if key == hash(item)
+            contains = true
+            break
+        end
+    end
+
+    contains ? (return copiedObjectMap[hash(item)]) : (forceMatch ? throw(KeyError(item)) : (return item))
 end

@@ -29,7 +29,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::CR
     r_23_3::Float64 = r_23^3
     qdot[1:3] = q[4:6]
     qdot[4] = 2*q[5]+q[1]-omm*(q[1]+EOMs.mu)/r_13_3-EOMs.mu*(q[1]-omm)/r_23_3
-    qdot[5] = q[2]-2*q[1]-omm*q[2]/r_13_3-EOMs.mu*q[2]/r_23_3
+    qdot[5] = q[2]-2*q[4]-omm*q[2]/r_13_3-EOMs.mu*q[2]/r_23_3
     qdot[6] = -omm*q[3]/r_13_3-EOMs.mu*q[3]/r_23_3
     if (EOMs.equationType == MBD.STM) || (EOMs.equationType == MBD.FULL)
         r_13_5::Float64 = r_13_3*r_13^2
