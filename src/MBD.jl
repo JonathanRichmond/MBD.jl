@@ -10,7 +10,7 @@ module MBD
 import Base: ==
 import DifferentialEquations, LightXML
 
-const GRAVITY = 6.67384e-20
+const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
 
 """
@@ -52,6 +52,11 @@ abstract type AbstractNonlinearProblem end
 Abstract type for system objects
 """
 abstract type AbstractSystemData end
+
+"""
+Abstract type for objects containing variables
+"""
+abstract type IHasVariables end
 
 """
     BodyName(name)
@@ -288,7 +293,7 @@ Node object
 - `state::Vector{Float64}`: State vector [ndim]
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 """
-mutable struct Node
+mutable struct Node <: IHasVariables
     dynamicsModel::AbstractDynamicsModel                # Dynamics model object
     epoch::Variable                                     # Epoch
     state::Variable                                     # State
@@ -323,7 +328,7 @@ Segment object
 - `originNode::Node`: Origin node
 - `terminalNode::Node`: Terminal node
 """
-mutable struct Segment
+mutable struct Segment <: IHasVariables
     originNode::Node                                    # Origin node object
     propArc::Arc                                        # Propagated arc object
     propagator::Propagator                              # Propagator object
@@ -370,6 +375,48 @@ mutable struct MultipleShooterProblem <: AbstractNonlinearProblem
     end
 end
 
+"""
+    ContinuityConstraint(segment)
+
+Continuity constraint object
+"""
+mutable struct ContinuityConstraint <: AbstractConstraint
+    constrainedIndices::Vector{Int64}                   # Constrained state indices
+    segment::Segment                                    # Segment object
+
+    function ContinuityConstraint(segment::Segment)
+        return new([1:length(segment.originNode.state.data)], segment)
+    end
+end
+
+"""
+    StateConstraint(node, indices, values)
+
+State constraint object
+"""
+mutable struct StateConstraint <: AbstractConstraint
+    constrainedIndices::Vector{Int64}                   # Constrained state indices
+    values::Vector{Float64}                             # Constraint values
+    variable::Variable                                  # Constrained variable
+
+    function StateConstraint(node::Node, indices::Vector{Int64}, values::Vector{Float64})
+        this = new()
+
+        this.variable = node.state
+        (length(indices) == length(values)) || throw(ArgumentError("Number of indices, $(length(indices)), must match number of values, $(length(values))"))
+        checkIndices(indices, length(this.variable.data))
+        this.constrainedIndices = copy(indices)
+        this.values = copy(values)
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        for index::Int64 in this.constrainedIndices
+            freeVariableMask[index] || throw(ArgumentError("Variable element $index is constrained but not free to vary"))
+        end
+
+        return this
+    end
+end
+
+include("corrections/ContinuityConstraint.jl")
 include("corrections/MultipleShooterProblem.jl")
 include("corrections/Node.jl")
 include("corrections/Segment.jl")

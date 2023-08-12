@@ -1,6 +1,7 @@
 using MBD
 using Test
 
+include("../src/corrections/ContinuityConstraint.jl")
 include("../src/corrections/MultipleShooterProblem.jl")
 include("../src/corrections/Node.jl")
 include("../src/corrections/Segment.jl")
@@ -25,11 +26,15 @@ end
     @test_throws ArgumentError MBD.Variable([1.0, 1.0], [true, false, true])
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    @test MBD.Node <: MBD.IHasVariables
     @test_throws ArgumentError MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1623], dynamicsModel)
     originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1623, 0], dynamicsModel)
     terminalNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1623, 0], dynamicsModel)
+    @test MBD.Segment <: MBD.IHasVariables
     @test_throws ArgumentError MBD.Segment(2.743, originNode, terminalNode)
     @test MBD.MultipleShooterProblem <: MBD.AbstractNonlinearProblem
+    @test MBD.ContinuityConstraint <: MBD.AbstractConstraint
+    @test MBD.StateConstraint <: MBD.AbstractConstraint
 end
 
 @testset "Copy" begin
