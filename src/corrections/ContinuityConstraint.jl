@@ -1,5 +1,5 @@
 """
-Multiple shooter problem wrapper
+Continuity constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
@@ -18,7 +18,7 @@ Return constraint error
 
 # Arguments
 - `continuityConstraint::ContinuityConstraint`: Continuity constraint object
-- `freeVariableIndexMap::Dict{MBD.Variable, Int64}`: Free variable index map
+- `freeVariableIndexMap::Dict{Variable, Int64}`: Free variable index map
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
 function evaluateConstraint(continuityConstraint::ContinuityConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int64}, freeVariableVector::Vector{Float64})
@@ -47,7 +47,7 @@ Return partial derivatives of constraint with respect to free variables
 
 # Arguments
 - `continuityConstraint::ContinuityConstraint`: Continuity constraint object
-- `freeVariableIndexMap::Dict{MBD.Variable, Int64}`: Free variable index map
+- `freeVariableIndexMap::Dict{Variable, Int64}`: Free variable index map
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
 function getPartials_ConstraintWRTVariables(continuityConstraint::ContinuityConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int64}, freeVariableVector::Vector{Float64})
@@ -95,17 +95,4 @@ function shallowClone(continuityConstraint::ContinuityConstraint)
     object.segment = continuityConstraint.segment
     
     return object
-end
-
-"""
-    updatePointers!(continuityConstraint, copiedObjectMap)
-
-Return continuity constraint object with update pointers
-
-# Arguments
-- `continuityConstraint::ContinuityConstraint`: Continuity constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
-"""
-function updatePointers!(continuityConstraint::ContinuityConstraint, copiedObjectMap::Dict)
-    continuityConstraint.segment = updatePointer(continuityConstraint.segment, copiedObjectMap, true)
 end

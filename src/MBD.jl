@@ -385,7 +385,7 @@ mutable struct ContinuityConstraint <: AbstractConstraint
     segment::Segment                                    # Segment object
 
     function ContinuityConstraint(segment::Segment)
-        return new([1:length(segment.originNode.state.data)], segment)
+        return new(1:length(segment.originNode.state.data), segment)
     end
 end
 
@@ -420,6 +420,7 @@ include("corrections/ContinuityConstraint.jl")
 include("corrections/MultipleShooterProblem.jl")
 include("corrections/Node.jl")
 include("corrections/Segment.jl")
+include("corrections/StateConstraint.jl")
 include("corrections/Variable.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")

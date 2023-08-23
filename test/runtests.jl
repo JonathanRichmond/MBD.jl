@@ -5,6 +5,7 @@ include("../src/corrections/ContinuityConstraint.jl")
 include("../src/corrections/MultipleShooterProblem.jl")
 include("../src/corrections/Node.jl")
 include("../src/corrections/Segment.jl")
+include("../src/corrections/StateConstraint.jl")
 include("../src/corrections/Variable.jl")
 include("../src/CR3BP/DynamicsModel.jl")
 include("../src/CR3BP/EquationsOfMotion.jl")
@@ -186,4 +187,30 @@ end
     @test size(maskData(mask2, data)) == (1, 0)
     mask3 = [true, true, true]
     @test maskData(mask3, data) == data
+end
+
+@testset "Lyapunov Example" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    q0::Vector{Float64} = [0.8234, 0, 0, 0, 0.1263, 0]
+    tSpan::Vector{Float64} = [0, 2.743]
+    halfPeriod::Float64 = (tSpan[2]-tSpan[1])/2
+    propagator = MBD.Propagator()
+    arc::MBD.Arc = propagate(propagator, q0, tSpan, dynamicsModel)
+    qf::Vector{Float64} = copy(getStateByIndex(arc, getStateCount(arc)))
+    @test qf == [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]
+    originNode = MBD.Node(tSpan[1], q0, dynamicsModel)
+    originNode.state.name = "Initial State"
+    terminalNode = MBD.Node(halfPeriod, qf, dynamicsModel)
+    terminalNode.state.name = "Target State"
+    segment = MBD.Segment(halfPeriod, originNode, terminalNode)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    multipleShooterProblem = MBD.MultipleShooterProblem()
+    addSegment!(multipleShooterProblem, segment)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    x0Constraint = MBD.StateConstraint(originNode, [1], [q0[1]])
+    qfConstraint = MBD.StateConstraint(terminalNode, [2, 4], [0.0, 0.0])
+    addConstraint!(multipleShooterProblem, x0Constraint)
+    addConstraint!(multipleShooterProblem, qfConstraint)
+    addConstraint!(multipleShooterProblem, continuityConstraint)
 end

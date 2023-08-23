@@ -174,19 +174,3 @@ function shallowClone(segment::Segment)
 
     return object
 end
-
-"""
-    updatePointers!(segment, copiedObjectMap)
-
-Return segment object with updated pointers
-
-# Arguments
-- `segment::Segment`: Segment object
-- `copiedObjectMap::Dict`: Map between old and new objects
-"""
-function updatePointers!(segment::Segment, copiedObjectMap::Dict)
-    segment.TOF = updatePointer(segment.TOF, copiedObjectMap, true)
-    segment.propParams = updatePointer(segement.propParams, copiedObjectMap, true)
-    segment.originNode = updatePointer(segment.originNode, copiedObjectMap, true)
-    segment.terminalNode = updatePointer(segment.terminalNode, copiedObjectMap, true)
-end

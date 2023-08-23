@@ -27,7 +27,7 @@ Return multiple shooter problem object with constraint
 """
 function addConstraint!(multipleShooterProblem::MultipleShooterProblem, constraint::MBD.AbstractConstraint)
     multipleShooterProblem.constraintIndexMap[constraint] = MBD.UNINITIALIZED_INDEX
-    (typeof(con) <: MBD.IHasVariables) && importFreeVariables!(multipleShooterProblem, constraint)
+    (typeof(constraint) <: MBD.IHasVariables) && importFreeVariables!(multipleShooterProblem, constraint)
     updateConstraintIndexMap!(multipleShooterProblem)
 end
 
@@ -252,14 +252,12 @@ function deepClone(multipleShooterProblem::MultipleShooterProblem)
     object.nodes = []
     for node::MBD.Node in multipleShooterProblem.nodes
         newNode::MBD.Node = MBD.shallowClone(node)
-        updatePointers!(newNode, copiedObjectMap)
         copiedObjectMap[hash(node)] = newNode
         push!(object.nodes, newNode)
     end
     object.segments = []
     for segment::MBD.Segment in multipleShooterProblem.segments
         newSegment::MBD.Segment = MBD.shallowClone(segment)
-        updatePointers!(newSegment, copiedObjctMap)
         copiedObjectMap[hash(segment)] = newSegment
         push!(object.segments, newSegment)
     end
@@ -267,7 +265,6 @@ function deepClone(multipleShooterProblem::MultipleShooterProblem)
     constraintIterable::Pair = pairs(multipleShooterProblem.constraintIndexmap)
     for (index::MBD.AbstractConstraint, value::Int64) in constraintIterable
         constraint::MBD.AbstractConstraint = MBD.shallowClone(index)
-        updatePointers!(constraint, copiedObjectMap)
         object.constraintIndexMap[constraint] = value
     end
     object.freeVariableVector = copy(multipleShooterProblem.freeVariableVector)
