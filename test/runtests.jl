@@ -1,7 +1,10 @@
 using MBD
 using Test
 
+include("../src/corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("../src/corrections/ContinuityConstraint.jl")
+include("../src/corrections/LeastSquaresUpdateGenerator.jl")
+include("../src/corrections/MinimumNormUpdateGenerator.jl")
 include("../src/corrections/MultipleShooterProblem.jl")
 include("../src/corrections/Node.jl")
 include("../src/corrections/Segment.jl")
@@ -28,28 +31,36 @@ end
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     @test MBD.Node <: MBD.IHasVariables
-    @test_throws ArgumentError MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1623], dynamicsModel)
-    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1623, 0], dynamicsModel)
-    terminalNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1623, 0], dynamicsModel)
+    @test_throws ArgumentError MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263], dynamicsModel)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    terminalNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
     @test MBD.Segment <: MBD.IHasVariables
     @test_throws ArgumentError MBD.Segment(2.743, originNode, terminalNode)
     @test MBD.MultipleShooterProblem <: MBD.AbstractNonlinearProblem
     @test MBD.ContinuityConstraint <: MBD.AbstractConstraint
     @test MBD.StateConstraint <: MBD.AbstractConstraint
+    @test MBD.ConstraintVectorL2NormConvergenceCheck <: MBD.AbstractConvergenceCheck
+    @test MBD.MinimumNormUpdateGenerator <: MBD.AbstractUpdateGenerator
+    @test MBD.LeastSquaresUpdateGenerator <: MBD.AbstractUpdateGenerator
+    @test MBD.MultipleShooter <: MBD.AbstractNonlinearProblemSolver
 end
 
 @testset "Copy" begin
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    originNode = MBD.Node(0.0, [0.8324, 0, 0, 0, 0.1623, 0], dynamicsModel)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
     @test MBD.shallowClone(originNode) == originNode
     terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
     segment = MBD.Segment(2.743, originNode, terminalNode)
     @test MBD.shallowClone(segment) == segment
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    @test MBD.shallowClone(continuityConstraint) == continuityConstraint
+    stateConstraint = MBD.StateConstraint(originNode, [1], [originNode.state.data[1]])
+    @test MBD.shallowClone(stateConstraint) == stateConstraint
 end
 
 @testset "Deep Copy" begin
-    variable = MBD.Variable([0.8234, 0, 0, 0, 0.1623, 0], [true, false, false, false, false, false])
+    variable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, false, false])
     @test MBD.deepClone(variable) == variable
 end
 
@@ -174,6 +185,30 @@ end
     @test getVariables(segment) == [segment.TOF, segment.propParams]
     resetPropagatedArc!(segment)
     @test getStateCount(segment.propArc) == 1
+end
+
+@testset "ContinuityConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    @test getNumberConstraintRows(continuityConstraint) == 6
+    multipleShooterProblem = MBD.MultipleShooterProblem()
+    @test evaluateConstraint(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0, 0, 0, 0, 0, 0]
+    @test length(keys(getPartials_ConstraintWRTVariables(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 3
+end
+
+@testset "StateConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    stateConstraint = MBD.StateConstraint(originNode, [1], [originNode.state.data[1]])
+    @test getNumberConstraintRows(stateConstraint) == 1
+    multipleShooterProblem = MBD.MultipleShooterProblem()
+    @test evaluateConstraint(stateConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0]
+    @test length(keys(getPartials_ConstraintWRTVariables(stateConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 1
 end
 
 @testset "Utility Functions" begin

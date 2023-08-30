@@ -51,7 +51,7 @@ Return partial derivatives of constraint with respect to free variables
 """
 function getPartials_ConstraintWRTVariables(stateConstraint::StateConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int64}, freeVariableVector::Vector{Float64})
     partials::Matrix{Float64} = zeros(Float64, (length(stateConstraint.constrainedIndices), length(stateConstraint.variable.data)))
-    [(partials[r,stateConstraint.constrainedindices[r]] = 1) for r in 1:length(stateConstraint.constrainedIndices)]
+    [(partials[r,stateConstraint.constrainedIndices[r]] = 1) for r in 1:length(stateConstraint.constrainedIndices)]
     partialsMap::Dict{MBD.Variable, Matrix{Float64}} = Dict{MBD.Variable, Matrix{Float64}}()
     partialsMap[stateConstraint.variable] = partials
 

@@ -25,7 +25,7 @@ function evaluateConstraint(continuityConstraint::ContinuityConstraint, freeVari
     propState::Vector{Float64} = getFinalState!(continuityConstraint.segment)
     terminalNodeState::Vector{Float64} = getData(continuityConstraint.segment.terminalNode.state)
     
-    return [propState[continuityConstraint.constrainedIndices[index]]-terminalNodeState[continuityConstraint.constrainedIndices[index]] forindex in 1:length(continuityConstraint.constrainedIndices)]
+    return [propState[continuityConstraint.constrainedIndices[index]]-terminalNodeState[continuityConstraint.constrainedIndices[index]] for index in 1:length(continuityConstraint.constrainedIndices)]
 end
 
 """
@@ -61,11 +61,11 @@ function getPartials_ConstraintWRTVariables(continuityConstraint::ContinuityCons
         finalStateWRTInitialState[index,:] = STM[continuityConstraint.constrainedIndices[index],:]
         finalStateWRTTargetState[index, continuityConstraint.constrainedIndices[index]] = -1
     end
-    partials::Dict{MBD.Variable, Matix{Float64}} = Dict{MBD.Variable, Matrix{Float64}}()
+    partials::Dict{MBD.Variable, Matrix{Float64}} = Dict{MBD.Variable, Matrix{Float64}}()
     partials[continuityConstraint.segment.TOF] = finalStateWRTTime
     partials[continuityConstraint.segment.originNode.state] = finalStateWRTInitialState
     partials[continuityConstraint.segment.terminalNode.state] = finalStateWRTTargetState
-    if !isEpochIndependent(continuityConstraint.segment.originNode.model)
+    if !isEpochIndependent(continuityConstraint.segment.originNode.dynamicsModel)
         dqdT::Matrix{Float64} = getPartials_FinalStateWRTEpoch!(continuityConstraint.segment)
         finalStateWRTEpoch::Matrix{float64} = zeros(Float64, (length(continuityConstraint.constrainedIndices), 1))
         [finalStateWRTEpoch[index,1] = dqdT[continuityConstraint.constrainedIndices[index],1] for index in 1:length(continuityConstraint.constrainedIndices)]

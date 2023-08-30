@@ -8,7 +8,7 @@ U: 7/29/23
 module MBD
 
 import Base: ==
-import DifferentialEquations, LightXML
+import DifferentialEquations, LightXML, LinearAlgebra, SPICE
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
@@ -27,6 +27,11 @@ Enumerated type for integrators
 Abstract type for constraints
 """
 abstract type AbstractConstraint end
+
+"""
+Abstract type for convergence checkIndices
+"""
+abstract type AbstractConvergenceCheck end
 
 """
 Abstract type for dynamics models
@@ -49,9 +54,19 @@ Abstract type for nonlinear problems
 abstract type AbstractNonlinearProblem end
 
 """
+Abstract type for nonlinear problem solvers
+"""
+abstract type AbstractNonlinearProblemSolver end
+
+"""
 Abstract type for system objects
 """
 abstract type AbstractSystemData end
+
+"""
+Abstract type for update generators
+"""
+abstract type AbstractUpdateGenerator end
 
 """
 Abstract type for objects containing variables
@@ -388,6 +403,7 @@ mutable struct ContinuityConstraint <: AbstractConstraint
         return new(1:length(segment.originNode.state.data), segment)
     end
 end
+Base.:(==)(continuityConstraint1::ContinuityConstraint, continuityConstraint2::ContinuityConstraint) = ((continuityConstraint1.constrainedIndices == continuityConstraint2.constrainedIndices) && (continuityConstraint1.segment == continuityConstraint2.segment))
 
 """
     StateConstraint(node, indices, values)
@@ -415,8 +431,65 @@ mutable struct StateConstraint <: AbstractConstraint
         return this
     end
 end
+Base.:(==)(stateConstraint1::StateConstraint, stateConstraint2::StateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
 
+"""
+    ConstraintVectorL2NormConvergenceCheck()
+
+Constraint vector L2 norm convergence check object
+"""
+struct ConstraintVectorL2NormConvergenceCheck <: AbstractConvergenceCheck
+    maxVectorNorm::Float64                              # Maximum allowable vector norm
+
+    function ConstraintVectorL2NormConvergenceCheck()
+        return new(1E-11)
+    end
+end
+
+"""
+    MinimumNormUpdateGenerator()
+
+Minimum norm update generator object
+"""
+struct MinimumNormUpdateGenerator <: AbstractUpdateGenerator
+    function MinimumNormUpdateGenerator()
+        return new()
+    end
+end
+
+"""
+    LeastSquaresUpdateGenerator()
+
+Least squares update generator object
+"""
+struct LeastSquaresUpdateGenerator <: AbstractUpdateGenerator
+    function LeastSquaresUpdateGenerator()
+        return new()
+    end
+end
+
+"""
+    MultipleShooter()
+
+Multiple shooter object
+"""
+mutable struct MultipleShooter <: AbstractNonlinearProblemSolver
+    convergenceCheck::AbstractConvergenceCheck          # Convergence check object
+    maxIterations::Int64                                # Maximum number of solver iterations
+    printProgress::Bool                                 # Print progress?
+    recentIterationCount::Int64                         # Number of iterations during last solve
+    solutionInProgress::MultipleShooterProblem          # Multiple shooter problem being solved
+    updateGenerators::Vector{AbstractUpdateGenerator}   # Update generators
+
+    function MultipleShooter()
+        return new(ConstraintVectorL2NormConvergenceCheck(), 25, true, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
+    end
+end
+
+include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/ContinuityConstraint.jl")
+include("corrections/LeastSquaresUpdateGenerator.jl")
+include("corrections/MinimumNormUpdateGenerator.jl")
 include("corrections/MultipleShooterProblem.jl")
 include("corrections/Node.jl")
 include("corrections/Segment.jl")
