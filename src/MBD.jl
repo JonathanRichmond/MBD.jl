@@ -287,16 +287,16 @@ Variable object
 """
 mutable struct Variable
     data::Vector{Float64}                               # Data values
-    freeVarMask::Vector{Bool}                           # Free variable mask
+    freeVariableMask::Vector{Bool}                           # Free variable mask
     name::String                                        # Name
 
-    function Variable(data::Vector{Float64}, freeVarMask::Vector{Bool})
-        (length(freeVarMask) == length(data)) || throw(ArgumentError("Free variable mask length, $(length(freeVarMask)), must match data values length, $(length(data))"))
+    function Variable(data::Vector{Float64}, freeVariableMask::Vector{Bool})
+        (length(freeVariableMask) == length(data)) || throw(ArgumentError("Free variable mask length, $(length(freeVariableMask)), must match data values length, $(length(data))"))
 
-        return new(copy(data), copy(freeVarMask), "")
+        return new(copy(data), copy(freeVariableMask), "")
     end
 end
-Base.:(==)(variable1::Variable, variable2::Variable) = ((variable1.data == variable2.data) && (variable1.freeVarMask == variable2.freeVarMask))
+Base.:(==)(variable1::Variable, variable2::Variable) = ((variable1.data == variable2.data) && (variable1.freeVariableMask == variable2.freeVariableMask))
 
 """
     Node(epoch, state, dynamicsModel)
@@ -482,7 +482,7 @@ mutable struct MultipleShooter <: AbstractNonlinearProblemSolver
     updateGenerators::Vector{AbstractUpdateGenerator}   # Update generators
 
     function MultipleShooter()
-        return new(ConstraintVectorL2NormConvergenceCheck(), 25, true, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
+        return new(ConstraintVectorL2NormConvergenceCheck(), 25, false, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
     end
 end
 
@@ -490,6 +490,7 @@ include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/ContinuityConstraint.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
 include("corrections/MinimumNormUpdateGenerator.jl")
+include("corrections/MultipleShooter.jl")
 include("corrections/MultipleShooterProblem.jl")
 include("corrections/Node.jl")
 include("corrections/Segment.jl")

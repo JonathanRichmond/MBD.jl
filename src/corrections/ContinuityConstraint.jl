@@ -96,3 +96,16 @@ function shallowClone(continuityConstraint::ContinuityConstraint)
     
     return object
 end
+
+"""
+    updatePointers!(continuityConstraint, copiedObjectMap)
+
+Update pointers for continuity constraint object
+
+# Arguments
+- `continuityConstraint::ContinuityConstraint`: Continuity constraint object
+- `copiedObjectMap::Dict`: Map between old and new objects
+"""
+function updatePointers!(continuityConstraint::ContinuityConstraint, copiedObjectMap::Dict)
+    continuityConstraint.segment = updatePointer(continuityConstraint.segment, copiedObjectMap, true)
+end

@@ -38,3 +38,17 @@ function shallowClone(node::Node)
 
     return object
 end
+
+"""
+    updatePointers!(node, copiedObjectMap)
+
+Update pointers for node object
+
+# Arguments
+- `node::Node`: Node object
+- `copiedObjectMap::Dict`: Map between old and new objects
+"""
+function updatePointers!(node::Node, copiedObjectMap::Dict)
+    node.state = updatePointer(node.state, copiedObjectMap, true)
+    node.epoch = updatePointer(node.epoch, copiedObjectMap, true)
+end

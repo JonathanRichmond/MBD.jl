@@ -21,7 +21,7 @@ Return deep copy of variable object
 - `variable::Variable`: Variable object
 """
 function deepClone(variable::Variable)
-    object = Variable(copy(variable.data), copy(variable.freeVarMask))
+    object = Variable(copy(variable.data), copy(variable.freeVariableMask))
     object.name = variable.name
 
     return object
@@ -48,7 +48,7 @@ Return free variable data
 - `variable::Variable`: Variable object
 """
 function getFreeVariableData(variable::Variable)
-    return variable.data[variable.freeVarMask]
+    return variable.data[variable.freeVariableMask]
 end
 
 """
@@ -60,7 +60,7 @@ Return free variable mask
 - `variable::Variable`: Variable object
 """
 function getFreeVariableMask(variable::Variable)
-    return copy(variable.freeVarMask)
+    return copy(variable.freeVariableMask)
 end
 
 """
@@ -72,7 +72,7 @@ Return number of free variables
 - `variable::Variable`: Variable object
 """
 function getNumberFreeVariables(variable::Variable)
-    return length(filter(x -> x == true, variable.freeVarMask))
+    return length(filter(x -> x == true, variable.freeVariableMask))
 end
 
 """
@@ -88,8 +88,8 @@ function setFreeVariableData!(variable::Variable, freeVariables::Vector{Float64}
     n_freeVar::Int64 = getNumberFreeVariables(variable)
     (length(freeVariables) > n_freeVar) && throw(ArgumentError("Free variable data has $(length(freeVariables)) elements, but should have $n_freeVar"))
     dataIndex::Int64 = 1
-    for maskIndex::Int64 = 1:length(variable.freeVarMask)
-        if variable.freeVarMask[maskIndex]
+    for maskIndex::Int64 = 1:length(variable.freeVariableMask)
+        if variable.freeVariableMask[maskIndex]
             variable.data[maskIndex] = freeVariables[dataIndex]
             dataIndex += 1
         end
@@ -106,6 +106,6 @@ Return variable object with new free variable mask
 - `mask::Vector{Bool}`: Free variable mask
 """
 function setFreeVariableMask!(variable::Variable, mask::Vector{Bool})
-    (length(mask) == length(variable.freeVarMask)) || throw(ArgumentError("Free variable mask has $(length(mask)) elements, but should have $(length(variable.freeVarMask))"))
-    variable.freeVarMask = copy(mask)
+    (length(mask) == length(variable.freeVariableMask)) || throw(ArgumentError("Free variable mask has $(length(mask)) elements, but should have $(length(variable.freeVariableMask))"))
+    variable.freeVariableMask = copy(mask)
 end

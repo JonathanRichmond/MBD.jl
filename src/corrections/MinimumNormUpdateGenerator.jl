@@ -38,7 +38,7 @@ function getFullUpdate(minimumNormUpdateGenerator::MinimumNormUpdateGenerator, m
     jacobian::Matrix{Float64} = getJacobian(multipleShooterProblem)
     FX::Vector{Float64} = -1 .*copy(getConstraintVector!(multipleShooterProblem))
     (length(FX) <= n_freeVariables) || throw(ErrorException("Cannot generate update: Number of constraints is greater than number of free variables"))
-    solver = LinearAlgebra.qr(jacobian, Val(true))
+    solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
     X::Vector{Float64} = solver\FX
 
     return X

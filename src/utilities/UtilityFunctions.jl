@@ -6,7 +6,7 @@ C: 9/7/22
 U: 8/5/23
 """
 
-export checkIndices, maskData
+export checkIndices, maskData, updatePointer
 
 """
     checkIndices(stateIndices, stateSize)
@@ -55,5 +55,30 @@ function maskData(mask::Vector{Bool}, data::Matrix{Float64})
         end
 
         return maskedData
+    end
+end
+
+"""
+    updatePointer(original, copiedObjectMap, forceMatch)
+
+Update pointer
+
+# Arguments
+- `original::Any`: Object
+- `copiedObjectMap::Dict`: Map between old and new objects
+- `forceMatch::Bool`: Force match?
+"""
+function updatePointer(original::Any, copiedObjectMap::Dict, forceMatch::Bool)
+    contains::Bool = false
+    for key in keys(copiedObjectMap)
+        if key == hash(original)
+            contains = true
+            break
+        end
+    end
+    if contains
+        return copiedObjectMap[hash(original)]
+    else
+        forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original)
     end
 end

@@ -5,6 +5,7 @@ include("../src/corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("../src/corrections/ContinuityConstraint.jl")
 include("../src/corrections/LeastSquaresUpdateGenerator.jl")
 include("../src/corrections/MinimumNormUpdateGenerator.jl")
+include("../src/corrections/MultipleShooter.jl")
 include("../src/corrections/MultipleShooterProblem.jl")
 include("../src/corrections/Node.jl")
 include("../src/corrections/Segment.jl")
@@ -153,7 +154,7 @@ end
     @test variable.data == [4.0, 0, 0, 0, 7.0, 0]
     @test_throws ArgumentError setFreeVariableMask!(variable, [true, false])
     setFreeVariableMask!(variable, [true, false, false, false, false, false])
-    @test variable.freeVarMask == [true, false, false, false, false, false]
+    @test variable.freeVariableMask == [true, false, false, false, false, false]
 end
 
 @testset "Node" begin
@@ -248,4 +249,6 @@ end
     addConstraint!(multipleShooterProblem, x0Constraint)
     addConstraint!(multipleShooterProblem, qfConstraint)
     addConstraint!(multipleShooterProblem, continuityConstraint)
+    multipleShooter = MBD.MultipleShooter()
+    solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
 end

@@ -77,3 +77,16 @@ function shallowClone(stateConstraint::StateConstraint)
     
     return object
 end
+
+"""
+    updatePointers!(stateConstraint, copiedObjectMap)
+
+Update pointers for state constraint object
+
+# Arguments
+- `stateConstraint::StateConstraint`: State constraint object
+- `copiedObjectMap::Dict`: Map between old and new objects
+"""
+function updatePointers!(stateConstraint::StateConstraint, copiedObjectMap::Dict)
+    stateConstraint.variable = updatePointer(stateConstraint.variable, copiedObjectMap, true)
+end

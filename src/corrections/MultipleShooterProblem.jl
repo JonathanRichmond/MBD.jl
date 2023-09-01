@@ -55,7 +55,7 @@ Return multiple shooter problem object with variable
 - `variable::Variable`: Variable
 """
 function addVariable!(multipleShooterProblem::MultipleShooterProblem, variable::MBD.Variable)
-    mulitpleShooterProblem.freeVariableIndexMap[variable] = MBD.UNINITIALIZED_INDEX
+    multipleShooterProblem.freeVariableIndexMap[variable] = MBD.UNINITIALIZED_INDEX
     updateFreeVariableIndexMap!(multipleShooterProblem)
     resetPropagatedArcs!(multipleShooterProblem)
 end
@@ -159,13 +159,11 @@ function checkJacobian(multipleShooterProblem::MultipleShooterProblem)
     freeVariableIndexMap::Dict{MBD.Variable, Int64} = getFreeVariableIndexMap!(problem)
     reverseConstraintIndexMap::Dict{Int64, MBD.AbstractConstraint} = Dict{Int64, MBD.AbstractConstraint}()
     reverseFreeVariableIndexMap::Dict{int64, MBD.Variable} = Dict{Int64, MBD.Variable}()
-    freeVariableIterable::Pair = pairs(freeVariableIndexMap)
-    for (index::MBD.Variable, value::Int64) in freeVariableIterable
+    for (index::MBD.Variable, value::Int64) in freeVariableIndexmap
         n_entries::Int64 = getNumberFreeVariables(index)
         [reverseFreeVariableIndexMap[value+i] = index for i in 1:n_entries]
     end
-    constraintIterable::Pair = pairs(constraintIndexMap)
-    for (index::MBD.AbstractConstraint, value::Int64) in constraintIterable
+    for (index::MBD.AbstractConstraint, value::Int64) in constraintIndexMap
         n_entries::Int64 = getNumberConstraintRows(index)
         [reverseConstraintIndexMap[value+i] = index for i in 1:n_entries]
     end
@@ -201,7 +199,7 @@ function checkValidGraph(multipleShooterProblem::MultipleShooterProblem, adjacen
         segmentCount::Int64 = 0
         TOFSegmentSum::Int64 = 0
         for c::Int64 in 1:size(adjacencyMatrix, 2)
-            if adacencyMatrix[r,c] > 0
+            if adjacencyMatrix[r,c] > 0
                 segmentCount += 1
                 TOF::MBD.Variable = multipleShooterProblem.segments[adjacencyMatrix[r,c]].TOF
                 TOFSegmentSum += sign(getData(TOF)[1])
@@ -243,8 +241,7 @@ function deepClone(multipleShooterProblem::MultipleShooterProblem)
     object = MultipleShooterProblem()
     copiedObjectMap::Dict = Dict()
     object.freeVariableIndexMap = Dict{MBD.Variable, Int64}()
-    freeVariableIterable::Pair = pairs(multipleShooterProblem.freeVariableIndexMap)
-    for (index::MBD.Variable, value::Int64) in freeVariableIterable
+    for (index::MBD.Variable, value::Int64) in multipleShooterProblem.freeVariableIndexMap
         variable::MBD.Variable = MBD.deepClone(index)
         copiedObjectMap[hash(index)] = variable
         object.freeVariableIndexMap[variable] = value
@@ -252,19 +249,21 @@ function deepClone(multipleShooterProblem::MultipleShooterProblem)
     object.nodes = []
     for node::MBD.Node in multipleShooterProblem.nodes
         newNode::MBD.Node = MBD.shallowClone(node)
+        updatePointers!(newNode, copiedObjectMap)
         copiedObjectMap[hash(node)] = newNode
         push!(object.nodes, newNode)
     end
     object.segments = []
     for segment::MBD.Segment in multipleShooterProblem.segments
         newSegment::MBD.Segment = MBD.shallowClone(segment)
+        updatePointers!(newSegment, copiedObjectMap)
         copiedObjectMap[hash(segment)] = newSegment
         push!(object.segments, newSegment)
     end
     object.constraintIndexMap = Dict{MBD.AbstractConstraint, Int64}()
-    constraintIterable::Pair = pairs(multipleShooterProblem.constraintIndexmap)
-    for (index::MBD.AbstractConstraint, value::Int64) in constraintIterable
+    for (index::MBD.AbstractConstraint, value::Int64) in multipleShooterProblem.constraintIndexMap
         constraint::MBD.AbstractConstraint = MBD.shallowClone(index)
+        updatePointers!(constraint, copiedObjectMap)
         object.constraintIndexMap[constraint] = value
     end
     object.freeVariableVector = copy(multipleShooterProblem.freeVariableVector)
@@ -294,9 +293,8 @@ Return constraint vector
 - `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
 """
 function getConstraintVector!(multipleShooterProblem::MultipleShooterProblem)
-    multipleShooterProblem.constraintVector = Vector{Float64}(undef, getNumberConstraints(problem))
-    constraintIterable::Pair = pairs(multipleShooterProblem.constraintIndexMap)
-    for (index::MBD.AbstractConstraint, value::Int64) in constraintIterable
+    multipleShooterProblem.constraintVector = Vector{Float64}(undef, getNumberConstraints(multipleShooterProblem))
+    for (index::MBD.AbstractConstraint, value::Int64) in multipleShooterProblem.constraintIndexMap
         data::Vector{Float64} = evaluateConstraint(index, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector)
         multipleShooterProblem.constraintVector[value:value+length(data)-1] = data
     end
@@ -329,8 +327,7 @@ Return free variable vector
 function getFreeVariableVector!(multipleShooterProblem::MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     multipleShooterProblem.freeVariableVector = Vector{Float64}(undef, getNumberFreeVariables(multipleShooterProblem))
-    freeVariableIterable::Pair = pairs(multipleShooterProblem.freeVariableIndexMap)
-    for (index::MBD.Variable, value::Int64) in freeVariableIterable
+    for (index::MBD.Variable, value::Int64) in multipleShooterProblem.freeVariableIndexMap
         data::Vector{Float64} = getFreeVariableData(index)
         multipleShooterProblem.freeVariableVector[value:value+length(data)-1] = data
     end
@@ -349,13 +346,11 @@ Return Jacobian matrix
 function getJacobian(multipleShooterProblem::MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     jacobian::Matrix{Float64} = zeros(Float64, (getNumberConstraints(multipleShooterProblem), getNumberFreeVariables(multipleShooterProblem)))
-    constraintIterable::Pair = pairs(multipleShooterProblem.constraintIndexMap)
-    for (index::MBD.AbstractConstraint, value::Int64) in constraintIterable
+    for (index::MBD.AbstractConstraint, value::Int64) in multipleShooterProblem.constraintIndexMap
         partials::Dict{MBD.Variable, Matrix{Float64}} = getPartials_ConstraintWRTVariables(index, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector)
-        partialIterable::Pair = pairs(partials)
-        for (index2::MBD.Variable, value2::Matrix{Float64}) in partialIterable
+        for (index2::MBD.Variable, value2::Matrix{Float64}) in partials
             maskedData::Matrix{Float64} = maskData(getFreeVariableMask(index2), value2)
-            (length(maskedData[1,:]) > 0) && (jacobian[value:value+size(maskedData, 1)-1, multipleShooterProblem.freeVariableIndexMap[index2]:multipleShooterProblem.freeVariableindexMap[index2]+size(maskedData, 2)-1] = maskedData)
+            (length(maskedData[1,:]) > 0) && (jacobian[value:value+size(maskedData, 1)-1, multipleShooterProblem.freeVariableIndexMap[index2]:multipleShooterProblem.freeVariableIndexMap[index2]+size(maskedData, 2)-1] = maskedData)
         end
     end
 
@@ -443,15 +438,14 @@ Return multiple shooter problem object with updated free variable vector
 """
 function setFreeVariableVector!(multipleShooterProblem::MultipleShooterProblem, freeVariableVector::Vector{Float64})
     multipleShooterProblem.freeVariableVector = freeVariableVector
-    freeVariableIterable::Pair = pairs(multipleShooterProblem.freeVariableIndexMap)
-    for (index::MBD.Variable, value::Int64) in freeVariableIterable
+    for (index::MBD.Variable, value::Int64) in multipleShooterProblem.freeVariableIndexMap
         n_rows::Int64 = getNumberFreeVariables(index)
         if n_rows > 0
             freeVariables::Vector{Float64} = freeVariableVector[value:value+n_rows-1]
             setFreeVariableData!(index, freeVariables)
         end
     end
-    resetPropagatedArcs!(mulitpleShooterProblem)
+    resetPropagatedArcs!(multipleShooterProblem)
 end
 
 """
