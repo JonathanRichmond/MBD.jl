@@ -1,6 +1,10 @@
 using MBD
 using Test
 
+include("../src/continuation/AdaptiveStepSizeByElementGenerator.jl")
+include("../src/continuation/BoundingBoxJumpCheck.jl")
+include("../src/continuation/NaturalParameterContinuationEngine.jl")
+include("../src/continuation/NumberStepsContinuationEndCheck.jl")
 include("../src/corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("../src/corrections/ContinuityConstraint.jl")
 include("../src/corrections/LeastSquaresUpdateGenerator.jl")
@@ -10,9 +14,11 @@ include("../src/corrections/MultipleShooterProblem.jl")
 include("../src/corrections/Node.jl")
 include("../src/corrections/Segment.jl")
 include("../src/corrections/StateConstraint.jl")
+include("../src/corrections/StateMatchConstraint.jl")
 include("../src/corrections/Variable.jl")
 include("../src/CR3BP/DynamicsModel.jl")
 include("../src/CR3BP/EquationsOfMotion.jl")
+include("../src/CR3BP/JacobiConstraint.jl")
 include("../src/CR3BP/SystemData.jl")
 include("../src/propagation/Arc.jl")
 include("../src/propagation/Propagator.jl")
@@ -40,10 +46,22 @@ end
     @test MBD.MultipleShooterProblem <: MBD.AbstractNonlinearProblem
     @test MBD.ContinuityConstraint <: MBD.AbstractConstraint
     @test MBD.StateConstraint <: MBD.AbstractConstraint
+    @test MBD.StateMatchConstraint <: MBD.AbstractConstraint
+    variable1 = MBD.Variable([1.0, 2.0], [true, false])
+    variable2 = MBD.Variable([1.0, 2.0, 3.0], [true, false, true])
+    @test_throws ArgumentError MBD.StateMatchConstraint(variable1, variable2, [1, 2])
+    variable3 = MBD.Variable([1.0, 2.0], [true, true])
+    @test_throws ArgumentError MBD.StateMatchConstraint(variable1, variable3, [1, 2])
+    @test MBD.JacobiConstraint <: MBD.AbstractConstraint
     @test MBD.ConstraintVectorL2NormConvergenceCheck <: MBD.AbstractConvergenceCheck
     @test MBD.MinimumNormUpdateGenerator <: MBD.AbstractUpdateGenerator
     @test MBD.LeastSquaresUpdateGenerator <: MBD.AbstractUpdateGenerator
     @test MBD.MultipleShooter <: MBD.AbstractNonlinearProblemSolver
+    @test_throws ArgumentError MBD.AdaptiveStepSizeByElementGenerator("Initial State", -1, 1E-4, 1E-2)
+    @test MBD.NumberStepsContinuationEndCheck <: MBD.AbstractContinuationEndCheck
+    @test MBD.BoundingBoxContinuationEndCheck <: MBD.AbstractContinuationEndCheck
+    @test MBD.BoundingBoxJumpCheck <: MBD.AbstractContinuationJumpCheck
+    @test MBD.NaturalParameterContinuationEngine <: MBD.AbstractContinuationEngine
 end
 
 @testset "Copy" begin
@@ -58,6 +76,10 @@ end
     @test MBD.shallowClone(continuityConstraint) == continuityConstraint
     stateConstraint = MBD.StateConstraint(originNode, [1], [originNode.state.data[1]])
     @test MBD.shallowClone(stateConstraint) == stateConstraint
+    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2, 3, 4, 5, 6])
+    @test MBD.shallowClone(stateMatchConstraint) == stateMatchConstraint
+    jacobiConstraint = MBD.JacobiConstraint(originNode, 3.1743560232059265)
+    @test MBD.shallowClone(jacobiConstraint) == jacobiConstraint
 end
 
 @testset "Deep Copy" begin
@@ -83,24 +105,29 @@ end
     @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.SIMPLE) == [0.8234, 0, 0, 0, 0.1263, 0]
     @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL) == [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
     @test evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.8234, 0, 0, 0, 0.1263, 0], systemData.params) == [0, 0.1263, 0, 0.11033238649399063, 0, 0]
+    MoonData = MBD.BodyData("Moon")
+    @test get2BApproximation(dynamicsModel, MoonData, 2, 0.01) == [0.9778494157300597, 0, 0, 0, 1.1122968869565202, 0]
     @test getEquationsOfMotion(dynamicsModel, MBD.SIMPLE) == MBD.CR3BPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
     @test isEpochIndependent(dynamicsModel)
     @test_throws ArgumentError getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [0, 0, 0, 0, 0, 0]
-    @test_throws ArgumentError getEquilibriumPoint(dynamicsModel, getMassRatio(systemData), 6)
-    @test getEquilibriumPoint(dynamicsModel, getMassRatio(systemData), 1) == [0.8369151323643023, 0, 0]
-    @test getEquilibriumPoint(dynamicsModel, getMassRatio(systemData), 2) == [1.1556821602923404, 0, 0]
-    @test getEquilibriumPoint(dynamicsModel, getMassRatio(systemData), 3) == [-1.005062645252109, 0, 0]
-    @test getEquilibriumPoint(dynamicsModel, getMassRatio(systemData), 4) == [0.48784941573005963, 0.8660254037844386, 0]
-    @test getEquilibriumPoint(dynamicsModel, getMassRatio(systemData), 5) == [0.48784941573005963, -0.8660254037844386, 0]
+    @test_throws ArgumentError getEquilibriumPoint(dynamicsModel, 6)
+    @test getEquilibriumPoint(dynamicsModel, 1) == [0.8369151323643023, 0, 0]
+    @test getEquilibriumPoint(dynamicsModel, 2) == [1.1556821602923404, 0, 0]
+    @test getEquilibriumPoint(dynamicsModel, 3) == [-1.005062645252109, 0, 0]
+    @test getEquilibriumPoint(dynamicsModel, 4) == [0.48784941573005963, 0.8660254037844386, 0]
     @test getJacobiConstant(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == 3.1743560232059265
+    L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
+    @test getLinearVariation(dynamicsModel, L1, [0.005, 0, 0]) == [[0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865]]
     @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
-    @test_throws ArgumentError getPrimaryPosition(dynamicsModel, getMassRatio(systemData), 3)
-    @test getPrimaryPosition(dynamicsModel, getMassRatio(systemData), 1) == [-0.012150584269940356, 0, 0]
-    @test getPseudopotentialJacobian(dynamicsModel, getMassRatio(systemData), [0.8234, 0, 0, 0, 0.1263, 0]) == [9.851145859594304, -3.4255729297971507, -4.42557292979715, 0, 0, 0]
+    @test_throws ArgumentError getPrimaryPosition(dynamicsModel, 3)
+    @test getPrimaryPosition(dynamicsModel, 1) == [-0.012150584269940356, 0, 0]
+    @test getPseudopotentialJacobian(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == [9.851145859594304, -3.4255729297971507, -4.42557292979715, 0, 0, 0]
     @test_throws ArgumentError getStateTransitionMatrix(dynamicsModel, [0.8324, 0, 0, 0, 0.1263, 0])
     @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
+    @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 2, [[1.0, 0, 0, 0, 1.0, 0], [1.1, 0, 0, 0, 1.1, 0]], [0.0])
+    @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 3, [[1.0, 0, 0, 0, 1.0, 0]], [0.0])
 end
 
 @testset "CR3BPEquationsOfMotion" begin
@@ -212,6 +239,29 @@ end
     @test length(keys(getPartials_ConstraintWRTVariables(stateConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 1
 end
 
+@testset "StateMatchConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2, 3, 4, 5, 6])
+    @test getNumberConstraintRows(stateMatchConstraint) == 6
+    multipleShooterProblem = MBD.MultipleShooterProblem()
+    @test evaluateConstraint(stateMatchConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [-0.008803836609691418, 0.00279597847933625, 0, -0.024609343495764855, 0.00969970552269439, 0]
+    @test length(keys(getPartials_ConstraintWRTVariables(stateMatchConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 2
+end
+
+@testset "JacobiConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    jacobiConstraint = MBD.JacobiConstraint(originNode, 3.1743560232059265)
+    @test getNumberConstraintRows(jacobiConstraint) == 1
+    multipleShooterProblem = MBD.MultipleShooterProblem()
+    @test evaluateConstraint(jacobiConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0.0]
+    @test length(keys(getPartials_ConstraintWRTVariables(jacobiConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 1
+end
+
 @testset "Utility Functions" begin
     @test_throws BoundsError checkIndices([1, 7], 6)
     @test_throws ArgumentError checkIndices([1, 1], 6)
@@ -251,4 +301,5 @@ end
     addConstraint!(multipleShooterProblem, continuityConstraint)
     multipleShooter = MBD.MultipleShooter()
     solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
+    
 end

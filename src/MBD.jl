@@ -29,7 +29,22 @@ Abstract type for constraints
 abstract type AbstractConstraint end
 
 """
-Abstract type for convergence checkIndices
+Abstract type for continuation end checks
+"""
+abstract type AbstractContinuationEndCheck end
+
+"""
+Abstract type for continuation engines
+"""
+abstract type AbstractContinuationEngine end
+
+"""
+Abstract type for continuation jump checks
+"""
+abstract type AbstractContinuationJumpCheck end
+
+"""
+Abstract type for convergence checks
 """
 abstract type AbstractConvergenceCheck end
 
@@ -47,6 +62,11 @@ abstract type AbstractEquationsOfMotion end
 Abstract type for events
 """
 abstract type AbstractEvent end
+
+"""
+Abstract type for linear solution generators
+"""
+abstract type AbstractLinearSolutionGenerator end
 
 """
 Abstract type for nonlinear problems
@@ -82,7 +102,7 @@ Body name object
 - `name::String`: Name of body
 """
 struct BodyName
-    name::String                                        # Name
+    name::String                                            # Name
 
     function BodyName(name)
         return new(name)
@@ -98,15 +118,15 @@ Body object
 - `name::String`: Name of body
 """
 mutable struct BodyData
-    bodyRadius::Float64                                 # Body mean radius [km]
-    gravParam::Float64                                  # Gravitational parameter [kg^3/s^2]
-    inc::Float64                                        # Orbit inclination relative to Ecliptic J2000 frame [rad]
-    mass::Float64                                       # Mass [kg]
-    name::String                                        # Name
-    orbitRadius::Float64                                # Orbit mean radius [km]
-    parentSpiceID::Int64                                # Parent body SPICE ID
-    RAAN::Float64                                       # Orbit Right-Ascension of Ascending Node relative to Ecliptic J2000 frame [rad]
-    spiceID::Int64                                      # SPICE ID
+    bodyRadius::Float64                                     # Body mean radius [km]
+    gravParam::Float64                                      # Gravitational parameter [kg^3/s^2]
+    inc::Float64                                            # Orbit inclination relative to Ecliptic J2000 frame [rad]
+    mass::Float64                                           # Mass [kg]
+    name::String                                            # Name
+    orbitRadius::Float64                                    # Orbit mean radius [km]
+    parentSpiceID::Int64                                    # Parent body SPICE ID
+    RAAN::Float64                                           # Orbit Right-Ascension of Ascending Node relative to Ecliptic J2000 frame [rad]
+    spiceID::Int64                                          # SPICE ID
 
     function BodyData(name::String)
         this = new()
@@ -155,13 +175,13 @@ CR3BP system object
 - `p2::String`: Name of second primary
 """
 mutable struct CR3BPSystemData <: AbstractSystemData
-    charLength::Float64                                 # Characteristic length [km]
-    charMass::Float64                                   # Characteristic mass [kg]
-    charTime::Float64                                   # Characteritic time [s]
-    numPrimaries::Int64                                 # Number of primaries that must exist in this system
-    params::Vector{Float64}                             # Other system parameters
-    primaryNames::Vector{String}                        # Primary names
-    primarySpiceIDs::Vector{Int64}                      # Primary SPICE IDs
+    charLength::Float64                                     # Characteristic length [km]
+    charMass::Float64                                       # Characteristic mass [kg]
+    charTime::Float64                                       # Characteritic time [s]
+    numPrimaries::Int64                                     # Number of primaries that must exist in this system
+    params::Vector{Float64}                                 # Other system parameters
+    primaryNames::Vector{String}                            # Primary names
+    primarySpiceIDs::Vector{Int64}                          # Primary SPICE IDs
 
     function CR3BPSystemData(p1::String, p2::String)
         this = new()
@@ -192,7 +212,7 @@ CR3BP dynamics model object
 - `systemData::CR3BPSystemData`: CR3BP system object
 """
 struct CR3BPDynamicsModel <: AbstractDynamicsModel
-    systemData::CR3BPSystemData                         # CR3BP system object
+    systemData::CR3BPSystemData                             # CR3BP system object
 
     function CR3BPDynamicsModel(systemData::CR3BPSystemData)
         return new(systemData)
@@ -210,9 +230,9 @@ CR3BP EOM object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
 struct CR3BPEquationsOfMotion <: AbstractEquationsOfMotion
-    dim::Int64                                          # State vector dimension
-    equationType::EquationType                          # EOM type
-    mu::Float64                                         # CR3BP system mass ratio
+    dim::Int64                                              # State vector dimension
+    equationType::EquationType                              # EOM type
+    mu::Float64                                             # CR3BP system mass ratio
 
     function CR3BPEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
         return new(getStateSize(dynamicsModel, equationType), equationType, getMassRatio(dynamicsModel.systemData))
@@ -226,9 +246,9 @@ Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOM
 Integrator object
 """
 mutable struct IntegratorFactory
-    integrator                                          # Integrator object
-    integratorType::IntegratorType                      # Integrator type
-    numSteps::Int64                                     # Number of steps for multi-step method
+    integrator                                              # Integrator object
+    integratorType::IntegratorType                          # Integrator type
+    numSteps::Int64                                         # Number of steps for multi-step method
 
     function IntegratorFactory()
         return new(DifferentialEquations.DP8(), DP8, 3)
@@ -241,14 +261,14 @@ end
 Propagator object
 """
 mutable struct Propagator
-    absTol::Float64                                     # Absolute tolerance
-    equationType::EquationType                          # EOM type
-    events::Vector{AbstractEvent}                       # Integration events
-    integratorFactory::IntegratorFactory                # Integrator object
-    maxEvaluationCount::Int64                           # Maximum number of equation evaluations
-    maxStep::Int64                                      # Maximum step size
-    minEventTime::Float64                               # Minimum time between initial time and first event occurrence
-    relTol::Float64                                     # Relative tolerance
+    absTol::Float64                                         # Absolute tolerance
+    equationType::EquationType                              # EOM type
+    events::Vector{AbstractEvent}                           # Integration events
+    integratorFactory::IntegratorFactory                    # Integrator object
+    maxEvaluationCount::Int64                               # Maximum number of equation evaluations
+    maxStep::Int64                                          # Maximum step size
+    minEventTime::Float64                                   # Minimum time between initial time and first event occurrence
+    relTol::Float64                                         # Relative tolerance
 
     function Propagator()
         return new(1E-14, SIMPLE, [], IntegratorFactory(), typemax(Int64), 100, 1E-12, 1E-12)
@@ -265,10 +285,10 @@ Arc object
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 """
 mutable struct Arc
-    dynamicsModel::AbstractDynamicsModel                # Dynamics model object
-    params::Vector{Float64}                             # System parameters
-    states::Vector{Vector{Float64}}                     # State vectors along arc [ndim]
-    times::Vector{Float64}                              # Times along arc [ndim]
+    dynamicsModel::AbstractDynamicsModel                    # Dynamics model object
+    params::Vector{Float64}                                 # System parameters
+    states::Vector{Vector{Float64}}                         # State vectors along arc [ndim]
+    times::Vector{Float64}                                  # Times along arc [ndim]
 
     function Arc(dynamicsModel::AbstractDynamicsModel)
         return new(dynamicsModel, [], [[]], [])
@@ -286,9 +306,9 @@ Variable object
 - `freeVarMask::Vector{Bool}`: Free variable mask
 """
 mutable struct Variable
-    data::Vector{Float64}                               # Data values
-    freeVariableMask::Vector{Bool}                           # Free variable mask
-    name::String                                        # Name
+    data::Vector{Float64}                                   # Data values
+    freeVariableMask::Vector{Bool}                          # Free variable mask
+    name::String                                            # Name
 
     function Variable(data::Vector{Float64}, freeVariableMask::Vector{Bool})
         (length(freeVariableMask) == length(data)) || throw(ArgumentError("Free variable mask length, $(length(freeVariableMask)), must match data values length, $(length(data))"))
@@ -309,9 +329,9 @@ Node object
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 """
 mutable struct Node <: IHasVariables
-    dynamicsModel::AbstractDynamicsModel                # Dynamics model object
-    epoch::Variable                                     # Epoch
-    state::Variable                                     # State
+    dynamicsModel::AbstractDynamicsModel                    # Dynamics model object
+    epoch::Variable                                         # Epoch
+    state::Variable                                         # State
 
     function Node(epoch::Float64, state::Vector{Float64}, dynamicsModel::AbstractDynamicsModel)
         this = new()
@@ -344,12 +364,12 @@ Segment object
 - `terminalNode::Node`: Terminal node
 """
 mutable struct Segment <: IHasVariables
-    originNode::Node                                    # Origin node object
-    propArc::Arc                                        # Propagated arc object
-    propagator::Propagator                              # Propagator object
-    propParams::Variable                                # Propagation parameters
-    terminalNode::Node                                  # Terminal node object
-    TOF::Variable                                       # Time of flight
+    originNode::Node                                        # Origin node object
+    propArc::Arc                                            # Propagated arc object
+    propagator::Propagator                                  # Propagator object
+    propParams::Variable                                    # Propagation parameters
+    terminalNode::Node                                      # Terminal node object
+    TOF::Variable                                           # Time of flight
 
     function Segment(TOF::Float64, originNode::Node, terminalNode::Node)
         this = new()
@@ -376,14 +396,14 @@ Base.:(==)(segment1::Segment, segment2::Segment) = ((segment1.originNode == segm
 Multiple shooter problem object
 """
 mutable struct MultipleShooterProblem <: AbstractNonlinearProblem
-    constraintIndexMap::Dict{AbstractConstraint, Int64} # Map between constraints and first index of contraint equation in constraint vector
-    constraintVector::Vector{Float64}                   # Constraints
-    freeVariableIndexMap::Dict{Variable, Int64}         # Map between free variables and first index of free variables in free variable vector
-    freeVariableVector::Vector{Float64}                 # Free variables
-    hasBeenBuilt::Bool                                  # Has been built?
-    jacobian::Vector{Vector{Float64}}                   # Jacobian matrix
-    nodes::Vector{Node}                                 # Nodes
-    segments::Vector{Segment}                           # Segments
+    constraintIndexMap::Dict{AbstractConstraint, Int64}     # Map between constraints and first index of contraint equation in constraint vector
+    constraintVector::Vector{Float64}                       # Constraints
+    freeVariableIndexMap::Dict{Variable, Int64}             # Map between free variables and first index of free variables in free variable vector
+    freeVariableVector::Vector{Float64}                     # Free variables
+    hasBeenBuilt::Bool                                      # Has been built?
+    jacobian::Vector{Vector{Float64}}                       # Jacobian matrix
+    nodes::Vector{Node}                                     # Nodes
+    segments::Vector{Segment}                               # Segments
 
     function MultipleShooterProblem()
         return new(Dict{AbstractConstraint, Int64}(), [], Dict{Variable, Int64}(), [], false, [[]], [], [])
@@ -394,10 +414,13 @@ end
     ContinuityConstraint(segment)
 
 Continuity constraint object
+
+# Arguments
+- `segment::Segment`: Segment object
 """
 mutable struct ContinuityConstraint <: AbstractConstraint
-    constrainedIndices::Vector{Int64}                   # Constrained state indices
-    segment::Segment                                    # Segment object
+    constrainedIndices::Vector{Int64}                       # Constrained state indices
+    segment::Segment                                        # Segment object
 
     function ContinuityConstraint(segment::Segment)
         return new(1:length(segment.originNode.state.data), segment)
@@ -409,11 +432,16 @@ Base.:(==)(continuityConstraint1::ContinuityConstraint, continuityConstraint2::C
     StateConstraint(node, indices, values)
 
 State constraint object
+
+# Arguments
+- `node::Node`: Node object
+- `indices::Vector{Int64}`: Constrained state indices
+- `values::Vector{Float64}`: Constraint values
 """
 mutable struct StateConstraint <: AbstractConstraint
-    constrainedIndices::Vector{Int64}                   # Constrained state indices
-    values::Vector{Float64}                             # Constraint values
-    variable::Variable                                  # Constrained variable
+    constrainedIndices::Vector{Int64}                       # Constrained state indices
+    values::Vector{Float64}                                 # Constraint values
+    variable::Variable                                      # Constrained variable
 
     function StateConstraint(node::Node, indices::Vector{Int64}, values::Vector{Float64})
         this = new()
@@ -434,12 +462,71 @@ end
 Base.:(==)(stateConstraint1::StateConstraint, stateConstraint2::StateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
 
 """
+    StateMatchConstraint(state1, state2, indices)
+
+State match constraint object
+
+# Arguments
+- `state1::Variable`: First state vector
+- `state2::Variable`: Second state vector
+- `indices::Vector{Int64}`: Constrained state indices
+"""
+mutable struct StateMatchConstraint <: AbstractConstraint
+    constrainedIndices::Vector{Int64}                       # Constrained state indices
+    variable1::Variable                                     # First state variable
+    variable2::Variable                                     # Second state variable
+
+    function StateMatchConstraint(state1::Variable, state2::Variable, indices::Vector{Int64})
+        this = new(indices, state1, state2)
+
+        (length(this.variable1.data) == length(this.variable2.data)) || throw(ArgumentError("First state length, $(length(this.variable1.data)), must match second state length, $(length(this.variable2.data))"))
+        checkIndices(this.constrainedIndices, length(this.variable1.data))
+        mask1::Vector{Bool} = getFreeVariableMask(this.variable1)
+        mask2::Vector{Bool} = getFreeVariableMask(this.variable2)
+        for i::Int64 in eachindex(this.constrainedIndices)
+            (mask1[this.constrainedIndices[i]] && mask2[this.constrainedIndices[i]]) || throw(ArgumentError("Cannot constrain index = $(this.constrainedIndices[i]); it is not a free variable"))
+        end
+
+        return this
+    end
+end
+Base.:(==)(stateMatchConstraint1::StateMatchConstraint, stateMatchConstraint2::StateMatchConstraint) = ((stateMatchConstraint1.variable1 == stateMatchConstraint2.variable1) && (stateMatchConstraint1.variable2 == stateMatchConstraint2.variable2) && (stateMatchConstraint1.constrainedIndices == stateMatchConstraint2.constrainedIndices))
+
+"""
+    JacobiConstraint(node, value)
+
+Jacobi constraint object
+
+# Arguments
+- `node::Node`: Node object
+- `value::Float64`: Constraint value
+"""
+mutable struct JacobiConstraint <: AbstractConstraint
+    dynamicsModel::CR3BPDynamicsModel                       # Dynamics model object
+    epoch::Variable                                         # Epoch
+    state::Variable                                         # Constrained state
+    value::Float64                                          # Constraint value
+
+    function JacobiConstraint(node::Node, value::Float64)
+        this = new()
+
+        this.epoch = node.epoch
+        this.state = node.state
+        (typeof(node.dynamicsModel) == CR3BPDynamicsModel) ? (this.dynamicsModel = node.dynamicsModel) : throw(ArgumentError("Expecting CR3BP dynamics model object"))
+        this.value = value
+
+        return this
+    end
+end
+Base.:(==)(jacobiConstraint1::JacobiConstraint, jacobiConstraint2::JacobiConstraint) = ((jacobiConstraint1.dynamicsModel == jacobiConstraint2.dynamicsModel) && (jacobiConstraint1.state == jacobiConstraint2.state) && (jacobiConstraint1.epoch == jacobiConstraint2.epoch) && (jacobiConstraint1.value == jacobiConstraint2.value))
+
+"""
     ConstraintVectorL2NormConvergenceCheck()
 
 Constraint vector L2 norm convergence check object
 """
 struct ConstraintVectorL2NormConvergenceCheck <: AbstractConvergenceCheck
-    maxVectorNorm::Float64                              # Maximum allowable vector norm
+    maxVectorNorm::Float64                                  # Maximum allowable vector norm
 
     function ConstraintVectorL2NormConvergenceCheck()
         return new(1E-11)
@@ -474,18 +561,164 @@ end
 Multiple shooter object
 """
 mutable struct MultipleShooter <: AbstractNonlinearProblemSolver
-    convergenceCheck::AbstractConvergenceCheck          # Convergence check object
-    maxIterations::Int64                                # Maximum number of solver iterations
-    printProgress::Bool                                 # Print progress?
-    recentIterationCount::Int64                         # Number of iterations during last solve
-    solutionInProgress::MultipleShooterProblem          # Multiple shooter problem being solved
-    updateGenerators::Vector{AbstractUpdateGenerator}   # Update generators
+    convergenceCheck::AbstractConvergenceCheck              # Convergence check object
+    maxIterations::Int64                                    # Maximum number of solver iterations
+    printProgress::Bool                                     # Print progress?
+    recentIterationCount::Int64                             # Number of iterations during last solve
+    solutionInProgress::MultipleShooterProblem              # Multiple shooter problem being solved
+    updateGenerators::Vector{AbstractUpdateGenerator}       # Update generators
 
     function MultipleShooter()
         return new(ConstraintVectorL2NormConvergenceCheck(), 25, false, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
     end
 end
 
+"""
+    ContinuationData()
+
+Continuation data object
+"""
+mutable struct ContinuationData
+    converging::Bool                                        # Converging?
+    currentStepSize::Float64                                # Current continuation step size
+    familyMembers::Vector{MultipleShooterProblem}           # Computed family family members
+    forceEndContinuation::Bool                              # Force end of continuation?
+    fullStep::Vector{Float64}                               # Full step along free variable vector
+    initialGuess::MultipleShooterProblem                    # First member passed to corrections algorithm
+    nextGuess::MultipleShooterProblem                       # Inital guess for next family member
+    numIterations::Int64                                    # Number of iterations required to converge previous solution
+    previousSolution::MultipleShooterProblem                # Most recently converged family member
+    stepCount::Int64                                        # Number of steps from initial guess
+    twoPreviousSolution::MultipleShooterProblem             # Second previously converged family member
+
+    function ContinuationData()
+        return new(true, 1, [], false, [], MultipleShooterProblem(), MultipleShooterProblem(), 0, MultipleShooterProblem(), 0, MultipleShooterProblem())
+    end
+end
+
+"""
+    AdaptiveStepSizeByElementGenerator(elementName, elementIndex, initialStepSize, maxElementStepSize)
+
+Adaptive step size by element generator object
+
+# Arguments
+- `elementName::String`: Free variable name
+- `elementIndex::Int64`: Free variable index
+- `initialStepSize::Float64`: Initial step size
+- `maxElementStepSize::Float64`: Maximum element step size
+"""
+mutable struct AdaptiveStepSizeByElementGenerator
+    elementIndex::Int64                                     # Free variable index
+    elementName::String                                     # Free variable name
+    initialStepSize::Float64                                # Initial continuation step size
+    maxElementStepSize::Float64                             # Maximum continuation step size for element
+    maxIterations::Int64                                    # Maximum iterations to converge solution
+    maxStepSize::Float64                                    # Maximum continuation step size
+    minIterations::Int64                                    # Minimum iterations to converge solution
+    minStepSize::Float64                                    # Minimum continuation step size
+    scaleFactor::Float64                                    # Step size scale scaleFactor
+
+    function AdaptiveStepSizeByElementGenerator(elementName::String, elementIndex::Int64, initialStepSize::Float64, maxElementStepSize::Float64)
+        this = new()
+
+        this.initialStepSize = initialStepSize
+        this.minStepSize = (initialStepSize < 0) ? -1E-10 : 1E-10
+        this.maxStepSize = 1E-1
+        this.scaleFactor = 2
+        this.minIterations = 10
+        this.maxIterations = 3
+        this.elementName = elementName
+        (elementIndex < 1) && throw(ArgumentError("Element index must be positive"))
+        this.elementIndex = elementIndex
+        this.maxElementStepSize = maxElementStepSize
+
+        return this
+    end
+end
+
+"""
+    NumberStepsContinuationEndCheck(maxSteps)
+
+Number of steps continuation end check object
+
+# Arguments
+- `maxSteps::Int64`: Maximum number of steps
+"""
+struct NumberStepsContinuationEndCheck <: AbstractContinuationEndCheck
+    maxSteps::Int64                                         # Maximum continuation steps
+
+    function NumberStepsContinuationEndCheck(maxSteps::Int64)
+        return new(maxSteps)
+    end
+end
+
+"""
+    BoundingBoxContinuationEndCheck(paramName, paramBounds)
+
+Bounding box continuation end check object
+
+# Arguments
+- `paramName::String`: Parameter name
+- `paramBounds::Matrix{Float64}`: Parameter lower/upper bounds
+"""
+mutable struct BoundingBoxContinuationEndCheck <: AbstractContinuationEndCheck
+    paramBounds::Matrix{Float64}                            # Parameter upper/lower bounds
+    paramName::String                                       # Parameter name
+    variableBounds::Dict{Int64, Vector{Float64}}            # Map between free variable index and bounds
+
+    function BoundingBoxContinuationEndCheck(paramName::String, paramBounds::Matrix{Float64})
+        return new(paramBounds, paramName, Dict{Int64, Vector{Float64}}())
+    end
+end
+
+"""
+    BundingBoxJumpCheck(paramName, paramBounds)
+
+Bounding box jump check object
+
+# Arguments
+- `paramName::String`: Parameter name
+- `paramBounds::Matrix{Float64}`: Parameter lower/upper bounds
+"""
+mutable struct BoundingBoxJumpCheck <: AbstractContinuationJumpCheck
+    paramBounds::Matrix{Float64}                            # Parameter upper/lower bounds
+    paramName::String                                       # Parameter name
+    variableBounds::Dict{Int64, Vector{Float64}}            # Map between free variable index and bounds
+
+    function BoundingBoxJumpCheck(paramName::String, paramBounds::Matrix{Float64})
+        return new(paramBounds, paramName, Dict{Int64, Vector{Float64}}())
+    end
+end
+
+"""
+    NaturalParameterContinuationEngine(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
+
+Natural parameter continuation engine object
+
+# Arguments
+- `paramName::String`: Natural parameter name
+- `paramIndex::Int64`: Natural parameter index to step in
+- `initialParamStepSize::Float64`: Initial step size
+- `maxParamStepSize::Float64`: Maximum parameter step size
+"""
+mutable struct NaturalParameterContinuationEngine <: AbstractContinuationEngine
+    corrector::MultipleShooter                              # Multiple shooter corrector for family
+    dataInProgress::ContinuationData                        # Continuation data
+    endChecks::Vector{AbstractContinuationEndCheck}         # Continuation end checks
+    jumpChecks::Vector{AbstractContinuationJumpCheck}       # Continuation jump checks
+    printProgress::Bool                                     # Print progress?
+    stepSizeGenerator::AdaptiveStepSizeByElementGenerator   # Step size generator
+    storeIntermediateMembers::Bool                          # Store intermediate family members?
+
+    function NaturalParameterContinuationEngine(paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64)
+        return new(MultipleShooter(), ContinuationData(), [], [], true, AdaptiveStepSizeByElementGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize), true)
+    end
+end
+
+include("continuation/AdaptiveStepSizeByElementGenerator.jl")
+include("continuation/BoundingBoxJumpCheck.jl")
+include("continuation/NaturalParameterContinuationEngine.jl")
+include("continuation/NumberStepsContinuationEndCheck.jl")
 include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/ContinuityConstraint.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
@@ -495,9 +728,11 @@ include("corrections/MultipleShooterProblem.jl")
 include("corrections/Node.jl")
 include("corrections/Segment.jl")
 include("corrections/StateConstraint.jl")
+include("corrections/StateMatchConstraint.jl")
 include("corrections/Variable.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
+include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/SystemData.jl")
 include("propagation/Arc.jl")
 include("propagation/Propagator.jl")
