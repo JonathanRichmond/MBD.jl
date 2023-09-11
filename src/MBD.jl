@@ -766,7 +766,7 @@ mutable struct CR3BPPeriodicOrbit <: AbstractTrajectoryStructure
     BrouckeStability::Vector{Float64}                       # Broucke stability parameters
     eigenvalues::Vector{Complex{Float64}}                   # Monodromy matrix eigenvalues [ndim]
     eigenvectors::Matrix{Complex{Float64}}                  # Monodromy matrix eigenvectors [ndim]
-    initialConditions::Vector{Float64}                      # Initial conditions [ndim]
+    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
     JacobiConstant::Float64                                 # Jacobi constant
     monodromy::Matrix{Float64}                              # Monodromy matrix [ndim]
     nu::Float64                                             # Maximum stability index [ndim]
