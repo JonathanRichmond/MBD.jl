@@ -8,7 +8,7 @@ U: 7/29/23
 module MBD
 
 import Base: ==
-import DifferentialEquations, LightXML, LinearAlgebra, SPICE
+import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
@@ -79,9 +79,24 @@ Abstract type for nonlinear problem solvers
 abstract type AbstractNonlinearProblemSolver end
 
 """
+Abstract type for structure families
+"""
+abstract type AbstractStructureFamily end
+
+"""
 Abstract type for system objects
 """
 abstract type AbstractSystemData end
+
+"""
+Abstract type for targeters
+"""
+abstract type AbstractTargeter end
+
+"""
+Abstract type for trajectory structures
+"""
+abstract type AbstractTrajectoryStructure end
 
 """
 Abstract type for update generators
@@ -715,8 +730,78 @@ mutable struct NaturalParameterContinuationEngine <: AbstractContinuationEngine
     end
 end
 
+"""
+    JacobiConstantContinuationEngine(initialParamStepSize, maxParamStepSize)
+
+Jacobi constant continuation engine object
+
+# Arguments
+- `initialParamStepSize::Float64`: Initial step size
+- `maxParamStepSize::Float64`: Maximum parameter step size
+"""
+mutable struct JacobiConstantContinuationEngine <: AbstractContinuationEngine
+    corrector::MultipleShooter                              # Multiple shooter corrector for family
+    dataInProgress::ContinuationData                        # Continuation data
+    endChecks::Vector{AbstractContinuationEndCheck}         # Continuation end checks
+    jumpChecks::Vector{AbstractContinuationJumpCheck}       # Continuation jump checks
+    printProgress::Bool                                     # Print progress?
+    stepSizeGenerator::AdaptiveStepSizeByElementGenerator   # Step size generator
+    storeIntermediateMembers::Bool                          # Store intermediate family members?
+
+    function JacobiConstantContinuationEngine(initialParamStepSize::Float64, maxParamStepSize::Float64)
+        return new(MultipleShooter(), ContinuationData(), [], [], true, AdaptiveStepSizeByElementGenerator("Jacobi Constant", 1, initialParamStepSize, maxParamStepSize), true)
+    end
+end
+
+"""
+    CR3BPPeriodicOrbit(multipleShooterProblem, targeter)
+
+CR3BP periodic orbit object
+
+# Arguments
+- `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
+- `targeter::AbstractTargeter`: Targeter object
+"""
+mutable struct CR3BPPeriodicOrbit <: AbstractTrajectoryStructure
+    BrouckeStability::Vector{Float64}                       # Broucke stability parameters
+    eigenvalues::Vector{Complex{Float64}}                   # Monodromy matrix eigenvalues [ndim]
+    eigenvectors::Matrix{Complex{Float64}}                  # Monodromy matrix eigenvectors [ndim]
+    initialConditions::Vector{Float64}                      # Initial conditions [ndim]
+    JacobiConstant::Float64                                 # Jacobi constant
+    monodromy::Matrix{Float64}                              # Monodromy matrix [ndim]
+    nu::Float64                                             # Maximum stability index [ndim]
+    period::Float64                                         # Period [ndim]
+    problem::MultipleShooterProblem                         # Solved multiple shooter problem
+    targeter::AbstractTargeter                              # Targeter
+    tau::Float64                                            # Time constant [ndim]
+
+    function CR3BPPeriodicOrbit(multipleShooterProblem::MultipleShooterProblem, targeter::AbstractTargeter)
+        return new(zeros(Float64, 2), Vector{Complex{Float64}}(undef, 6), Matrix{Complex{Float64}}(undef, 6, 6), Vector{Float64}(undef, 6), 0.0, Matrix{Float64}(undef, 6, 6), 0.0, 0.0, multipleShooterProblem, targeter, 0.0)
+    end
+end
+
+"""
+    CR3BPOrbitFamily(familyMembers)
+
+CR3BP orbit family object
+
+# Arguments
+- `familyMembers::Vector{CR3BPPeriodicOrbit}`: Family members
+"""
+mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
+    eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
+    eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
+    familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
+
+    function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
+        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers)
+    end
+end
+
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
+include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
+include("continuation/JacobiConstantContinuationEngine.jl")
 include("continuation/NaturalParameterContinuationEngine.jl")
 include("continuation/NumberStepsContinuationEndCheck.jl")
 include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
@@ -733,6 +818,8 @@ include("corrections/Variable.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
 include("CR3BP/JacobiConstraint.jl")
+include("CR3BP/OrbitFamily.jl")
+include("CR3BP/PeriodicOrbit.jl")
 include("CR3BP/SystemData.jl")
 include("propagation/Arc.jl")
 include("propagation/Propagator.jl")

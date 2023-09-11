@@ -1,5 +1,5 @@
 """
-BodyName wrapper
+Body name wrapper
 
 Author: Jonathan Richmond
 C: 9/1/22

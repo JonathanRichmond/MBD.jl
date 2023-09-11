@@ -2,7 +2,9 @@ using MBD
 using Test
 
 include("../src/continuation/AdaptiveStepSizeByElementGenerator.jl")
+include("../src/continuation/BoundingBoxContinuationEndCheck.jl")
 include("../src/continuation/BoundingBoxJumpCheck.jl")
+include("../src/continuation/JacobiConstantContinuationEngine.jl")
 include("../src/continuation/NaturalParameterContinuationEngine.jl")
 include("../src/continuation/NumberStepsContinuationEndCheck.jl")
 include("../src/corrections/ConstraintVectorL2NormConvergenceCheck.jl")
@@ -19,6 +21,8 @@ include("../src/corrections/Variable.jl")
 include("../src/CR3BP/DynamicsModel.jl")
 include("../src/CR3BP/EquationsOfMotion.jl")
 include("../src/CR3BP/JacobiConstraint.jl")
+include("../src/CR3BP/OrbitFamily.jl")
+include("../src/CR3BP/PeriodicOrbit.jl")
 include("../src/CR3BP/SystemData.jl")
 include("../src/propagation/Arc.jl")
 include("../src/propagation/Propagator.jl")
@@ -62,6 +66,8 @@ end
     @test MBD.BoundingBoxContinuationEndCheck <: MBD.AbstractContinuationEndCheck
     @test MBD.BoundingBoxJumpCheck <: MBD.AbstractContinuationJumpCheck
     @test MBD.NaturalParameterContinuationEngine <: MBD.AbstractContinuationEngine
+    @test MBD.JacobiConstantContinuationEngine <: MBD.AbstractContinuationEngine
+    @test MBD.CR3BPPeriodicOrbit <: MBD.AbstractTrajectoryStructure
 end
 
 @testset "Copy" begin

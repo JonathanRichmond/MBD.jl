@@ -1,5 +1,5 @@
 """
-CR3BPDynamicsModel wrapper
+CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22

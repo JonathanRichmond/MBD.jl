@@ -1,5 +1,5 @@
 """
-CR3BPSystemData wrapper
+CR3BP system data wrapper
 
 Author: Jonathan Richmond
 C: 9/9/22

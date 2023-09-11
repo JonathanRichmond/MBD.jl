@@ -31,7 +31,7 @@ end
 Return natural parameter continuation engine with updated jump checks
 
 # Arguments
-- `naturalParametercontinuationEngine::NaturalParameterContinuationEngine`: Natural parameter continuation engine object
+- `naturalParameterContinuationEngine::NaturalParameterContinuationEngine`: Natural parameter continuation engine object
 - `jumpCheck::AbstractContinuationJumpCheck`: Continuation jump check
 """
 function addJumpCheck!(naturalParameterContinuationEngine::NaturalParameterContinuationEngine, jumpCheck::MBD.AbstractContinuationJumpCheck)

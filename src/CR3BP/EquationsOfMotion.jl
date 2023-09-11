@@ -1,5 +1,5 @@
 """
-CR3BPEquationsOfMotion wrapper
+CR3BP equations of motion wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
