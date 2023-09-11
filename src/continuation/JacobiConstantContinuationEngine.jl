@@ -110,7 +110,7 @@ function doContinuation!(jacobiConstantContinuationEngine::JacobiConstantContinu
     jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = convergeInitialSolution(jacobiConstantContinuationEngine, initialGuess1)
     jacobiConstantContinuationEngine.dataInProgress.previousSolution = convergeInitialSolution(jacobiConstantContinuationEngine, initialGuess2)
     jacobiConstantContinuationEngine.dataInProgress.numIterations = jacobiConstantContinuationEngine.corrector.recentIterationCount
-    push!(jacobiConstantContinuationEngine.dataInProgress.familyMembers, deepClone(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution), deepClone(jacobiConstantContinuationEngine.previousSolution))
+    push!(jacobiConstantContinuationEngine.dataInProgress.familyMembers, deepClone(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution), deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution))
     jacobiConstantContinuationEngine.dataInProgress.initialGuess = initialGuess2
     jacobiConstantContinuationEngine.dataInProgress.stepCount = 2
     jacobiConstantContinuationEngine.dataInProgress.converging = true

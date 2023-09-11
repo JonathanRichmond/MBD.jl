@@ -115,7 +115,7 @@ function doContinuation!(naturalParameterContinuationEngine::NaturalParameterCon
     naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution = convergeInitialSolution(naturalParameterContinuationEngine, initialGuess1)
     naturalParameterContinuationEngine.dataInProgress.previousSolution = convergeInitialSolution(naturalParameterContinuationEngine, initialGuess2)
     naturalParameterContinuationEngine.dataInProgress.numIterations = naturalParameterContinuationEngine.corrector.recentIterationCount
-    push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone(naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution), deepClone(naturalParameterContinuationEngine.previousSolution))
+    push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone(naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution), deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution))
     naturalParameterContinuationEngine.dataInProgress.initialGuess = initialGuess2
     naturalParameterContinuationEngine.dataInProgress.stepCount = 2
     naturalParameterContinuationEngine.dataInProgress.converging = true
