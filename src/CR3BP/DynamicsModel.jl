@@ -201,7 +201,7 @@ function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPos::V
     q::Vector{Float64} = push!(equilibriumPos+variation, variation[2]*s/beta_3, -beta_3*variation[1]*s, 0)
     tSpan::Vector{Float64} = [0, 2*pi/s]
     
-    return [q, tSpan]
+    return (q, tSpan)
 end
 
 """
