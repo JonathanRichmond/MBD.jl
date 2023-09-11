@@ -20,8 +20,8 @@ Return adaptive step size by element generator with updated step size
 - `data::ContinuationData`: Continuation data object
 """
 function updateStepSize!(adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator, data::MBD.ContinuationData)
+    signFactor = (data.currentStepSize < 0) ? -1 : 1
     if data.converging
-        signFactor = (data.currentStepSize < 0) ? -1 : 1
         if data.numIterations < adaptiveStepSizeByElementGenerator.maxIterations
             data.currentStepSize = signFactor*min(abs(adaptiveStepSizeByElementGenerator.maxStepSize), abs(data.currentStepSize*adaptiveStepSizeByElementGenerator.scaleFactor))
         elseif data.numIterations > adaptiveStepSizeByElementGenerator.minIterations
