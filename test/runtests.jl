@@ -309,3 +309,24 @@ end
     solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
     @test isapprox(solved.nodes[1].state.data-[0.8234, 0, 0, 0, 0.12623176201421427, 0], zeros(Float64, 6), atol = 1E-11)
 end
+
+@testset "Halo Multiple Shooter Example" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    nodeStates::Vector{Vector{Float64}} = [
+        [1.0277, 0, 0.1857, 0, -0.1152, 0],
+        [1.008, -0.0476, 0.1133, -0.0714, -0.0307, -0.2984],
+        [1.008, 0.0476, 0.1133, 0.0714, -0.0307, 0.2985],
+        [1.0277, 0, 0.1857, 0, -0.1152, 0]
+    ]
+    nodeTimes::Vector{Float64} = [0, 0.52854, 1.0571, 1.5856]
+    nodes::Vector{MBD.Node} = Vector{MBD.Node}(undef, length(nodeTimes))
+    [nodes[n] = MBD.Node(nodeTimes[n], nodeStates[n], dynamicsModel) for n in eachindex(nodeTimes)]
+    multipleShooterProblem = MBD.MultipleShooterProbem()
+    segments::Vector{MBD.Segment} = Vector{MBD.Segment}(undef, length(nodeTimes)-1)
+    for s::Int64 in 1:length(nodeTimes)-1
+        segments[s] = MBD.Segment(nodeTimes[s+1]-nodeTimes[s], nodes[s], nodes[s+1])
+        addSegment!(multipleShooterProblem, segments[s])
+    end
+    @test length(multipleShooterProblem.segments) == 3
+end
