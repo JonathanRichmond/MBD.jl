@@ -124,7 +124,7 @@ end
     @test getEquilibriumPoint(dynamicsModel, 4) == [0.48784941573005963, 0.8660254037844386, 0]
     @test getJacobiConstant(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == 3.1743560232059265
     L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
-    @test getLinearVariation(dynamicsModel, L1, [0.005, 0, 0]) == [[0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865]]
+    @test getLinearVariation(dynamicsModel, L1, [0.005, 0, 0]) == ([0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865])
     @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
     @test_throws ArgumentError getPrimaryPosition(dynamicsModel, 3)
@@ -307,5 +307,5 @@ end
     addConstraint!(multipleShooterProblem, continuityConstraint)
     multipleShooter = MBD.MultipleShooter()
     solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
-    
+    @test solved.nodes[1].state.data == [0.8234, 0, 0, 0, 0.12623176201421427, 0]
 end
