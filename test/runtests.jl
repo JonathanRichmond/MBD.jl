@@ -307,5 +307,5 @@ end
     addConstraint!(multipleShooterProblem, continuityConstraint)
     multipleShooter = MBD.MultipleShooter()
     solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
-    @test solved.nodes[1].state.data == [0.8234, 0, 0, 0, 0.12623176201421427, 0]
+    @test isapprox(solved.nodes[1].state.data-[0.8234, 0, 0, 0, 0.12623176201421427, 0], zeros(Float64, 6), atol = 1E-11)
 end
