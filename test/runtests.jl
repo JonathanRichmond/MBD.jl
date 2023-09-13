@@ -29,6 +29,8 @@ include("../src/propagation/Propagator.jl")
 include("../src/spice/BodyName.jl")
 include("../src/utilities/UtilityFunctions.jl")
 
+include("ExampleLyapunovJCTargeter.jl")
+
 @testset "Files" begin
     @test isfile("../src/body_data.xml")
 end
@@ -336,4 +338,31 @@ end
     multipleShooter = MBD.MultipleShooter()
     solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
     @test isapprox(solved.nodes[1].state.data-solved.nodes[end].state.data, zeros(Float64, 6), atol = 1E-11)
+end
+
+@testset "Lyapunov Continuation Example" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    Moon = MBD.BodyData("Moon")
+    L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
+    (stateGuess::Vector{Float64}, timeGuess::Vector{Float64}) = getLinearVariation(dynamicsModel, L1, [0.005, 0, 0])
+    targetJC::Float64 = getJacobiConstant(dynamicsModel, stateGuess)
+    targeter = LyapunovJCTargeter(dynamicsModel)
+    solution1::MBD.MultipleShooterProblem = correct(targeter, stateGuess, timeGuess, targetJC)
+    orbit1 = MBD.CR3BPPeriodicOrbit(solution1, targeter)
+    solution2::MBD.MultipleShooterProblem = correct(targeter, stateGuess, timeGuess, 3.186)
+    orbit2 = MBD.CR3BPPeriodicOrbit(solution2, targeter)
+    continuationEngine = MBD.JacobiConstantContinuationEngine(-1E-3, -1E-2)
+    continuationEngine.printProgress = false
+    ydot0JumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [NaN NaN; -2.5 0])
+    addJumpCheck!(continuationEngine, ydot0JumpCheck)
+    @test length(continuationEngine.jumpChecks) == 1
+    numberSteps::Int64 = 100
+    numberEndCheck = MBD.NumberStepsContinuationEndCheck(numberSteps)
+    MoonEndCheck = MBD.BoundingBoxContinuationEndCheck("Initial State", [L1[1] getPrimaryPosition(dynamicsModel, 2)[1]-Moon.bodyRadius/systemData.charLength; NaN NaN])
+    addEndCheck!(continuationEngine, numberEndCheck)
+    addEndCheck!(continuationEngine, MoonEndCheck)
+    @test length(continuationEngine.endChecks) == 2
+    solutions::Vector{MBD.MultipleShooterProblem} = doContinuation!(continuationEngine, solution1, solution2)
+    @test length(solutions) == numberSteps
 end

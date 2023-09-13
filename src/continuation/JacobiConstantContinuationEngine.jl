@@ -161,7 +161,7 @@ Return Jacobi constant continuation engine with reset data
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
 """
 function resetEngine!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine)
-    jacobiConstantContinuationEngine.dataInProgress = ContinuationData()
+    jacobiConstantContinuationEngine.dataInProgress = MBD.ContinuationData()
 end
 
 """
@@ -174,7 +174,7 @@ Return updated Jacobi constant continuation engine object
 """
 function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine)
     updateStepSize!(jacobiConstantContinuationEngine.stepSizeGenerator, jacobiConstantContinuationEngine.dataInProgress)
-    println("Current step size: $(jacobiConstantContinuationEngine.dataInProgress.currentStepSize)")
+    jacobiConstantContinuationEngine.printProgress && println("Current step size: $(jacobiConstantContinuationEngine.dataInProgress.currentStepSize)")
     jacobiConstantContinuationEngine.dataInProgress.nextGuess = deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution)
     setFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.nextGuess, getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution)+jacobiConstantContinuationEngine.dataInProgress.fullStep.*jacobiConstantContinuationEngine.dataInProgress.currentStepSize)
     constrainNextGuess!(jacobiConstantContinuationEngine, jacobiConstantContinuationEngine.dataInProgress)
