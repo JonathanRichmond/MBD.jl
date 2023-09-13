@@ -322,11 +322,18 @@ end
     nodeTimes::Vector{Float64} = [0, 0.52854, 1.0571, 1.5856]
     nodes::Vector{MBD.Node} = Vector{MBD.Node}(undef, length(nodeTimes))
     [nodes[n] = MBD.Node(nodeTimes[n], nodeStates[n], dynamicsModel) for n in eachindex(nodeTimes)]
-    multipleShooterProblem = MBD.MultipleShooterProbem()
+    multipleShooterProblem = MBD.MultipleShooterProblem()
     segments::Vector{MBD.Segment} = Vector{MBD.Segment}(undef, length(nodeTimes)-1)
     for s::Int64 in 1:length(nodeTimes)-1
         segments[s] = MBD.Segment(nodeTimes[s+1]-nodeTimes[s], nodes[s], nodes[s+1])
         addSegment!(multipleShooterProblem, segments[s])
     end
     @test length(multipleShooterProblem.segments) == 3
+    map(s -> addConstraint!(multipleShooterProblem, MBD.ContinuityConstraint(s)), segments)
+    addConstraint!(multipleShooterProblem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 4, 5, 6]))
+    addConstraint!(multipleShooterProblem, MBD.JacobiConstraint(nodes[1], 3.04))
+    @test checkJacobian(multipleShooterProblem)
+    multipleShooter = MBD.MultipleShooter()
+    solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
+    @test isapprox(solved.nodes[1].state.data-solved.nodes[end].state.data, zeros(Float64, 6), atol = 1E-11)
 end

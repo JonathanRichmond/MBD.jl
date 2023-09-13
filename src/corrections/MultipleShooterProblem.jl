@@ -153,13 +153,13 @@ function checkJacobian(multipleShooterProblem::MultipleShooterProblem)
         perturbedFreeVariables[varIndex] += 2*stepSize
         setFreeVariableVector!(problem, perturbedFreeVariables)
         constraintVectorPlus::Vector{Float64} = copy(getConstraintVector!(problem))
-        jacobianNumeric[:,varIndex] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
+        jacobianNumerical[:,varIndex] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
     end
     constraintIndexMap::Dict{MBD.AbstractConstraint, Int64} = problem.constraintIndexMap
     freeVariableIndexMap::Dict{MBD.Variable, Int64} = getFreeVariableIndexMap!(problem)
     reverseConstraintIndexMap::Dict{Int64, MBD.AbstractConstraint} = Dict{Int64, MBD.AbstractConstraint}()
-    reverseFreeVariableIndexMap::Dict{int64, MBD.Variable} = Dict{Int64, MBD.Variable}()
-    for (index::MBD.Variable, value::Int64) in freeVariableIndexmap
+    reverseFreeVariableIndexMap::Dict{Int64, MBD.Variable} = Dict{Int64, MBD.Variable}()
+    for (index::MBD.Variable, value::Int64) in freeVariableIndexMap
         n_entries::Int64 = getNumberFreeVariables(index)
         [reverseFreeVariableIndexMap[value+i] = index for i in 1:n_entries]
     end
@@ -449,20 +449,20 @@ function setFreeVariableVector!(multipleShooterProblem::MultipleShooterProblem, 
 end
 
 """
-    shallowClone(multipleShooterProblem)
+    shallowClone!(multipleShooterProblem)
 
 Return copy of multiple shooter problem object
 
 # Arguments
 - `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
 """
-function shallowClone(mulitpleShooterProblem::MultipleShooterProblem)
+function shallowClone!(multipleShooterProblem::MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     object = MultipleShooterProblem()
     object.constraintIndexMap = copy(multipleShooterProblem.constraintIndexMap)
     object.freeVariableIndexMap = copy(multipleShooterProblem.freeVariableIndexMap)
     object.freeVariableVector = copy(multipleShooterProblem.freeVariableVector)
-    obejct.constraintVector = copy(multipleShooterProblem.constraintVector)
+    object.constraintVector = copy(multipleShooterProblem.constraintVector)
     object.nodes = copy(multipleShooterProblem.nodes)
     object.segments = copy(multipleShooterProblem.segments)
 
