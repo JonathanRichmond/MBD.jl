@@ -829,6 +829,71 @@ mutable struct CR3BPBifurcation <: AbstractBifurcation
     end
 end
 
+"""
+    TBPSystemData(p)
+
+TBP system object
+
+# Arguments
+- `p::String`: Name of primary
+"""
+mutable struct TBPSystemData <: AbstractSystemData
+    gravParam::Float64                                      # Gravitational parameter [km^3/s^2]
+    numPrimaries::Int64                                     # Number of primaries that must exist in this system
+    primaryName::String                                     # Primary name
+    primarySpiceID::Int64                                   # Primary SPICE ID
+
+    function TBPSystemData(p::String)
+        this = new()
+
+        pData = BodyData(p)
+        this.numPrimaries = 1
+        this.primaryName = pData.name
+        this.primarySpiceID = pData.spiceID
+        this.gravParam = pData.gravParam
+        
+        return this
+    end
+end
+Base.:(==)(systemData1::TBPSystemData, systemData2::TBPSystemData) = (systemData1.primarySpiceID == systemData2.primarySpiceID)
+
+"""
+    TBPDynamicsModel(systemData)
+
+TBP dynamics model object
+
+# Arguments
+- `systemData::TBPSystemData`: TBP system object
+"""
+struct TBPDynamicsModel <: AbstractDynamicsModel
+    systemData::TBPSystemData                               # CR3BP system object
+
+    function TBPDynamicsModel(systemData::TBPSystemData)
+        return new(systemData)
+    end
+end
+Base.:(==)(dynamicsModel1::TBPDynamicsModel, dynamicsModel2::TBPDynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
+
+"""
+    TBPEquationsOfMotion(equationType, dynamicsModel)
+
+TBP EOM object
+
+# Arguments
+- `equationType::EquationType`: EOM type
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+"""
+struct TBPEquationsOfMotion <: AbstractEquationsOfMotion
+    dim::Int64                                              # State vector dimension
+    equationType::EquationType                              # EOM type
+    mu::Float64                                             # TBP gravitational parameter
+
+    function TBPEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
+        return new(getStateSize(dynamicsModel, equationType), equationType, dynamicsModel.systemData.gravParam)
+    end
+end
+Base.:(==)(EOMs1::TBPEquationsOfMotion, EOMs2::TBPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
+
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
@@ -855,6 +920,8 @@ include("CR3BP/SystemData.jl")
 include("propagation/Arc.jl")
 include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
+include("TBP/DynamicsModel.jl")
+include("TBP/EquationsOfMotion.jl")
 include("utilities/UtilityFunctions.jl")
 
 end # module MBD

@@ -11,14 +11,14 @@ import MBD: CR3BPEquationsOfMotion
 export computeDerivatives!
 
 """
-    computeDerivatives!(EOM, qdot, q, t)
+    computeDerivatives!(qdot, q, EOMs, t)
 
 Return time derivative of state vector
 
 # Arguments
-- `EOMs::CR3BPEquationsOfMotion`: EOM obbject
 - `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
 - `q::Vector{Float64}`: State vector [ndim]
+- `EOMs::CR3BPEquationsOfMotion`: CR3BP EOM obbject
 - `t::Float64`: Time [ndim]
 """
 function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::CR3BPEquationsOfMotion, t::Float64)
