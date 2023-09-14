@@ -888,7 +888,7 @@ struct TBPEquationsOfMotion <: AbstractEquationsOfMotion
     equationType::EquationType                              # EOM type
     mu::Float64                                             # TBP gravitational parameter
 
-    function TBPEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
+    function TBPEquationsOfMotion(equationType::EquationType, dynamicsModel::TBPDynamicsModel)
         return new(getStateSize(dynamicsModel, equationType), equationType, dynamicsModel.systemData.gravParam)
     end
 end
