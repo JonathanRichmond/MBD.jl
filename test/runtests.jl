@@ -27,6 +27,8 @@ include("../src/CR3BP/SystemData.jl")
 include("../src/propagation/Arc.jl")
 include("../src/propagation/Propagator.jl")
 include("../src/spice/BodyName.jl")
+include("../src/TBP/DynamicsModel.jl")
+include("../src/TBP/EquationsOfMotion.jl")
 include("../src/utilities/UtilityFunctions.jl")
 
 include("ExampleLyapunovJCTargeter.jl")
@@ -71,6 +73,9 @@ end
     @test MBD.JacobiConstantContinuationEngine <: MBD.AbstractContinuationEngine
     @test MBD.CR3BPPeriodicOrbit <: MBD.AbstractTrajectoryStructure
     @test MBD.CR3BPBifurcation <: MBD.AbstractBifurcation
+    @test MBD.TBPSystemData <: MBD.AbstractSystemData
+    @test MBD.TBPDynamicsModel <: MBD.AbstractDynamicsModel
+    @test MBD.TBPEquationsOfMotion <: MBD.AbstractEquationsOfMotion
 end
 
 @testset "Copy" begin
@@ -137,6 +142,7 @@ end
     @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
     @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 2, [[1.0, 0, 0, 0, 1.0, 0], [1.1, 0, 0, 0, 1.1, 0]], [0.0])
     @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 3, [[1.0, 0, 0, 0, 1.0, 0]], [0.0])
+    @test primaryInertial2Rotating(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8112494157300597, 0, 0, 0, -0.6971, 0]]
 end
 
 @testset "CR3BPEquationsOfMotion" begin
@@ -269,6 +275,38 @@ end
     multipleShooterProblem = MBD.MultipleShooterProblem()
     @test evaluateConstraint(jacobiConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0.0]
     @test length(keys(getPartials_ConstraintWRTVariables(jacobiConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 1
+end
+
+@testset "TBPDynamicsModel" begin
+    systemData = MBD.TBPSystemData("Sun")
+    dynamicsModel = MBD.TBPDynamicsModel(systemData)
+    @test getStateSize(dynamicsModel, MBD.SIMPLE) == 6
+    @test_throws ArgumentError appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1], MBD.SIMPLE)
+    @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.SIMPLE) == [0.8234, 0, 0, 0, 0.1263, 0]
+    @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL) == [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
+    @test evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.8234, 0, 0, 0, 0.1263, 0]) == [0, 0.1263, 0, -1.4749533162525872, 0, 0]
+    @test getEquationsOfMotion(dynamicsModel, MBD.SIMPLE) == MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
+    @test isEpochIndependent(dynamicsModel)
+    @test_throws ArgumentError getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
+    @test getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [0, 0, 0, 0, 0, 0]
+    @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
+    @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
+    @test getPrimaryPosition(dynamicsModel) == [0.0, 0.0, 0.0]
+    @test_throws ArgumentError getStateTransitionMatrix(dynamicsModel, [0.8324, 0, 0, 0, 0.1263, 0])
+    @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
+end
+
+@testset "TBPEquationsOfMotion" begin
+    systemData = MBD.TBPSystemData("Sun")
+    dynamicsModel = MBD.TBPDynamicsModel(systemData)
+    EOMs_simple = MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
+    qdot_simple = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.SIMPLE))
+    computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], EOMs_simple, 0.0)
+    @test qdot_simple == [0, 0.1263, 0, -1.4749533162525872, 0, 0]
+    EOMs_full = MBD.TBPEquationsOfMotion(MBD.FULL, dynamicsModel)
+    qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
+    computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), EOMs_full, 0.0)
+    @test qdot_full == [0, 0.1263, 0, -1.4749533162525872, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.5825924611430353, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0]
 end
 
 @testset "Utility Functions" begin
