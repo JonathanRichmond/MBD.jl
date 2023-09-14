@@ -8,7 +8,8 @@ U: 7/29/23
 module MBD
 
 import Base: ==
-import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE
+import Combinatorics, DataFrames, DifferentialEquations, LightXML
+import LinearAlgebra, SPICE
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
@@ -22,6 +23,11 @@ Enumerated type for EOMs
 Enumerated type for integrators
 """
 @enum IntegratorType AB AM BS DP5 DP8
+
+"""
+Abstract type for bifurcations
+"""
+abstract type AbstractBifurcation end
 
 """
 Abstract type for constraints
@@ -795,6 +801,44 @@ mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
 
     function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
         return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers)
+    end
+end
+
+"""
+    CR3BPBifurcation(familyData, targeter)
+
+CR3BP bifurcation object
+
+# Arguments
+- `familyData::DataFrame`: Orbit family data
+- `targeter::AbstractTargeter`: Targeter object
+"""
+mutable struct CR3BPBifurcation <: AbstractBifurcation
+    family::CR3BPOrbitFamily                                # Original orbit family
+    orbit::CR3BPPeriodicOrbit                               # Bifurcating orbit
+    step::Vector{Float64}                                   # Step into new family
+    
+    function CR3BPBifurcation(familyData::DataFrames.DataFrame, targeter::AbstractTargeter)
+        this = new()
+
+        familyMembers::Vector{CR3BPPeriodicOrbit} = Vector{CR3BPPeriodicOrbit}(undef, size(familyData, 1))
+        for r::Int64 in 1:size(familyData, 1)
+            orbitData::DataFrames.DataFrameRow = familyData[r,:]
+            initialCondition::Vector{Float64} = [orbitData[s] for s = ["x", "y", "z", "xdot", "ydot", "zdot"]]
+            period::Float64 = orbitData["Period"]
+            JC::Float64 = orbitData["JC"]
+            solution::MultipleShooterProblem = correct(targeter, initialCondition, [0, period], JC)
+            orbit = MBD.CR3BPPeriodicOrbit(solution, targeter)
+            getProperties!(targeter, orbit)
+            getMonodromy!(targeter, orbit)
+            getStability!(orbit)
+            familyMembers[r] = orbit
+        end
+        this.family = CR3BPOrbitFamily(familyMembers)
+        this.orbit = familyMembers[1]
+        this.step = Vector{Float64}(undef, 6)
+
+        return this
     end
 end
 

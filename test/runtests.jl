@@ -70,6 +70,7 @@ end
     @test MBD.NaturalParameterContinuationEngine <: MBD.AbstractContinuationEngine
     @test MBD.JacobiConstantContinuationEngine <: MBD.AbstractContinuationEngine
     @test MBD.CR3BPPeriodicOrbit <: MBD.AbstractTrajectoryStructure
+    @test MBD.CR3BPBifurcation <: MBD.AbstractBifurcation
 end
 
 @testset "Copy" begin
