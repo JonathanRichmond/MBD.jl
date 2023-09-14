@@ -26,7 +26,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::TB
     qdot[1:3] = q[4:6]
     qdot[4:6] = -1*q[1:3]./r^3
     if (EOMs.equationType == MBD.STM) || (EOMs.equationType == MBD.FULL)
-        A_21 = (3/r^5).*q[1:3]*q[1:3]'-(1/r^3)*LinearAlgebra.I
-        qdot[7:42] = vec([zeros(Float64, (3,3)) LinearAlgebra.I; A_21 zeros(Float64, (3,3))])
+        A_21::Matrix{Float64} = (3/r^5).*q[1:3]*q[1:3]'-(1/r^3)*LinearAlgebra.I
+        qdot[7:42] = reshape([zeros(Float64, (3,3)) LinearAlgebra.I; A_21 zeros(Float64, (3,3))]', (1,36))
     end
 end
