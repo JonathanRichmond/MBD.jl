@@ -15,6 +15,11 @@ const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
 
 """
+Enumerated type for bifurcations
+"""
+@enum BifurcationType TANGENT DOUBLING TRIPLING QUADRUPLING HOPF
+
+"""
 Enumerated type for EOMs
 """
 @enum EquationType FULL SIMPLE STM
@@ -805,20 +810,22 @@ mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
 end
 
 """
-    CR3BPBifurcation(family)
+    CR3BPBifurcation(family, type)
 
 CR3BP bifurcation object
 
 # Arguments
 - `family::CR3BPOrbitFamily`: Orbit family
+- `type::BifurcationType`: Bifurcation type
 """
 mutable struct CR3BPBifurcation <: AbstractBifurcation
     family::CR3BPOrbitFamily                                # Original orbit family
     orbit::CR3BPPeriodicOrbit                               # Bifurcating orbit
     step::Vector{Float64}                                   # Step into new family
+    type::BifurcationType                                   # Bifurcation type
     
-    function CR3BPBifurcation(family::CR3BPOrbitFamily)
-        return new(family, family.familyMembers[1], Vector{Float64}(undef, 6))
+    function CR3BPBifurcation(family::CR3BPOrbitFamily, type::BifurcationType)
+        return new(family, family.familyMembers[1], Vector{Float64}(undef, 6), type)
     end
 end
 
