@@ -103,7 +103,7 @@ Return initial/final velocities
 function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, TOF::Float64, transferMethod::String)
     r0::Float64 = LinearAlgebra.norm(initialPos)
     rf::Float64 = LinearAlgebra.norm(finalPos)
-    cosdeltanu::Float64 = dot(initialPos, finalPos)/(r0*rf)
+    cosdeltanu::Float64 = LinearAlgebra.dot(initialPos, finalPos)/(r0*rf)
     t_m::Float64 = (transferMethod == "Short") ? 1.0 : -1.0
     A::Float64 = t_m*sqrt(rf*r0*(1+cosdeltanu))
     (A == 0) && throw(ErrorException("A = 0 so Lamber arc cannot be computed"))
