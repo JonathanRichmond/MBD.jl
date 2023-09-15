@@ -34,5 +34,5 @@ function getEphemerides(initialEpoch::String, times::Vector{Float64}, targetBody
     end
     SPICE.kclear()
     
-    return (states, times)
+    return (ephemerisStates, ephemerisTimes)
 end
