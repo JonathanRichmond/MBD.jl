@@ -10,7 +10,7 @@ import SPICE
 export getEphemerides
 
 """
-    getEphemerides(initialEpoch, times, targetBody, observerBody, frame)
+    getEphemerides(initialEpoch, times, targetBody, observerBody, frame, directory)
 
 Return ephemerides
 
@@ -20,6 +20,7 @@ Return ephemerides
 - `targetBody::String`: Target body for ephemerides
 - `observerBody::String`: Body for ephemerides reference
 - `frame::String`: Reference frame
+- `directory::String`: SPICE kernels directory
 """
 function getEphemerides(initialEpoch::String, times::Vector{Float64}, targetBody::String, observerBody::String, frame::String, directory::String)
     SPICE.furnsh(directory*"src/spice/kernels/naif0012.tls", directory*"src/spice/kernels/de440.bsp", directory*"src/spice/kernels/mar097.bsp")
