@@ -24,7 +24,7 @@ Return ephemerides
 function getEphemerides(initialEpoch::String, times::Vector{Float64}, targetBody::String, observerBody::String, frame::String)
     SPICE.furnsh("MBD.jl/src/spice/kernels/naif0012.tls", "MBD.jl/src/spice/kernels/de440.bsp", "MBD.jl/src/spice/kernels/mar097.bsp")
     epoch = SPICE.str2et(initialEpoch)
-    epochs = epoch+times
+    epochs = epoch.+times
     (states, times) = SPICE.spkezr(targetBody, epochs, frame, "NONE", observerBody)
     SPICE.kclear()
     
