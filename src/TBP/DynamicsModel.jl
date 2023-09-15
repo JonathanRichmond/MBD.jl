@@ -117,7 +117,7 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
         y_n::Float64 = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
         x_n::Float64 = sqrt(y_n/c_2)
         deltat_n = x_n^3*c_3+A*sqrt(y_n)
-        (deltat_n > deltat) ? (psi_up = psi_n) : (psi_low = psi_n)
+        (deltat_n > TOF) ? (psi_up = psi_n) : (psi_low = psi_n)
         psi_n = (psi_up+psi_low)/2
         if psi_n > 1E-6
             c_2 = (1-cos(sqrt(psi_n)))/psi_n
