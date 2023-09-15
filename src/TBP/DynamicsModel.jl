@@ -5,11 +5,13 @@ Author: Jonathan Richmond
 C: 9/14/23
 """
 
+import LinearAlgebra
 import MBD: TBPDynamicsModel
 
 export appendExtraInitialConditions, evaluateEquations, getEquationsOfMotion
-export getEpochDependencies, getParameterDependenciesgetPrimaryPosition
-export getStateSize, getStateTransitionMatrix, isEpochIndependent
+export getEpochDependencies, getLambertArc, getParameterDependencies
+export getPrimaryPosition, getStateSize, getStateTransitionMatrix
+export isEpochIndependent
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -85,6 +87,54 @@ function getEpochDependencies(dynamicsModel::TBPDynamicsModel, q_full::Vector{Fl
     n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
+end
+
+"""
+    getLambertArc(initialPos, finalPos, TOF, transferMethod)
+
+Return initial/final velocities
+
+# Arguments
+- `initalPos::Vector{Float64}`: Initial position [ndim]
+- `finalPos::Vector{Float64}`: Final position [ndim]
+- `TOF::Float64`: Time of flight [ndim]
+- `transferMethod::String`: Transfer method
+"""
+function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, TOF::Float64, transferMethod::String)
+    r0::Float64 = LinearAlgebra.norm(initialPos)
+    rf::Float64 = LinearAlgebra.norm(finalPos)
+    cosdeltanu::Float64 = dot(initialPos, finalPos)/(r0*rf)
+    t_m::Float64 = (transferMethod == "Short") ? 1.0 : -1.0
+    A::Float64 = t_m*sqrt(rf*r0*(1+cosdeltanu))
+    (A == 0) && throw(ErrorException("A = 0 so Lamber arc cannot be computed"))
+    psi_n::Float64 = 0.0
+    c_2::Float64 = 1/2
+    c_3::Float64 = 1/6
+    psi_up::Float64 = 4*pi^2
+    psi_low::Float64 = -4*pi
+    deltat_n::Float64 = TOF+100
+    while abs(deltat_n-TOF) >= 1E-9
+        y_n::Float64 = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
+        x_n::Float64 = sqrt(y_n/c_2)
+        deltat_n = x_n^3*c_3+A*sqrt(y_n)
+        (deltat_n > deltat) ? (psi_up = psi_n) : (psi_low = psi_n)
+        psi_n = (psi_up+psi_low)/2
+        if psi_n > 1E-6
+            c_2 = (1-cos(sqrt(psi_n)))/psi_n
+            c_3 = (sqrt(psi_n)-sin(sqrt(psi_n)))/sqrt(psi_n^3)
+        elseif psi_n < -1E-6
+            c_2 = (1-cosh(sqrt(-psi_n)))/psi_n
+            c_3 = (sinh(sqrt(-psi_n))-sqrt(-psi_n))/sqrt((-psi_n)^3)
+        else
+            c_2 = 1/2
+            c_3 = 1/6
+        end
+    end
+    f::Float64 = 1-y_n/r0
+    gdot::Float64 = 1-y_n/rf
+    g::Float64 = A*sqrt(y_n)
+
+    return ((finalPos-f.*initialPos)./g, (gdot.*finalPos-initialPos)./g)
 end
 
 """
