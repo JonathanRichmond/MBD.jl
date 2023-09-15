@@ -27,6 +27,7 @@ include("../src/CR3BP/SystemData.jl")
 include("../src/propagation/Arc.jl")
 include("../src/propagation/Propagator.jl")
 include("../src/spice/BodyName.jl")
+include("../src/spice/SpiceFunctions.jl")
 include("../src/TBP/DynamicsModel.jl")
 include("../src/TBP/EquationsOfMotion.jl")
 include("../src/utilities/UtilityFunctions.jl")
@@ -35,6 +36,7 @@ include("ExampleLyapunovJCTargeter.jl")
 
 @testset "Files" begin
     @test isfile("../src/body_data.xml")
+    @test isfile("../src/spice/kernels/de440.bsp")
 end
 
 @testset "Constructors" begin
@@ -307,6 +309,11 @@ end
     qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
     computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), EOMs_full, 0.0)
     @test qdot_full == [0, 0.1263, 0, -1.4749533162525872, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.5825924611430353, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0]
+end
+
+@testset "SPICE Functions" begin
+    (EarthInitialState, initialEpoch) = getEphemerides("Nov 1 2026", [0.0], "EARTH", "SUN", "ECLIPJ2000")
+    @test EarthInitialState == [1.1669364364177027E8, 9.184694649040842E7, -6547.627331614494, -18.896701708854742, 23.300520269960817, -0.0003837831634516675]
 end
 
 @testset "Utility Functions" begin
