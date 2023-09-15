@@ -130,7 +130,7 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
             c_3 = 1/6
         end
     end
-    y_n::Float64 = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
+    y_n = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
     f::Float64 = 1-y_n/r0
     gdot::Float64 = 1-y_n/rf
     g::Float64 = A*sqrt(y_n)
