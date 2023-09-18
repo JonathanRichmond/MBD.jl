@@ -9,7 +9,27 @@ U: 9/10/23
 import LinearAlgebra
 import MBD: CR3BPPeriodicOrbit
 
-export getStability!
+export geManifold, getStability!
+
+"""
+    getManifold(periodicOrbit, stabilitity, d)
+
+Return stable or unstable manifold tubes
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `stability::String`: Desired manifold stability
+- `d::Float64`: Stepoff distance [ndim]
+"""
+function getManifold(periodicOrbit::CR3BPPeriodicOrbit, stability::String, d::Float64)
+    index::Int64 = (stability == "Stable") ?  argmax(abs(periodicOrbit.eigenvalues)) : argmin(abs(periodicOrbit.eigenvalues))
+    eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[index]
+    normEigenvector::Vector{Complex{Float64}} = eigenvector./LinearAlgebra.norm(eigenvector[1:3])
+    posManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition+d.*normEigenvector, periodicOrbit)
+    negManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition-d.*normEigenvector, periodicOrbit)
+
+    return ([posManifoldArc], [negManifoldArc])
+end
 
 """
     getStability!(periodicOrbit)
