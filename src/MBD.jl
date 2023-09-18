@@ -815,16 +815,16 @@ end
 CR3BP manifold arc object
 
 # Arguments
-- `initialCondition::Vector{Float64}`: Initial conditions [ndim]
+- `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
 """
 mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
-    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
+    initialCondition::Vector{Complex{Float64}}              # Initial conditions [ndim]
     periodicOrbit::CR3BPPeriodicOrbit                       # Underlying periodic orbit
     TOF::Float64                                            # Time of flight
 
-    function CR3BPManifoldArc(initialCondition::Vector{Float64}, periodicOrbit::CR3BPPeriodicOrbit)
-        return new(initialCondition, 0.0, periodicOrbit)
+    function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit)
+        return new(real.(initialCondition), 0.0, periodicOrbit)
     end
 end
 
