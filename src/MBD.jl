@@ -819,7 +819,7 @@ CR3BP manifold arc object
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
 """
 mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
-    initialCondition::Vector{Complex{Float64}}              # Initial conditions [ndim]
+    initialCondition::Vector{Float64}              # Initial conditions [ndim]
     periodicOrbit::CR3BPPeriodicOrbit                       # Underlying periodic orbit
     TOF::Float64                                            # Time of flight
 
