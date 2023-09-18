@@ -22,7 +22,7 @@ Return stable or unstable manifold tubes
 - `d::Float64`: Stepoff distance [ndim]
 """
 function getManifold(periodicOrbit::CR3BPPeriodicOrbit, stability::String, d::Float64)
-    index::Int64 = (stability == "Stable") ?  argmax(abs(periodicOrbit.eigenvalues)) : argmin(abs(periodicOrbit.eigenvalues))
+    index::Int64 = (stability == "Stable") ?  argmax(abs.(periodicOrbit.eigenvalues)) : argmin(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[index]
     normEigenvector::Vector{Complex{Float64}} = eigenvector./LinearAlgebra.norm(eigenvector[1:3])
     posManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition+d.*normEigenvector, periodicOrbit)
