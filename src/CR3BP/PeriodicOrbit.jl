@@ -9,7 +9,7 @@ U: 9/10/23
 import LinearAlgebra
 import MBD: CR3BPPeriodicOrbit
 
-export geManifold, getStability!
+export getManifold, getStability!
 
 """
     getManifold(periodicOrbit, stabilitity, d)
