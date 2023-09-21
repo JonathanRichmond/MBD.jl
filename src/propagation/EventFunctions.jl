@@ -19,7 +19,7 @@ Return event condition
 - `time::Float64`: Time [ndim]
 - `integrator`: Integrator object
 """
-function arclengthCondition(state::Vector{Float64}, time::Float64, integrator::DifferentialEquations.Integrator)
+function arclengthCondition(state::Vector{Float64}, time::Float64, integrator)
     state[43]-integrator.p[2]
 end
 
