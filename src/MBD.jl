@@ -22,7 +22,7 @@ Enumerated type for bifurcations
 """
 Enumerated type for EOMs
 """
-@enum EquationType FULL SIMPLE STM
+@enum EquationType ARCLENGTH FULL SIMPLE STM
 
 """
 Enumerated type for integrators

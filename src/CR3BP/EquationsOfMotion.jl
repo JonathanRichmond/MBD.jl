@@ -47,5 +47,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::CR
             qdot[11+6*(c-1)] = pseudoPotentialJacobian[4]*q[7+6*(c-1)]+pseudoPotentialJacobian[2]*q[8+6*(c-1)]+pseudoPotentialJacobian[6]*q[9+6*(c-1)]-2*q[10+6*(c-1)]
             qdot[12+6*(c-1)] = pseudoPotentialJacobian[5]*q[7+6*(c-1)]+pseudoPotentialJacobian[6]*q[8+6*(c-1)]+pseudoPotentialJacobian[3]*q[9+6*(c-1)]
         end
+    elseif EOMs.equationType == MBD.ARCLENGTH
+        qdot[7] = sqrt(q[4]^2+q[5]^2+q[6]^2)
     end
 end
