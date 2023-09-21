@@ -825,7 +825,7 @@ mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
     TOF::Float64                                            # Time of flight
 
     function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit)
-        return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, initialCondition), periodicOrbit, 0.0)
+        return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, real.(initialCondition)), periodicOrbit, 0.0)
     end
 end
 
