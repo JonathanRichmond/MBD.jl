@@ -56,7 +56,7 @@ Return time derivative of state vector
 function evaluateEquations(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType, t::Float64, q::Vector{Float64}, params::Vector{Float64})
     qdot::Vector{Float64} = Vector{Float64}(undef, getStateSize(dynamicsModel, equationType))
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType, params)
-    computeDerivatives!(qdot, q, EOMs, t)
+    computeDerivatives!(qdot, q, [EOMs], t)
 
     return qdot
 end
