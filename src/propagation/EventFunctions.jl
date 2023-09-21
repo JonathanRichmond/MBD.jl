@@ -7,7 +7,7 @@ C: 9/20/23
 
 import DifferentialEquations
 
-export arclengthCondition, distanceCondition, terminateAffect!
+export arclengthCondition, p2DistanceCondition, terminateAffect!
 
 """
     arclengthCondition(state, time, integrator)
