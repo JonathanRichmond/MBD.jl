@@ -6,29 +6,47 @@ C: 1/16/23
 U: 9/10/23
 """
 
-import LinearAlgebra
+import DifferentialEquations, LinearAlgebra
 import MBD: CR3BPPeriodicOrbit
 
 export getManifold, getStability!
 
 """
-    getManifold(periodicOrbit, stabilitity, d)
+    getManifold(periodicOrbit, dynamicsModel, stabilitity, d)
 
 Return stable or unstable manifold tubes
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
 - `d::Float64`: Stepoff distance [ndim]
 """
-function getManifold(periodicOrbit::CR3BPPeriodicOrbit, stability::String, d::Float64)
+function getManifold(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64)
     index::Int64 = (stability == "Stable") ?  argmax(abs.(periodicOrbit.eigenvalues)) : argmin(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
-    normEigenvector::Vector{Complex{Float64}} = eigenvector./LinearAlgebra.norm(eigenvector[1:3])
-    posManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition+d.*normEigenvector, periodicOrbit)
-    negManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition-d.*normEigenvector, periodicOrbit)
+    propagator = MBD.Propagator()
+    propagator.equationType = MBD.ARCLENGTH
+    orbitArc::MBD.Arc = propagate(propagator, vcat(appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), 0.0), [0, periodicOrbit.period], dynamicsModel)
+    orbitLength::Float64 = getStateByIndex(orbitArc, -1)[43]
+    arclength::Vector{Float64} = collect(range(0, orbitLength, 11))
+    posManifold::Vector{MBD.CR3BPManifoldArc} = []
+    negManifold::Vector{MBD.CR3BPManifoldArc} = []
+    for a::Int64 in 2:length(arclength)
+        callbackEvent = DifferentialEquations.ContinuousCallback(arclengthCondition, terminateAffect!)
+        arc::MBD.Arc = propagateWithEvent(propagator, callbackEvent, vcat(appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), 0.0), [0, periodicOrbit.period], dynamicsModel, [arclength[a]])
+        q::Vector{Float64} = getStateByIndex(arc, -1)
+        state::Vector{Float64} = q[1:6]
+        Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
+        arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
+        normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
+        posManifoldArc = MBD.CR3BPManifoldArc(state+d.*normEigenvector, periodicOrbit)
+        negManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition-d.*normEigenvector, periodicOrbit)
+        push!(posManifold, posManifoldArc)
+        push!(negManifold, negManifoldArc)
+    end
 
-    return ([posManifoldArc], [negManifoldArc])
+    return (posManifold, negManifold)
 end
 
 """

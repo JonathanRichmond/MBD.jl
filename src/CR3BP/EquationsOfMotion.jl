@@ -31,7 +31,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::CR
     qdot[4] = 2*q[5]+q[1]-omm*(q[1]+EOMs.mu)/r_13_3-EOMs.mu*(q[1]-omm)/r_23_3
     qdot[5] = q[2]-2*q[4]-omm*q[2]/r_13_3-EOMs.mu*q[2]/r_23_3
     qdot[6] = -omm*q[3]/r_13_3-EOMs.mu*q[3]/r_23_3
-    if (EOMs.equationType == MBD.STM) || (EOMs.equationType == MBD.FULL)
+    if (EOMs.equationType == MBD.STM) || (EOMs.equationType == MBD.FULL) || (EOMs.equationType == MBD.ARCLENGTH)
         r_13_5::Float64 = r_13_3*r_13^2
         r_23_5::Float64 = r_23_3*r_23^2
         pseudoPotentialJacobian::Vector{Float64} = Vector{Float64}(undef, 6)
@@ -47,7 +47,8 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, EOMs::CR
             qdot[11+6*(c-1)] = pseudoPotentialJacobian[4]*q[7+6*(c-1)]+pseudoPotentialJacobian[2]*q[8+6*(c-1)]+pseudoPotentialJacobian[6]*q[9+6*(c-1)]-2*q[10+6*(c-1)]
             qdot[12+6*(c-1)] = pseudoPotentialJacobian[5]*q[7+6*(c-1)]+pseudoPotentialJacobian[6]*q[8+6*(c-1)]+pseudoPotentialJacobian[3]*q[9+6*(c-1)]
         end
-    elseif EOMs.equationType == MBD.ARCLENGTH
-        qdot[7] = sqrt(q[4]^2+q[5]^2+q[6]^2)
+    end
+    if EOMs.equationType == MBD.ARCLENGTH
+        qdot[43] = sqrt(q[4]^2+q[5]^2+q[6]^2)
     end
 end
