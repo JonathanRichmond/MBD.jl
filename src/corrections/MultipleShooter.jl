@@ -9,7 +9,7 @@ U: 8/30/23
 import LinearAlgebra
 import MBD: MultipleShooter
 
-export setPrintProgress!, solve!, solveUpdateEquation
+export setPrintProgress!, solveUpdateEquation
 
 """
     setPrintProgress!(multipleShooter, print)
