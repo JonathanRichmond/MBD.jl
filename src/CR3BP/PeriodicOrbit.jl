@@ -69,7 +69,7 @@ function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
 end
 
 function arclengthCondition(state, time, integrator)
-    state[43]-integrator.opts.userdata[:conditionValue]
+    state[43]-integrator.p[2][1]
 end
 
 function terminateAffect!(integrator)
