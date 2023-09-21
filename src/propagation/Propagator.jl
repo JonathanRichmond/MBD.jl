@@ -34,7 +34,7 @@ function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Fl
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs))
+        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs,))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         arcOut.states = sol.u
         arcOut.times = sol.t
