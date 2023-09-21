@@ -20,7 +20,7 @@ Return event condition
 - `integrator::DEIntegrator`: Integrator object
 """
 function arclengthCondition(state::Vector{Float64}, time::Float64, integrator::DifferentialEquations.DEIntegrator)
-    state[43]-integrator.opts.userdata[:conditionValue]
+    state[43]-integrator.p[2]
 end
 
 """

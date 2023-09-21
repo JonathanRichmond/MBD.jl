@@ -12,7 +12,7 @@ import MBD: CR3BPPeriodicOrbit
 export getManifold, getStability!
 
 """
-    getManifold(periodicOrbit, dynamicsModel, stabilitity, d)
+    getManifold(periodicOrbit, dynamicsModel, stabilitity, d, nArcs)
 
 Return stable or unstable manifold tubes
 
@@ -21,18 +21,19 @@ Return stable or unstable manifold tubes
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
 - `d::Float64`: Stepoff distance [ndim]
+- `nArcs::Int64`: Number of manifold arcs
 """
-function getManifold(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64)
+function getManifold(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, nArcs::Int64)
     index::Int64 = (stability == "Stable") ?  argmax(abs.(periodicOrbit.eigenvalues)) : argmin(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
     propagator = MBD.Propagator()
     propagator.equationType = MBD.ARCLENGTH
     orbitArc::MBD.Arc = propagate(propagator, vcat(appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), 0.0), [0, periodicOrbit.period], dynamicsModel)
     orbitLength::Float64 = getStateByIndex(orbitArc, -1)[43]
-    arclength::Vector{Float64} = collect(range(0, orbitLength, 11))
+    arclength::Vector{Float64} = collect(range(0, orbitLength, nArcs+1))
     posManifold::Vector{MBD.CR3BPManifoldArc} = []
     negManifold::Vector{MBD.CR3BPManifoldArc} = []
-    for a::Int64 in 2:length(arclength)
+    for a::Int64 in 2:nArcs+1
         callbackEvent = DifferentialEquations.ContinuousCallback(arclengthCondition, terminateAffect!)
         arc::MBD.Arc = propagateWithEvent(propagator, callbackEvent, vcat(appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), 0.0), [0, periodicOrbit.period], dynamicsModel, [arclength[a]])
         q::Vector{Float64} = getStateByIndex(arc, -1)
@@ -68,10 +69,10 @@ function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
     periodicOrbit.tau = periodicOrbit.period/log(periodicOrbit.nu)
 end
 
-function arclengthCondition(state, time, integrator)
-    state[43]-integrator.p[2]
-end
+#function arclengthCondition(state, time, integrator)
+#    state[43]-integrator.p[2]
+#end
 
-function terminateAffect!(integrator)
-    DifferentialEquations.terminate!(integrator)
-end
+#function terminateAffect!(integrator)
+#    DifferentialEquations.terminate!(integrator)
+#end
