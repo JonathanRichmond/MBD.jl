@@ -287,7 +287,7 @@ Return number of state variables
 - `equationType::EquationType`: EOM type
 """
 function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-    type = Dict(MBD.SIMPLE => 6, MBD.STM => 42, MBD.FULL => 42)
+    type = Dict(MBD.SIMPLE => 6, MBD.ARCLENGTH => 7, MBD.STM => 42, MBD.FULL => 42)
 
     return type[equationType]
 end
