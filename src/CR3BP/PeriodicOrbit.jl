@@ -9,8 +9,6 @@ U: 9/10/23
 import DifferentialEquations, LinearAlgebra
 import MBD: CR3BPPeriodicOrbit
 
-include("../propagation/Propagator.jl")
-
 export getManifold, getStability!
 
 """
@@ -68,4 +66,8 @@ function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
     periodicOrbit.BrouckeStability = [alpha, beta]
     periodicOrbit.nu = LinearAlgebra.norm(periodicOrbit.eigenvalues, Inf)
     periodicOrbit.tau = periodicOrbit.period/log(periodicOrbit.nu)
+end
+
+function arclengthCondition(state, time, integrator)
+    state[43]-integrator.opts.userdata[:conditionValue]
 end
