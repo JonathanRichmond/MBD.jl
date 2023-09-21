@@ -17,9 +17,9 @@ Return event condition
 # Arguments
 - `state::Vector{Float64}`: State vector with arclength [ndim]
 - `time::Float64`: Time [ndim]
-- `integrator::DEIntegrator`: Integrator object
+- `integrator`: Integrator object
 """
-function arclengthCondition(state::Vector{Float64}, time::Float64, integrator::DifferentialEquations.DEIntegrator)
+function arclengthCondition(state::Vector{Float64}, time::Float64, integrator::Integrator)
     state[43]-integrator.p[2]
 end
 
@@ -29,8 +29,8 @@ end
 Return event effect
 
 # Arguments
-- `integrator::DEIntegrator`: Integrator object
+- `integrator`: Integrator object
 """
-function terminateAffect!(integrator::DifferentialEquations.DEIntegrator)
+function terminateAffect!(integrator)
     DifferentialEquations.terminate!(integrator)
 end
