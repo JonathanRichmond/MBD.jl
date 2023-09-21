@@ -18,10 +18,10 @@ Return time derivative of state vector
 # Arguments
 - `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
 - `q::Vector{Float64}`: State vector [ndim]
-- `params::Vector{MBD.TBPEquationsOfMotion}`: Propagation parameters
+- `params::Tuple{TBPEquationsOfMotion}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
-function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Vector{MBD.TBPEquationsOfMotion}, t::Float64)
+function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{TBPEquationsOfMotion}, t::Float64)
     r::Float64 = sqrt(q[1]^2+q[2]^2+q[3]^2)
     qdot[1:3] = q[4:6]
     qdot[4:6] = -1*q[1:3]./r^3

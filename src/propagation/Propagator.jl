@@ -34,7 +34,7 @@ function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Fl
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), [EOMs])
+        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         arcOut.states = sol.u
         arcOut.times = sol.t
@@ -44,7 +44,7 @@ function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Fl
 end
 
 """
-    propagateWithEvent(propagator, callbackEvent, q0, tSpan, dynamicsModel; params)
+    propagateWithEvent(propagator, callbackEvent, q0, tSpan, dynamicsModel; param)
 
 Return propagated arc
 # Arguments
@@ -53,9 +53,9 @@ Return propagated arc
 - `q0::Vector{Float64}`: Initial state vector [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `params::Vector{Float64}`: Propagation parameters
+- `param::Float64`: Propagation parameter
 """
-function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params::Vector{Float64})
+function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, param::Float64)
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
@@ -67,7 +67,7 @@ function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialE
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), [EOMs, params])
+        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs, param))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         arcOut.states = sol.u
         arcOut.times = sol.t
