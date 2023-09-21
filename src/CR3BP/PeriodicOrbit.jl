@@ -71,3 +71,7 @@ end
 function arclengthCondition(state, time, integrator)
     state[43]-integrator.opts.userdata[:conditionValue]
 end
+
+function terminateAffect!(integrator)
+    DifferentialEquations.terminate!(integrator)
+end
