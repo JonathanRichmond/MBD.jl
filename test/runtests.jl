@@ -80,6 +80,7 @@ end
     @test MBD.TBPSystemData <: MBD.AbstractSystemData
     @test MBD.TBPDynamicsModel <: MBD.AbstractDynamicsModel
     @test MBD.TBPEquationsOfMotion <: MBD.AbstractEquationsOfMotion
+    @test MBD.TBPTrajectory <: MBD.AbstractTrajectoryStructure
 end
 
 @testset "Copy" begin
@@ -154,11 +155,11 @@ end
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     EOMs_simple = MBD.CR3BPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
     qdot_simple = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.SIMPLE))
-    computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], EOMs_simple, 0.0)
+    computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], (EOMs_simple,), 0.0)
     @test qdot_simple == [0, 0.1263, 0, 0.11033238649399063, 0, 0]
     EOMs_full = MBD.CR3BPEquationsOfMotion(MBD.FULL, dynamicsModel)
     qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
-    computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), EOMs_full, 0.0)
+    computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), (EOMs_full,), 0.0)
     @test qdot_full == [0, 0.1263, 0, 0.11033238649399063, 0, 0, 0, 0, 0, 9.851145859594295, 0, 0, 0, 0, 0, 0, -3.425572929797148, 0, 0, 0, 0, 0, 0, -4.4255729297971484, 1, 0, 0, 0, -2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0]
 end
 

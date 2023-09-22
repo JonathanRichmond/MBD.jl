@@ -914,6 +914,35 @@ struct TBPEquationsOfMotion <: AbstractEquationsOfMotion
 end
 Base.:(==)(EOMs1::TBPEquationsOfMotion, EOMs2::TBPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
 
+"""
+    TBPTrajectory(initialCondition, dynamicsModel)
+
+TBP trajectory object
+
+# Arguments
+- `initialCondition::Vector{Float64}`: Initial conditions [ndim]
+- `dynamicsModel::TBPDynamicsModel`: Dynamics model object
+"""
+mutable struct TBPTrajectory <: AbstractTrajectoryStructure
+    a::Float64                                              # Semimajor axis [ndim]
+    dynamicsModel::TBPDynamicsModel                         # TBP Dynamics model object
+    E::Float64                                              # Energy [ndim]
+    e::Float64                                              # Eccentricity
+    i::Float64                                              # Inclination [rad]
+    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
+    Omega::Float64                                          # Longitude of ascending node [rad]
+    omega::Float64                                          # Argument of periapsis [rad]
+    r_a::Float64                                            # Radius of apoapse [ndim]
+    r_p::Float64                                            # Radius of periapse [ndim]
+    theta::Float64                                          # True anomaly [rad]
+    TOF::Float64                                            # Time of flight
+    v_infinity::Float64                                     # Hyperbolic excess speed [ndim]
+
+    function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
+        return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    end
+end
+
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
