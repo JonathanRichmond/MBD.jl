@@ -306,11 +306,11 @@ end
     dynamicsModel = MBD.TBPDynamicsModel(systemData)
     EOMs_simple = MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
     qdot_simple = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.SIMPLE))
-    computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], EOMs_simple, 0.0)
+    computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], (EOMs_simple,), 0.0)
     @test qdot_simple == [0, 0.1263, 0, -1.4749533162525872, 0, 0]
     EOMs_full = MBD.TBPEquationsOfMotion(MBD.FULL, dynamicsModel)
     qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
-    computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), EOMs_full, 0.0)
+    computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), (EOMs_full,), 0.0)
     @test qdot_full == [0, 0.1263, 0, -1.4749533162525872, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.5825924611430353, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0]
     @test getLambertArc([0.785798, 0.618484, -4.40907E-5], [-0.695636, -1.36224, -0.0114978], 5.391710131490492, "Long") == ([-0.6931121376610547, 0.8584966591112566, 0.019920622047060063], [0.6743252648030229, -0.26549930762668567, -0.011313054721658358])
 end
