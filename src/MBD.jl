@@ -943,7 +943,7 @@ mutable struct TBPTrajectory <: AbstractTrajectoryStructure
     TOF::Float64                                            # Time of flight [ndim]
 
     function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
-        return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end
 
