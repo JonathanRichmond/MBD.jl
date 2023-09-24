@@ -300,6 +300,10 @@ end
     @test getPrimaryPosition(dynamicsModel) == [0.0, 0.0, 0.0]
     @test_throws ArgumentError getStateTransitionMatrix(dynamicsModel, [0.8324, 0, 0, 0, 0.1263, 0])
     @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
+    systemDataEarth = MBD.TBPSystemData("Earth")
+    dynamicsModelEarth = MBD.TBPDynamicsModel(systemDataEarth)
+    trajectory = getOsculatingOrbitalElements(dynamicsModel, [1.231789044172658E8, 0, 0, 0, 0.006519428065716839, 0])
+    @test trajectory.E == -0.0032146957660944154
 end
 
 @testset "TBPEquationsOfMotion" begin
