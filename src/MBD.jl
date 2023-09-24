@@ -858,6 +858,8 @@ TBP system object
 - `p::String`: Name of primary
 """
 mutable struct TBPSystemData <: AbstractSystemData
+    charLength::Float64                                     # Characteristic length [km]
+    charTime::Float64                                       # Characteristic time [s]
     gravParam::Float64                                      # Gravitational parameter [km^3/s^2]
     numPrimaries::Int64                                     # Number of primaries that must exist in this system
     primaryName::String                                     # Primary name
@@ -871,6 +873,8 @@ mutable struct TBPSystemData <: AbstractSystemData
         this.primaryName = pData.name
         this.primarySpiceID = pData.spiceID
         this.gravParam = pData.gravParam
+        this.charLength = pData.orbitRadius
+        this.charTime = sqrt(this.charLength^3/this.gravParam)
         
         return this
     end
@@ -924,19 +928,19 @@ TBP trajectory object
 - `dynamicsModel::TBPDynamicsModel`: Dynamics model object
 """
 mutable struct TBPTrajectory <: AbstractTrajectoryStructure
-    a::Float64                                              # Semimajor axis [ndim]
+    a::Float64                                              # Semimajor axis [km]
     dynamicsModel::TBPDynamicsModel                         # TBP Dynamics model object
-    E::Float64                                              # Energy [ndim]
+    E::Float64                                              # Energy [km^2/s^2]
     e::Float64                                              # Eccentricity
+    h::Float64                                              # Angular momentum [km^2/s]
     i::Float64                                              # Inclination [rad]
     initialCondition::Vector{Float64}                       # Initial conditions [ndim]
     Omega::Float64                                          # Longitude of ascending node [rad]
     omega::Float64                                          # Argument of periapsis [rad]
-    r_a::Float64                                            # Radius of apoapse [ndim]
-    r_p::Float64                                            # Radius of periapse [ndim]
+    r_a::Float64                                            # Radius of apoapse [km]
+    r_p::Float64                                            # Radius of periapse [km]
     theta::Float64                                          # True anomaly [rad]
-    TOF::Float64                                            # Time of flight
-    v_infinity::Float64                                     # Hyperbolic excess speed [ndim]
+    TOF::Float64                                            # Time of flight [ndim]
 
     function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
         return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)

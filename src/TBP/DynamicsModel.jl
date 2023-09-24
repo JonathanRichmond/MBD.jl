@@ -9,9 +9,9 @@ import LinearAlgebra
 import MBD: TBPDynamicsModel
 
 export appendExtraInitialConditions, evaluateEquations, getEquationsOfMotion
-export getEpochDependencies, getLambertArc, getParameterDependencies
-export getPrimaryPosition, getStateSize, getStateTransitionMatrix
-export isEpochIndependent
+export getEpochDependencies, getLambertArc, getOsculatingOrbitalElements
+export getParameterDependencies, getPrimaryPosition, getStateSize
+export getStateTransitionMatrix, isEpochIndependent
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -136,6 +136,35 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
     g::Float64 = A*sqrt(y_n)
 
     return ((finalPos-f.*initialPos)./g, (gdot.*finalPos-initialPos)./g)
+end
+
+"""
+    getOsculatingOrbitalElements(dynamicsModel, state_dim)
+
+Return 2BP trajectory object with orbital elements
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `state_dim::Vector{Float64}`: Primary-centered inertial state
+"""
+function getOsculatingOrbitalElements(dynamicsModel::TBPDynamicsModel, state_dim::Vector{Float64})
+    state::Vector{Float64} = append!(state_dim[1:3]./dynamicsModel.systemData.charLength, state_dim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
+    trajectory = MBD.TBPTrajectory(state, dynamicsModel)
+    r::Float64 = LinearAlgebra.norm(state_dim[1:3])
+    v_r::Float64 = LinearAlgebra.dot(state_dim[4:6], state_dim[1:3])/r
+    angularMomentum::Vector{Float64} = LinearAlgebra.cross(state_dim[1:3], state_dim[4:6])
+    trajectory.h = LinearAlgebra.norm(angularMomentum)
+    trajectory.i = acos(angularMomentum[3]/trajectory.h)
+    n::Vector{Float64} = LinearAlgebra.cross([0, 0, 1], angularMomentum)
+    trajectory.Omega = (n[2] < 0) ? 2*pi-acos(n[1]/LinearAlgebra.norm(n)) : acos(n[1]/LinearAlgebra.norm(n))
+    eccentricityVector::Vector{float64} = LinearAlgebra.cross(state_dim[4:6], angularMomentum)/dynamicsModel.systemData.gravParam-state_dim./r
+    trajectory.e = LinearAlgebra.norm(eccentricityVector)
+    trajectory.a = trajectory.h^2/(dynamicsModel.systemData.gravParam*(1-trajectory.e^2))
+    trajectory.r_p = trajectory.a*(1-trajectory.e)
+    trajectory.r_a = trajectory.a*(1+trajectory.e)
+    trajectory.omega = (eccentricityVector[3] < 0) ? 2*pi-acos(LinearAlgebra.dot(n, eccentricityVector)/(LinearAlgebra.norm(n)*trajectory.e)) : acos(LinearAlgebra.dot(n, eccentricityVector)/(LinearAlgebra.norm(n)*trajectory.e))
+    trajectory.theta = (v_r < 0) ? 2*pi-acos(LinearAlgebra.dot(eccentricityVector, state_dim[1:3])/(trajectory.e*r)) : acos(LinearAlgebra.dot(eccentricityVector, state_dim[1:3])/(trajectory.e*r))
+    tajectory.E = -dynamicsModel.systemData.gravParam/(2*trajectory.a)
 end
 
 """
