@@ -13,6 +13,7 @@ export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
 export getJacobiConstant, getLinearVariation, getParameterDependencies
 export getPrimaryPosition, getPseudopotentialJacobian, getStateSize
 export getStateTransitionMatrix, isEpochIndependent, primaryInertial2Rotating
+export rotating2PrimaryInertial
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -330,7 +331,7 @@ end
 """
     primaryInertial2Rotating(dynamicsModel, primary, states_primaryInertial, times)
 
-Return rotaing frame states
+Return rotating frame states
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
@@ -351,4 +352,30 @@ function primaryInertial2Rotating(dynamicsModel::CR3BPDynamicsModel, primary::In
     end
 
     return states
+end
+
+"""
+    rotating2PrimaryInertial(dynamicsModel, primary, states, times)
+
+Return primary-centered arbitrary inertial frame states
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `primary::Int64`: Primary identifier
+- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
+- `times::Vector{Float64}`: Epochs [ndim]
+"""
+function rotating2PrimaryInertial(dynamicsModel::CR3BPDynamicsModel, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
+    states_primary::Vector{Vector{Float64}} = states.+push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
+    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
+    for i in 1:length(times)
+        C::Matrix{Float64} = [cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1]
+        Cdot::Matrix{Float64} = [-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0]
+        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
+        states_primaryInertial[i] = N*states_primary[i]
+    end
+
+    return states_primaryInertial
 end
