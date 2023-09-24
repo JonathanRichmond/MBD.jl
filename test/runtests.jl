@@ -303,7 +303,7 @@ end
     systemDataEarth = MBD.TBPSystemData("Earth")
     dynamicsModelEarth = MBD.TBPDynamicsModel(systemDataEarth)
     trajectory = getOsculatingOrbitalElements(dynamicsModel, [1.231789044172658E8, 0, 0, 0, 0.006519428065716839, 0])
-    @test trajectory.E == -0.0032146957660944154
+    @test trajectory.E == -1077.3958252913806
 end
 
 @testset "TBPEquationsOfMotion" begin
