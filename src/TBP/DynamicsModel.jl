@@ -148,7 +148,7 @@ Return 2BP trajectory object with orbital elements
 - `state_dim::Vector{Float64}`: Primary-centered inertial state
 """
 function getOsculatingOrbitalElements(dynamicsModel::TBPDynamicsModel, state_dim::Vector{Float64})
-    state::Vector{Float64} = append!(state_dim[1:3]./dynamicsModel.systemData.charLength, state_dim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
+    state::Vector{Float64} = append!(state_dim[1:3]./dynamicsModel.systemData.charLength, (state_dim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)...)
     trajectory = MBD.TBPTrajectory(state, dynamicsModel)
     r::Float64 = LinearAlgebra.norm(state_dim[1:3])
     v_r::Float64 = LinearAlgebra.dot(state_dim[4:6], state_dim[1:3])/r
