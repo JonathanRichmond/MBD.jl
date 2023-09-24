@@ -939,11 +939,11 @@ mutable struct TBPTrajectory <: AbstractTrajectoryStructure
     omega::Float64                                          # Argument of periapsis [rad]
     r_a::Float64                                            # Radius of apoapse [km]
     r_p::Float64                                            # Radius of periapse [km]
-    theta::Float64                                          # True anomaly [rad]
+    #theta::Float64                                          # True anomaly [rad]
     TOF::Float64                                            # Time of flight [ndim]
 
     function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
-        return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end
 
