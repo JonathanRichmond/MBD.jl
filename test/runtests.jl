@@ -148,6 +148,7 @@ end
     @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 2, [[1.0, 0, 0, 0, 1.0, 0], [1.1, 0, 0, 0, 1.1, 0]], [0.0])
     @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 3, [[1.0, 0, 0, 0, 1.0, 0]], [0.0])
     @test primaryInertial2Rotating(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8112494157300597, 0, 0, 0, -0.6971, 0]]
+    @test rotating2PrimaryInertial(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8355505842699403, 0, 0, 0, 0.9618505842699403, 0]]
 end
 
 @testset "CR3BPEquationsOfMotion" begin
