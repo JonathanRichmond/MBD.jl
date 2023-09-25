@@ -357,7 +357,7 @@ end
 """
     rotating2PrimaryInertial(dynamicsModel, primary, states, times)
 
-Return primary-centered arbitrary inertial frame states
+Return primary-centered arbitrary inertial frame states [ndim]
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
