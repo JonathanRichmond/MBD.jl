@@ -924,7 +924,7 @@ Base.:(==)(EOMs1::TBPEquationsOfMotion, EOMs2::TBPEquationsOfMotion) = ((EOMs1.e
 TBP trajectory object
 
 # Arguments
-- `initialCondition::Vector{Float64}`: Initial conditions [ndim]
+- `initialCondition::Vector{Float64}`: Initial conditions
 - `dynamicsModel::TBPDynamicsModel`: Dynamics model object
 """
 mutable struct TBPTrajectory <: AbstractTrajectoryStructure
@@ -934,13 +934,13 @@ mutable struct TBPTrajectory <: AbstractTrajectoryStructure
     e::Float64                                              # Eccentricity
     h::Float64                                              # Angular momentum [km^2/s]
     i::Float64                                              # Inclination [rad]
-    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
+    initialCondition::Vector{Float64}                       # Initial conditions
     Omega::Float64                                          # Longitude of ascending node [rad]
     omega::Float64                                          # Argument of periapsis [rad]
     r_a::Float64                                            # Radius of apoapse [km]
     r_p::Float64                                            # Radius of periapse [km]
-    #theta::Float64                                          # True anomaly [rad]
-    TOF::Float64                                            # Time of flight [ndim]
+    theta::Float64                                          # True anomaly [rad]
+    TOF::Float64                                            # Time of flight
 
     function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
         return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0)

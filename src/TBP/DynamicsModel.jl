@@ -148,8 +148,7 @@ Return 2BP trajectory object with orbital elements
 - `state_dim::Vector{Float64}`: Primary-centered inertial state
 """
 function getOsculatingOrbitalElements(dynamicsModel::TBPDynamicsModel, state_dim::Vector{Float64})
-    state::Vector{Float64} = append!(state_dim[1:3]./dynamicsModel.systemData.charLength, state_dim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
-    trajectory = MBD.TBPTrajectory(state, dynamicsModel)
+    trajectory = MBD.TBPTrajectory(state_dim, dynamicsModel)
     r::Float64 = LinearAlgebra.norm(state_dim[1:3])
     v_r::Float64 = LinearAlgebra.dot(state_dim[4:6], state_dim[1:3])/r
     angularMomentum::Vector{Float64} = LinearAlgebra.cross(state_dim[1:3], state_dim[4:6])
@@ -163,7 +162,7 @@ function getOsculatingOrbitalElements(dynamicsModel::TBPDynamicsModel, state_dim
     trajectory.r_p = trajectory.a*(1-trajectory.e)
     trajectory.r_a = trajectory.a*(1+trajectory.e)
     trajectory.omega = (eccentricityVector[3] < 0) ? 2*pi-acos(LinearAlgebra.dot(n, eccentricityVector)/(LinearAlgebra.norm(n)*trajectory.e)) : acos(LinearAlgebra.dot(n, eccentricityVector)/(LinearAlgebra.norm(n)*trajectory.e))
-    #trajectory.theta = (v_r < 0) ? 2*pi-acos(LinearAlgebra.dot(eccentricityVector, state_dim[1:3])/(trajectory.e*r)) : acos(LinearAlgebra.dot(eccentricityVector, state_dim[1:3])/(trajectory.e*r))
+    trajectory.theta = (v_r < 0) ? 2*pi-acos(LinearAlgebra.dot(eccentricityVector, state_dim[1:3])/(trajectory.e*r)) : acos(LinearAlgebra.dot(eccentricityVector, state_dim[1:3])/(trajectory.e*r))
     trajectory.E = -dynamicsModel.systemData.gravParam/(2*trajectory.a)
 
     return trajectory
