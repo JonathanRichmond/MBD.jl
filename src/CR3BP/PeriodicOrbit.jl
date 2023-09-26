@@ -30,6 +30,7 @@ function getManifold(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDyna
     propagator.equationType = MBD.ARCLENGTH
     orbitArc::MBD.Arc = propagate(propagator, vcat(appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), 0.0), [0, periodicOrbit.period], dynamicsModel)
     orbitLength::Float64 = getStateByIndex(orbitArc, -1)[43]
+    println(orbitLength)
     arclength::Vector{Float64} = collect(range(0, orbitLength, nArcs+1))
     posManifold::Vector{MBD.CR3BPManifoldArc} = []
     negManifold::Vector{MBD.CR3BPManifoldArc} = []
