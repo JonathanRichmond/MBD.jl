@@ -24,7 +24,8 @@ Return stable or unstable manifold tubes
 - `nArcs::Int64`: Number of manifold arcs
 """
 function getManifold(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, nArcs::Int64)
-    index::Int64 = (stability == "Stable") ?  argmax(abs.(periodicOrbit.eigenvalues)) : argmin(abs.(periodicOrbit.eigenvalues))
+    index::Int64 = (stability == "Stable") ?  argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
+    println(periodicOrbit.eigenvalues[index])
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
     propagator = MBD.Propagator()
     propagator.equationType = MBD.ARCLENGTH
