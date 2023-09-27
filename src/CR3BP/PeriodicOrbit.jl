@@ -65,6 +65,8 @@ Return stable or unstable manifold tubes spaced by time
 function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, nArcs::Int64)
     index::Int64 = (stability == "Stable") ?  argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
+    propagator = MBD.Propagator()
+    propagator.equationType = MBD.STM
     time::Vector{Float64} = collect(range(0, periodicOrbit.period, nArcs+1))
     posManifold::Vector{MBD.CR3BPManifoldArc} = []
     negManifold::Vector{MBD.CR3BPManifoldArc} = []
