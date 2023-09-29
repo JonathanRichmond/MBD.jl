@@ -386,7 +386,7 @@ function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEp
         yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
         C::Matrix{Float64} = [xhat yhat zhat]
         thetadotDim::Float64 = 1/bodyTime
-        Cdot::Matrix{float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
+        Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
         state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
         states_primaryInertial[i] = append!(state_primaryInertialDim./dynamicsModel.systemData.charLength, state_primaryInertialDim.*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
