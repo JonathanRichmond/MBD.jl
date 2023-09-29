@@ -391,6 +391,7 @@ function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEp
         state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
         states_primaryInertial[i] = append!(state_primaryInertialDim./dynamicsModel.systemData.charLength, state_primaryInertialDim.*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
     end
+    SPICE.kclear()
 
     return states_primaryInertial
 end
