@@ -370,7 +370,7 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 """
 function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, center::BodyData, bodyPlane::BodyData, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    (bodyInitialStateDim::Vector{Vector{Float64}}, initialEpochDim::Vector{Float64}) = getEphemerides(initialEpoch, [0.0], bodyPlane.name, center.name, "ECLIPJ2000", "")
+    (bodyInitialStateDim::Vector{Vector{Float64}}, initialEpochDim::Vector{Float64}) = getEphemerides(initialEpoch, [0.0], bodyPlane.name, center.name, "ECLIPJ2000", "MBD.jl/")
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], SPICE.str2et(epoch), center.gravParam)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
     bodyLength::Float64 = bodyPlane.orbitRadius
