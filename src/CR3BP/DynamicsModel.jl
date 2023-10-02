@@ -356,6 +356,32 @@ function primaryInertial2Rotating(dynamicsModel::CR3BPDynamicsModel, primary::In
 end
 
 """
+    rotating2PrimaryInertial(dynamicsModel, primary, states, times)
+
+Return primary-centered arbitrary inertial frame states [ndim]
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `primary::Int64`: Primary identifier
+- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
+- `times::Vector{Float64}`: Epochs [ndim]
+"""
+function rotating2PrimaryInertial(dynamicsModel::CR3BPDynamicsModel, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
+    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
+    for i in 1:length(times)
+        state_primary::Vector{Float64} = states[i]-push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
+        C::Matrix{Float64} = [cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1]
+        Cdot::Matrix{Float64} = [-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0]
+        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
+        states_primaryInertial[i] = N*state_primary
+    end
+
+    return states_primaryInertial
+end
+
+"""
     rotating2SunEclipJ2000(dynamicsModel, initialEpoch, states, times)
 
 Return Sun-centered Ecliptic J2000 inertial frame states [ndim]
@@ -390,32 +416,6 @@ function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch:
         states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
     end
     SPICE.kclear()
-
-    return states_primaryInertial
-end
-
-"""
-    rotating2PrimaryInertial(dynamicsModel, primary, states, times)
-
-Return primary-centered arbitrary inertial frame states [ndim]
-
-# Arguments
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-- `primary::Int64`: Primary identifier
-- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
-- `times::Vector{Float64}`: Epochs [ndim]
-"""
-function rotating2PrimaryInertial(dynamicsModel::CR3BPDynamicsModel, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
-    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
-    for i in 1:length(times)
-        state_primary::Vector{Float64} = states[i]-push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
-        C::Matrix{Float64} = [cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1]
-        Cdot::Matrix{Float64} = [-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        states_primaryInertial[i] = N*state_primary
-    end
 
     return states_primaryInertial
 end
