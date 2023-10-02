@@ -368,10 +368,11 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 """
 function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    (bodyInitialStateDim::Vector{Vector{Float64}}, initialEpochDim::Vector{Float64}) = getEphemerides(initialEpoch, [0.0], "Earth", "Sun", "ECLIPJ2000", "MBD.jl/")
+    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], "Earth", "Sun", "ECLIPJ2000", "MBD.jl/")
     Sun = MBD.BodyData("Sun")
     Earth = MBD.BodyData("Earth")
-    bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], SPICE.str2et(initialEpoch), Sun.gravParam)
+    initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
+    bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
     bodyLength::Float64 = Earth.orbitRadius
     bodyTime::Float64 = sqrt(bodyLength^3/(Sun.gravParam+Earth.gravParam))
@@ -380,7 +381,7 @@ function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEp
         stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
         state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
         bodyElements::Vector{Float64} = append!([bodyLength, 0.0], bodySPICEElements[3:5], bodySPICEElements[6]+timesDim[i]/bodyTime, bodySPICEElements[7:8])
-        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochDim[1]+timesDim[i])
+        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
         xhat::Vector{Float64} = bodyStateDim[1:3]./bodyLength
         zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
         yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
