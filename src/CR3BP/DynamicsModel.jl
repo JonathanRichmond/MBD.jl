@@ -368,30 +368,29 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 """
 function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], "Earth", "Sun", "ECLIPJ2000", "MBD.jl/")
+    EarthInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], "Earth", "Sun", "ECLIPJ2000", "MBD.jl/")
     Sun = MBD.BodyData("Sun")
     Earth = MBD.BodyData("Earth")
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam)
+    EarthSPICEElements::Vector{Float64} = SPICE.oscltx(EarthInitialStateDim[1], initialEpochTime, Sun.gravParam)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
-    bodyLength::Float64 = Earth.orbitRadius
-    bodyTime::Float64 = sqrt(bodyLength^3/(Sun.gravParam+Earth.gravParam))
+    SELength::Float64 = Earth.orbitRadius
+    SETime::Float64 = sqrt(SELength^3/(Sun.gravParam+Earth.gravParam))
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
         state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
-        bodyElements::Vector{Float64} = append!([bodyLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/bodyTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
-        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
-        xhat::Vector{Float64} = bodyStateDim[1:3]./bodyLength
-        zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
+        EarthElements::Vector{Float64} = append!([SELength, 0.0], EarthSPICEElements[3:5], [EarthSPICEElements[6]+timesDim[i]/SETime, initialEpochTime+timesDim[i]], [EarthSPICEElements[8]])
+        EarthStateDim::Vector{Float64} = SPICE.conics(EarthElements, initialEpochTime+timesDim[i])
+        xhat::Vector{Float64} = EarthStateDim[1:3]./SELength
+        zhat::Vector{Float64} = LinearAlgebra.cross(EarthStateDim[1:3], EarthStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(EarthStateDim[1:3], EarthStateDim[4:6]))
         yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
         C::Matrix{Float64} = [xhat yhat zhat]
-        thetadotDim::Float64 = 1/bodyTime
+        thetadotDim::Float64 = 1/SETime
         Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
         state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
-        #states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
-        states_primaryInertial[i] = bodyStateDim
+        states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
     end
     SPICE.kclear()
 
