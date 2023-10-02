@@ -385,7 +385,7 @@ function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEp
         state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
         #EarthElements::Vector{Float64} = append!([SELength, 0.0], EarthSPICEElements[3:5], [EarthSPICEElements[6]+timesDim[i]/SETime, initialEpochTime+timesDim[i]], [EarthSPICEElements[8]])
         #EarthStateDim::Vector{Float64} = SPICE.conics(EarthElements, initialEpochTime+timesDim[i])
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEELements[8]])
+        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
         bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
         #xhat::Vector{Float64} = EarthStateDim[1:3]./SELength
         #zhat::Vector{Float64} = LinearAlgebra.cross(EarthStateDim[1:3], EarthStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(EarthStateDim[1:3], EarthStateDim[4:6]))
