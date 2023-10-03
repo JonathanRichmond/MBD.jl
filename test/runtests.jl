@@ -324,7 +324,7 @@ end
 end
 
 @testset "SPICE Functions" begin
-    (EarthInitialState, initialEpoch) = getEphemerides("Nov 1 2026", [0.0], "Earth", "Sun", "ECLIPJ2000", "../")
+    EarthInitialState = getEphemerides("Nov 1 2026", [0.0], "Earth", "Sun", "ECLIPJ2000", "../")
     @test EarthInitialState == [[1.1669364364177027E8, 9.184694649040842E7, -6547.627331614494, -18.896701708854742, 23.300520269960817, -0.0003837831634516675]]
 end
 
