@@ -382,7 +382,7 @@ function rotating2PrimaryInertial(dynamicsModel::CR3BPDynamicsModel, primary::In
 end
 
 """
-    rotating2SunEclipJ2000(dynamicsModel, initialEpoch, states, times)
+    rotating2SunEclipJ2000(dynamicsModel, initialEpoch, states, times, directory)
 
 Return Sun-centered Ecliptic J2000 inertial frame states [ndim]
 
@@ -391,10 +391,11 @@ Return Sun-centered Ecliptic J2000 inertial frame states [ndim]
 - `initialEpoch::String`: Initial epoch
 - `states::Vector{Vector{Float64}}`: Rotating states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
+- `directory::String`: SPICE kernels directory
 """
-function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
+function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64}, directory::String)
     (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000", "MBD.jl/")
+    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000", directory)
     Sun = MBD.BodyData("Sun")
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam)

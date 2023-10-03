@@ -151,7 +151,7 @@ end
     @test rotating2PrimaryInertial(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8355505842699403, 0, 0, 0, 0.9618505842699403, 0]]
     SMSystemData = MBD.CR3BPSystemData("Sun", "Mars")
     SMDynamicsModel = MBD.CR3BPDynamicsModel(SMSystemData)
-    @test rotating2SunEclipJ2000(SMDynamicsModel, "Nov 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[-0.017617714300628865, 0.8230219571068724, 0.01767952801303379, -0.9491976093478762, -0.020809236372775805, 0.022838061558712815]]
+    @test rotating2SunEclipJ2000(SMDynamicsModel, "Nov 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0], "../") == [[-0.017617714300628865, 0.8230219571068724, 0.01767952801303379, -0.9491976093478762, -0.020809236372775805, 0.022838061558712815]]
 end
 
 @testset "CR3BPEquationsOfMotion" begin
