@@ -415,7 +415,6 @@ function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch:
         state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
         states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
     end
-    SPICE.kclear()
 
     return states_primaryInertial
 end
