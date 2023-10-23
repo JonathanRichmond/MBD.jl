@@ -277,7 +277,7 @@ mutable struct IntegratorFactory
     numSteps::Int64                                         # Number of steps for multi-step method
 
     function IntegratorFactory()
-        return new(DifferentialEquations.DP8(), DP8, 3)
+        return new(DifferentialEquations.DP5(), DP5, 3)
     end
 end
 
