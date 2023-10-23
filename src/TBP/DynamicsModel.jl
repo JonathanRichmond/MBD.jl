@@ -11,7 +11,7 @@ import MBD: TBPDynamicsModel
 export appendExtraInitialConditions, evaluateEquations, getEquationsOfMotion
 export getEpochDependencies, getLambertArc, getOsculatingOrbitalElements
 export getParameterDependencies, getPrimaryPosition, getStateSize
-export getStateTransitionMatrix, isEpochIndependent
+export getStateTransitionMatrix, isEpochIndependent, solveKeplersEquation
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -255,4 +255,21 @@ Return true if dynamics model is epoch independent
 """
 function isEpochIndependent(dynamicsModel::TBPDynamicsModel)
     return true
+end
+
+"""
+    solveKeplersEquation(dynamicsModel, trajectory)
+
+Return time since periapsis based on true anomaly
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `trajectory::TBPTrajectory`: TBP trajectory object
+"""
+function solveKeplersEquation(dynamicsModel::TBPDynamicsModel, trajectory::TBPTrajectory)
+    eccentricAnomaly::Float64 = 2*atan(tan(trajectory.theta/2)/sqrt((1+trajectory.e)/(1-trajectory.e)))
+    meanAnomaly::Float64 = eccentricAnomaly-trajectory.e*sin(eccentricAnomaly)
+    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/sqrt(trajectory.a)^3)
+
+    return meanAnomaly/meanMotion
 end
