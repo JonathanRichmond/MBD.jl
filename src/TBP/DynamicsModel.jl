@@ -77,13 +77,25 @@ Return 2BP trajectory object with Cartesian state
 function getCartesianState(dynamicsModel::TBPDynamicsModel, a::Float64, e::Float64, i::Float64, Omega::Float64, omega::Float64, theta::Float64)
     eccentricAnomaly::Float64 = atan(sqrt(1-e^2)*sin(theta), e+cos(theta))
     circularRadius::Float64 = a*(1-e*cos(eccentricAnomaly))
-    r0::Vector{Float64} = [circularRadius*cos(theta), circularRadius*sin(theta), 0]
-    v0::Vector{Float64} = (sqrt(dynamicsModel.systemData.gravParam*a)/circularRadius).*[-sin(eccentricAnomaly), sqrt(1-e^2)*cos(eccentricAnomaly), 0]
+    r_E::Vector{Float64} = [circularRadius*cos(theta), circularRadius*sin(theta), 0]
+    v_E::Vector{Float64} = (sqrt(dynamicsModel.systemData.gravParam*a)/circularRadius).*[-sin(eccentricAnomaly), sqrt(1-e^2)*cos(eccentricAnomaly), 0]
     C::Matrix{Float64} = [cos(omega)*cos(Omega)-sin(omega)*cos(i)*sin(Omega) -sin(omega)*cos(Omega)-cos(omega)*cos(i)*sin(Omega) 0; cos(omega)*sin(Omega)+sin(omega)*cos(i)*cos(Omega) -sin(omega)*sin(Omega)+cos(omega)*cos(i)*cos(Omega) 0; sin(omega)*sin(i) cos(omega)*sin(i) 0]
-    r::Vector{Float64} = C*r0
-    v::Vector{Float64} = C*v0
+    pos_dim::Vector{Float64} = C*r_E
+    vel_dim::Vector{Float64} = C*v_E
+    stateTrajectory = MBD.TBPTrajectory(append!(copy(pos_dim), vel_dim), dynamicsModel)
+    angularMomentum::Vector{Float64} = LinearAlgebra.cross(pos_dim, vel_dim)
+    stateTrajectory.h = LinearAlgebra.norm(angularMomentum)
+    stateTrajectory.i = i
+    stateTrajectory.Omega = Omega
+    stateTrajectory.e = e
+    stateTrajectory.a = a
+    stateTrajectory.r_p = a*(1-e)
+    stateTrajectory.r_a = a*(1+e)
+    stateTrajectory.omega = omega
+    stateTrajectory.theta = theta
+    stateTrajectory.E = -dynamicsModel.systemData.gravParam/(2*a)
 
-    return getOsculatingOrbitalElements(dynamicsModel, append!(r, v))
+    return stateTrajectory
 end
 
 """
