@@ -10,7 +10,7 @@ import MBD: TBPDynamicsModel
 
 export appendExtraInitialConditions, evaluateEquations, getEquationsOfMotion
 export getEpochDependencies, getLambertArc, getOsculatingOrbitalElements
-export getParameterDependencies, getPrimaryPosition, getStateSize
+export getParameterDependencies, getPeriod, getPrimaryPosition, getStateSize
 export getStateTransitionMatrix, isEpochIndependent, solveKeplersEquation
 
 """
@@ -193,6 +193,21 @@ function getParameterDependencies(dynamicsModel::TBPDynamicsModel, q_full::Vecto
     end
 
     return dqdp
+end
+
+"""
+    getPeriod(dynamicsModel, trajectory)
+
+Return two-body orbital period
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `trajectory::TBPTrajectory`: TBP trajectory object
+"""
+function getPeriod(dynamicsModel::TBPDynamicsModel, trajectory::TBPTrajectory)
+    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/sqrt(trajectory.a)^3)
+
+    return 2*pi/meanMotion
 end
 
 """
