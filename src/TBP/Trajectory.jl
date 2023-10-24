@@ -21,13 +21,25 @@ Return 2BP trajectory object with Cartesian state
 function getCartesianState(trajectory::TBPTrajectory, theta::Float64)
     eccentricAnomaly::Float64 = atan(sqrt(1-trajectory.e^2)*sin(theta), trajectory.e+cos(theta))
     circularRadius::Float64 = trajectory.a*(1-trajectory.e*cos(eccentricAnomaly))
-    r0::Vector{Float64} = [circularRadius*cos(theta), circularRadius*sin(theta), 0]
-    v0::Vector{Float64} = (sqrt(trajectory.dynamicsModel.systemData.gravParam*trajectory.a)/circularRadius).*[-sin(eccentricAnomaly), sqrt(1-trajectory.e^2)*cos(eccentricAnomaly), 0]
+    r_E::Vector{Float64} = [circularRadius*cos(theta), circularRadius*sin(theta), 0]
+    v_E::Vector{Float64} = (sqrt(trajectory.dynamicsModel.systemData.gravParam*trajectory.a)/circularRadius).*[-sin(eccentricAnomaly), sqrt(1-trajectory.e^2)*cos(eccentricAnomaly), 0]
     C::Matrix{Float64} = [cos(trajectory.omega)*cos(trajectory.Omega)-sin(trajectory.omega)*cos(trajectory.i)*sin(trajectory.Omega) -sin(trajectory.omega)*cos(trajectory.Omega)-cos(trajectory.omega)*cos(trajectory.i)*sin(trajectory.Omega) 0; cos(trajectory.omega)*sin(trajectory.Omega)+sin(trajectory.omega)*cos(trajectory.i)*cos(trajectory.Omega) -sin(trajectory.omega)*sin(trajectory.Omega)+cos(trajectory.omega)*cos(trajectory.i)*cos(trajectory.Omega) 0; sin(trajectory.omega)*sin(trajectory.i) cos(trajectory.omega)*sin(trajectory.i) 0]
-    r::Vector{Float64} = C*r0
-    v::Vector{Float64} = C*v0
+    pos_dim::Vector{Float64} = C*r_E
+    vel_dim::Vector{Float64} = C*v_E
+    stateTrajectory = TBPTrajectory(append!(pos_dim, vel_dim), dynamicsModel)
+    angularMomentum::Vector{Float64} = LinearAlgebra.cross(pos_dim, vel_dim)
+    stateTrajectory.h = LinearAlgebra.norm(angularMomentum)
+    stateTrajectory.i = trajectory.i
+    stateTrajectory.Omega = trajector.Omega
+    stateTrajectory.e = trajectory.e
+    stateTrajectory.a = trajectory.a
+    stateTrajectory.r_p = trajectory.a*(1-trajectory.e)
+    stateTrajectory.r_a = trajectory.a*(1+trajectory.e)
+    stateTrajectory.omega = trajectory.omega
+    stateTrajectory.theta = theta
+    stateTrajectory.E = -dynamicsModel.systemData.gravParam/(2*trajectory.a)
 
-    return getOsculatingOrbitalElements(trajectory.dynamicsModel, append!(r, v))
+    return stateTrajectory
 end
 
 """
