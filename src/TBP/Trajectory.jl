@@ -31,7 +31,7 @@ function getCartesianState(trajectory::TBPTrajectory, theta::Float64)
     angularMomentum::Vector{Float64} = LinearAlgebra.cross(pos_dim, vel_dim)
     stateTrajectory.h = LinearAlgebra.norm(angularMomentum)
     stateTrajectory.i = trajectory.i
-    stateTrajectory.Omega = trajector.Omega
+    stateTrajectory.Omega = trajectory.Omega
     stateTrajectory.e = trajectory.e
     stateTrajectory.a = trajectory.a
     stateTrajectory.r_p = trajectory.a*(1-trajectory.e)
