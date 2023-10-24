@@ -27,7 +27,7 @@ function getCartesianState(trajectory::TBPTrajectory, theta::Float64)
     C::Matrix{Float64} = [cos(trajectory.omega)*cos(trajectory.Omega)-sin(trajectory.omega)*cos(trajectory.i)*sin(trajectory.Omega) -sin(trajectory.omega)*cos(trajectory.Omega)-cos(trajectory.omega)*cos(trajectory.i)*sin(trajectory.Omega) 0; cos(trajectory.omega)*sin(trajectory.Omega)+sin(trajectory.omega)*cos(trajectory.i)*cos(trajectory.Omega) -sin(trajectory.omega)*sin(trajectory.Omega)+cos(trajectory.omega)*cos(trajectory.i)*cos(trajectory.Omega) 0; sin(trajectory.omega)*sin(trajectory.i) cos(trajectory.omega)*sin(trajectory.i) 0]
     pos_dim::Vector{Float64} = C*r_E
     vel_dim::Vector{Float64} = C*v_E
-    stateTrajectory = TBPTrajectory(append!(pos_dim, vel_dim), trajectory.dynamicsModel)
+    stateTrajectory = TBPTrajectory(append!(copy(pos_dim), vel_dim), trajectory.dynamicsModel)
     angularMomentum::Vector{Float64} = LinearAlgebra.cross(pos_dim, vel_dim)
     stateTrajectory.h = LinearAlgebra.norm(angularMomentum)
     stateTrajectory.i = trajectory.i
