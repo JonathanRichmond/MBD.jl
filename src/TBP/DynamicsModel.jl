@@ -267,9 +267,9 @@ Return time since periapsis based on true anomaly
 - `trajectory::TBPTrajectory`: TBP trajectory object
 """
 function solveKeplersEquation(dynamicsModel::TBPDynamicsModel, trajectory::TBPTrajectory)
+    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/sqrt(trajectory.a)^3)
+    (trajectory.theta == 1.0*pi) && (return pi/meanMotion)
     eccentricAnomaly::Float64 = 2*atan(tan(trajectory.theta/2)/sqrt((1+trajectory.e)/(1-trajectory.e)))
     meanAnomaly::Float64 = eccentricAnomaly-trajectory.e*sin(eccentricAnomaly)
-    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/sqrt(trajectory.a)^3)
-
-    return meanAnomaly/meanMotion
+    meanAnomaly < 0 ? (return (meanAnomaly+2*pi)/meanMotion) : (return meanAnomaly/meanMotion)
 end
