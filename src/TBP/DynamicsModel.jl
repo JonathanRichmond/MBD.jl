@@ -205,7 +205,7 @@ Return two-body orbital period
 - `trajectory::TBPTrajectory`: TBP trajectory object
 """
 function getPeriod(dynamicsModel::TBPDynamicsModel, trajectory::TBPTrajectory)
-    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/sqrt(trajectory.a)^3)
+    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/abs(trajectory.a)^3)
 
     return 2*pi/meanMotion
 end
@@ -282,7 +282,7 @@ Return time since periapsis based on true anomaly
 - `trajectory::TBPTrajectory`: TBP trajectory object
 """
 function solveKeplersEquation(dynamicsModel::TBPDynamicsModel, trajectory::TBPTrajectory)
-    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/sqrt(trajectory.a)^3)
+    meanMotion::Float64 = sqrt(dynamicsModel.systemData.gravParam/abs(trajectory.a)^3)
     (trajectory.theta == 1.0*pi) && (return pi/meanMotion)
     eccentricAnomaly::Float64 = 2*atan(tan(trajectory.theta/2)/sqrt((1+trajectory.e)/(1-trajectory.e)))
     meanAnomaly::Float64 = eccentricAnomaly-trajectory.e*sin(eccentricAnomaly)
