@@ -19,7 +19,7 @@ Return 2BP trajectory object with Cartesian state
 - `theta::Float64`: True anomaly [rad]
 """
 function getCartesianState(trajectory::TBPTrajectory, theta::Float64)
-    eccentricAnomaly::Float64 = atan(sqrt(1-trajectory.e^2)*sin(theta), e+cos(theta))
+    eccentricAnomaly::Float64 = atan(sqrt(1-trajectory.e^2)*sin(theta), trajectory.e+cos(theta))
     circularRadius::Float64 = trajectory.a*(1-trajectory.e*cos(eccentricAnomaly))
     r0::Vector{Float64} = [circularRadius*cos(theta), circularRadius*sin(theta), 0]
     v0::Vector{Float64} = (sqrt(dynamicsModel.systemData.gravParam*trajectory.a)/circularRadius).*[-sin(eccentricAnomaly), sqrt(1-trajectory.e^2)*cos(eccentricAnomaly), 0]
