@@ -5,6 +5,7 @@ Author: Jonathan Richmond
 C: 10/23/23
 """
 
+import LinearAlgebra
 import MBD: TBPTrajectory
 
 export getCartesianState
