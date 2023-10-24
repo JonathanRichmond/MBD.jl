@@ -977,6 +977,7 @@ include("spice/BodyName.jl")
 include("spice/SpiceFunctions.jl")
 include("TBP/DynamicsModel.jl")
 include("TBP/EquationsOfMotion.jl")
+include("TBP/Trajectory.jl")
 include("utilities/UtilityFunctions.jl")
 
 end # module MBD

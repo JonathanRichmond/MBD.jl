@@ -31,6 +31,7 @@ include("../src/spice/BodyName.jl")
 include("../src/spice/SpiceFunctions.jl")
 include("../src/TBP/DynamicsModel.jl")
 include("../src/TBP/EquationsOfMotion.jl")
+include("../src/TBP/Trajectory.jl")
 include("../src/utilities/UtilityFunctions.jl")
 
 include("ExampleLyapunovJCTargeter.jl")
