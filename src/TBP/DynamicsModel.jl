@@ -8,10 +8,11 @@ C: 9/14/23
 import LinearAlgebra
 import MBD: TBPDynamicsModel
 
-export appendExtraInitialConditions, evaluateEquations, getEquationsOfMotion
-export getEpochDependencies, getLambertArc, getOsculatingOrbitalElements
-export getParameterDependencies, getPeriod, getPrimaryPosition, getStateSize
-export getStateTransitionMatrix, isEpochIndependent, solveKeplersEquation
+export appendExtraInitialConditions, evaluateEquations, getCartesianState
+export getEquationsOfMotion, getEpochDependencies, getLambertArc
+export getOsculatingOrbitalElements, getParameterDependencies, getPeriod
+export getPrimaryPosition, getStateSize, getStateTransitionMatrix
+export isEpochIndependent, solveKeplersEquation
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -57,6 +58,32 @@ function evaluateEquations(dynamicsModel::TBPDynamicsModel, equationType::MBD.Eq
     computeDerivatives!(qdot, q, (EOMs,), t)
 
     return qdot
+end
+
+"""
+    getCartesianState(dynamicsModel, a, e, i, Omega, omega, theta)
+
+Return 2BP trajectory object with Cartesian state
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `a::Float64`: Semimajor axis [km]
+- `e::Float64`: Eccentricity
+- `i::Float64`: Inclination [rad]
+- `Omega::Float64`: Longitude of ascending node [rad]
+- `omega::Float64`: Argument of periapsis [rad]
+- `theta::Float64`: True anomaly [rad]
+"""
+function getCartesianState(dynamicsModel::TBPDynamicsModel, a::Float64, e::Float64, i::Float64, Omega::Float64, omega::Float64, theta::Float64)
+    eccentricAnomaly::Float64 = atan(sqrt(1-e^2)*sin(theta), e+cos(theta))
+    circularRadius::Float64 = a*(1-e*cos(eccentricAnomaly))
+    r0::Vector{Float64} = [circularRadius*cos(theta), circularradius*sin(theta), 0]
+    v0::Vector{Float64} = (sqrt(dynamicsModel.systemData.gravParam*a)/circularRadius).*[-sin(eccentricAnomaly), sqrt(1-e^2)*cos(eccentricAnomaly), 0]
+    C::Matrix{Float64} = [cos(omega)*cos(Omega)-sin(omega)*cos(i)*sin(Omega) -sin(omega)*cos(Omega)-cos(omega)*cos(i)*sin(Omega) 0; cos(omega)*sin(Omega)+sin(omega)*cos(i)*cos(Omega) -sin(omega)*sin(Omega)+cos(omega)*cos(i)*cos(Omega) 0; sin(omega)*sin(i) cos(omega)*sin(i) 0]
+    r::Vector{Float64} = C*r0
+    v::Vector{Float64} = C*v0
+
+    return getOsculatingOrbitalElements(dynamicsModel, append!(r, v))
 end
 
 """
@@ -145,7 +172,7 @@ Return 2BP trajectory object with orbital elements
 
 # Arguments
 - `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
-- `state_dim::Vector{Float64}`: Primary-centered inertial state
+- `state_dim::Vector{Float64}`: Primary-centered inertial state [dim]
 """
 function getOsculatingOrbitalElements(dynamicsModel::TBPDynamicsModel, state_dim::Vector{Float64})
     trajectory = MBD.TBPTrajectory(state_dim, dynamicsModel)
