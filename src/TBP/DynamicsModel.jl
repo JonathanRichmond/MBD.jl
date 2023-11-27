@@ -150,7 +150,7 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
     c_2::Float64 = 1/2
     c_3::Float64 = 1/6
     psi_up::Float64 = 4*pi^2
-    psi_low::Float64 = -4*pi^2
+    psi_low::Float64 = -10*pi^2
     deltat_n::Float64 = TOF+100
     iter::Int64 = 0
     while (abs(deltat_n-TOF) >= 1E-9) && (iter < 100)
