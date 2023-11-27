@@ -134,12 +134,13 @@ end
 Return initial/final velocities
 
 # Arguments
-- `initalPos::Vector{Float64}`: Initial position [ndim]
-- `finalPos::Vector{Float64}`: Final position [ndim]
-- `TOF::Float64`: Time of flight [ndim]
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `initalPos::Vector{Float64}`: Initial position [dim]
+- `finalPos::Vector{Float64}`: Final position [dim]
+- `TOF::Float64`: Time of flight [dim]
 - `transferMethod::String`: Transfer method
 """
-function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, TOF::Float64, transferMethod::String)
+function getLambertArc(dynamicsModel::TBPDynamicsModel, initialPos::Vector{Float64}, finalPos::Vector{Float64}, TOF::Float64, transferMethod::String)
     r0::Float64 = LinearAlgebra.norm(initialPos)
     rf::Float64 = LinearAlgebra.norm(finalPos)
     cosdeltanu::Float64 = LinearAlgebra.dot(initialPos, finalPos)/(r0*rf)
@@ -153,17 +154,18 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
     psi_low::Float64 = -4*pi
     deltat_n::Float64 = TOF+100
     iter::Int64 = 0
-    while (abs(deltat_n-TOF) >= 1E-9) && (iter < 100)
+    while (abs(deltat_n-TOF) >= 1E-6) && (iter < 100)
         y_n::Float64 = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
         println(y_n)
         if (A > 0) && (y_n < 0)
-            psi_low -= 1
+            psi_low /= 2
         else
             x_n::Float64 = sqrt(y_n/c_2)
-            deltat_n = x_n^3*c_3+A*sqrt(y_n)
-            iter += 1
+            deltat_n = (x_n^3*c_3+A*sqrt(y_n))/sqrt(dynamicsModel.systemData.gravParam)
+            println("Deltat: $deltat_n")
             (deltat_n > TOF) ? (psi_up = psi_n) : (psi_low = psi_n)
         end
+        iter += 1
         psi_n = (psi_up+psi_low)/2
         if psi_n > 1E-6
             c_2 = (1-cos(sqrt(psi_n)))/psi_n
@@ -180,7 +182,7 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
     y_n = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
     f::Float64 = 1-y_n/r0
     gdot::Float64 = 1-y_n/rf
-    g::Float64 = A*sqrt(y_n)
+    g::Float64 = A*sqrt(y_n/dynamicsModel.systemData.gravParam)
 
     return ((finalPos-f.*initialPos)./g, (gdot.*finalPos-initialPos)./g)
 end
