@@ -150,7 +150,7 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
     c_2::Float64 = 1/2
     c_3::Float64 = 1/6
     psi_up::Float64 = 4*pi^2
-    psi_low::Float64 = -10*pi^2
+    psi_low::Float64 = -100*pi^2
     deltat_n::Float64 = TOF+100
     iter::Int64 = 0
     while (abs(deltat_n-TOF) >= 1E-9) && (iter < 100)
@@ -177,6 +177,7 @@ function getLambertArc(initialPos::Vector{Float64}, finalPos::Vector{Float64}, T
             c_3 = 1/6
         end
     end
+    (iter < 100) || throw(ErrorException("Could not converge Lambert arc"))
     y_n = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
     f::Float64 = 1-y_n/r0
     gdot::Float64 = 1-y_n/rf
