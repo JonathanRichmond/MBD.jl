@@ -129,7 +129,7 @@ function getEpochDependencies(dynamicsModel::TBPDynamicsModel, q_full::Vector{Fl
 end
 
 """
-    getLambertArc(initialPos, finalPos, TOF, transferMethod)
+    getLambertArc(dynamicsModel, initialPos, finalPos, TOF, transferMethod)
 
 Return initial/final velocities
 
@@ -156,13 +156,11 @@ function getLambertArc(dynamicsModel::TBPDynamicsModel, initialPos::Vector{Float
     iter::Int64 = 0
     while (abs(deltat_n-TOF) >= 1E-6) && (iter < 100)
         y_n::Float64 = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
-        println(y_n)
         if (A > 0) && (y_n < 0)
             psi_low /= 2
         else
             x_n::Float64 = sqrt(y_n/c_2)
             deltat_n = (x_n^3*c_3+A*sqrt(y_n))/sqrt(dynamicsModel.systemData.gravParam)
-            println("Deltat: $deltat_n")
             (deltat_n > TOF) ? (psi_up = psi_n) : (psi_low = psi_n)
         end
         iter += 1
