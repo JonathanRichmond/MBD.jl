@@ -151,10 +151,10 @@ function getLambertArc(dynamicsModel::TBPDynamicsModel, initialPos::Vector{Float
     c_2::Float64 = 1/2
     c_3::Float64 = 1/6
     psi_up::Float64 = 4*pi^2
-    psi_low::Float64 = -4*pi
+    psi_low::Float64 = -8*pi
     deltat_n::Float64 = TOF+100
     iter::Int64 = 0
-    while (abs(deltat_n-TOF) >= 1E-6) && (iter < 500)
+    while (abs(deltat_n-TOF) >= 1E-6) && (iter < 200)
         y_n::Float64 = r0+rf+(A*(psi_n*c_3-1))/sqrt(c_2)
         if (A > 0) && (y_n < 0)
             psi_low /= 2
