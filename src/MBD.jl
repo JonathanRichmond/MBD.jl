@@ -27,7 +27,7 @@ Enumerated type for EOMs
 """
 Enumerated type for integrators
 """
-@enum IntegratorType AB AM BS DP5 DP8
+@enum IntegratorType AB5 ABM54 BS5 DP5 DP8
 
 """
 Abstract type for bifurcations
