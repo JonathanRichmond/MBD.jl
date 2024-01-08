@@ -67,6 +67,7 @@ function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialE
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
+        println(tf)
         problem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         arcOut.states = sol.u
