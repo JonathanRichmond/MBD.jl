@@ -297,7 +297,7 @@ mutable struct Propagator
     relTol::Float64                                         # Relative tolerance
 
     function Propagator()
-        return new(1E-14, SIMPLE, [], IntegratorFactory(), typemax(Int64), 100, 1E-12, 1E-12)
+        return new(1E-12, SIMPLE, [], IntegratorFactory(), typemax(Int64), 100, 1E-12, 1E-12)
     end
 end
 Base.:(==)(propagator1::Propagator, propagator2::Propagator) = ((propagator1.equationType == propagator2.equationType) && (propagator1.events == propagator2.events))
