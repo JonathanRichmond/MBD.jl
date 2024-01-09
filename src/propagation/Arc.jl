@@ -8,27 +8,8 @@ U: 8/5/23
 
 import MBD: Arc
 
-export crash, deleteStateAndTime!, getStateByIndex, getStateCount
-export getTimeByIndex, setParameters!
-
-"""
-    crash(arc, center, radius)
-
-Return true if arc crashes into body
-
-# Arguments
-- `arc::Arc`: Arc object
-- `center::Vector{Float64}`: Body center [ndim]
-- `radius::Float64`: Body radius [ndim]
-"""
-function crash(arc::Arc, center::Vector{Float64}, radius::Float64)
-    for state in arc.states
-        distance::Float64 = sqrt((state[1]-center[1])^2+(state[2]-center[2])^2+(state[3]-center[3])^2)
-        (distance <= radius) && (return true)
-    end
-
-    return false
-end
+export deleteStateAndTime!, getStateByIndex, getStateCount, getTimeByIndex
+export setParameters!
 
 """
     deleteStateAndTime!(arc, index)
