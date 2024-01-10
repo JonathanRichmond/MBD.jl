@@ -53,9 +53,9 @@ version = "7.7.0"
 
 [[deps.ArrayLayouts]]
 deps = ["FillArrays", "LinearAlgebra"]
-git-tree-sha1 = "6364e1f449627f9ca6ba9dd2e48527dd4a682a5e"
+git-tree-sha1 = "a45ec4acc9d905f94b47243cff666820bb107789"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "1.5.1"
+version = "1.5.2"
 weakdeps = ["SparseArrays"]
 
     [deps.ArrayLayouts.extensions]
