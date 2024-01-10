@@ -9,7 +9,7 @@ import LinearAlgebra
 import MBD: TBPDynamicsModel
 
 export appendExtraInitialConditions, evaluateEquations, getCartesianState
-export getEquationsOfMotion, getEpochDependencies, getLambertArc
+export getEquationsOfMotion, getEpochDependencies, getExcursion, getLambertArc
 export getOsculatingOrbitalElements, getParameterDependencies, getPeriod
 export getPrimaryPosition, getStateSize, getStateTransitionMatrix
 export isEpochIndependent, solveKeplersEquation
@@ -126,6 +126,21 @@ function getEpochDependencies(dynamicsModel::TBPDynamicsModel, q_full::Vector{Fl
     n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
+end
+
+"""
+    getExcursion(dynamicsModel, q)
+
+Return distance from primary
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: CR3BP dynamics model object
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function getExcursion(dynamicsModel::TBPDynamicsModel, q::Vector{Float64})
+    primaryPos::Vector{Float64} = getPrimaryPosition(dynamicsModel)
+
+    return LinearAlgebra.norm(q[1:3]-primaryPos)*dynamicsModel.systemData.charLength
 end
 
 """

@@ -11,10 +11,11 @@ import MBD: CR3BPDynamicsModel
 
 export appendExtraInitialConditions, evaluateEquations, get2BApproximation
 export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
-export getJacobiConstant, getLinearVariation, getParameterDependencies
-export getPrimaryPosition, getPseudopotentialJacobian, getStateSize
-export getStateTransitionMatrix, isEpochIndependent, primaryInertial2Rotating
-export rotating2PrimaryInertial, rotating2SunEclipJ2000
+export getExcursion, getJacobiConstant, getLinearVariation
+export getParameterDependencies, getPrimaryPosition, getPseudopotentialJacobian
+export getStateSize, getStateTransitionMatrix, isEpochIndependent
+export primaryInertial2Rotating, rotating2PrimaryInertial
+export rotating2SunEclipJ2000
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -165,6 +166,22 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)
 end
 
 """
+    getExcursion(dynamicsModel, primary, q)
+
+Return distance from primary
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `primary::Int64`: Primary identifier
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function getExcursion(dynamicsModel::CR3BPDynamicsModel, primary::Int64, q::Vector{Float64})
+    primaryPos::Vector{Float64} = getPrimaryPosition(dynamicsModel, primary)
+
+    return LinearAlgebra.norm(q[1:3]-primaryPos)*dynamicsModel.systemData.charLength
+end
+
+"""
     getJacobiConstant(dynamicsModel, q)
 
 Return CR3BP Jacobi constant
@@ -194,7 +211,6 @@ Return linear variation about equilibrium point
 - `variation::Vector{Float64}`: Variation from equilibrium point [ndim]
 """
 function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPos::Vector{Float64}, variation::Vector{Float64})
-    mu = getMassRatio(dynamicsModel.systemData)
     Uddot::Vector{Float64} = getPseudopotentialJacobian(dynamicsModel, equilibriumPos)
     beta_1::Float64 = 2-(Uddot[1]+Uddot[2])/2
     beta_2_2::Float64 = -Uddot[1]*Uddot[2]
