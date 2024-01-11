@@ -229,7 +229,7 @@ function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPoint:
         else
             throw(ArgumentError("Invalid equilateral equilibrium point period $period"))
         end
-        s = imag(lambda)
+        s = abs(imag(lambda))
         alpha_1::Float64 = variation[1]
         beta_1 = variation[2]
         alpha_2::Float64 = (Uddot[4]*alpha_1+(Uddot[2]+s^2)*beta_1)/(2*s)
