@@ -138,7 +138,12 @@ end
     @test getEquilibriumPoint(dynamicsModel, 4) == [0.48784941573005963, 0.8660254037844386, 0]
     @test getJacobiConstant(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == 3.1743560232059265
     L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
-    @test getLinearVariation(dynamicsModel, L1, [0.005, 0, 0]) == ([0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865])
+    L5::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 5)
+    println(L5)
+    @test_throws ArgumentError getLinearVariation(dynamicsModel, 6, L1, [0.005, 0, 0])
+    @test getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0]) == ([0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865])
+    @test_throws ArgumentError getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Medium")
+    @test getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0]) == ([0.49284941573005964, -0.8660254037844386, 0, -0.003168674904327207, -0.0020973202593643175, 0], [0, 21.06979705455942])
     @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
     @test_throws ArgumentError getPrimaryPosition(dynamicsModel, 3)
