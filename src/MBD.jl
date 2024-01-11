@@ -510,7 +510,7 @@ mutable struct StateMatchConstraint <: AbstractConstraint
         mask1::Vector{Bool} = getFreeVariableMask(this.variable1)
         mask2::Vector{Bool} = getFreeVariableMask(this.variable2)
         for i::Int64 in eachindex(this.constrainedIndices)
-            (mask1[this.constrainedIndices[i]] && mask2[this.constrainedIndices[i]]) || throw(ArgumentError("Cannot constrain index = $(this.constrainedIndices[i]); it is not a free variable"))
+            (mask1[this.constrainedIndices[i]] || mask2[this.constrainedIndices[i]]) || throw(ArgumentError("Cannot constrain index = $(this.constrainedIndices[i]); it is not a free variable"))
         end
 
         return this
