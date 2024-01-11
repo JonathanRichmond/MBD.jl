@@ -225,16 +225,16 @@ function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPoint:
         if period == "Short"
             lambda::Complex{Float64} = sqrt(-0.5-0.5*sqrt(complex(1-27*mu*(1-mu))))
         elseif period == "Long"
-            lambda::Complex{Float64} = sqrt(-0.5+0.5*sqrt(complex(1-27*mu*(1-mu))))
+            lambda = sqrt(-0.5+0.5*sqrt(complex(1-27*mu*(1-mu))))
         else
             throw(ArgumentError("Invalid equilateral equilibrium point period $period"))
         end
-        s::Float64 = imag(lambda)
+        s = imag(lambda)
         alpha_1::Float64 = variation[1]
-        beta_1::Float64 = variation[2]
+        beta_1 = variation[2]
         alpha_2::Float64 = (Uddot[4]*alpha_1+(Uddot[2]+s^2)*beta_1)/(2*s)
         beta_2::Float64 = ((Uddot[1]+s^2)*alpha_1+Uddot[4]*beta_1)/(-2*s)
-        q::Vector{Float64} = push!(equilibriumPos+variation, alpha_2*s, beta_2*s, 0)
+        q = push!(equilibriumPos+variation, alpha_2*s, beta_2*s, 0)
     else
         throw(ArgumentError("Invalid equilibrium point $equilibriumPoint"))
     end
