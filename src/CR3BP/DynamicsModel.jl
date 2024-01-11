@@ -201,22 +201,43 @@ function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}
 end
 
 """
-    getLinearVariation(dynamicsModel, equilibriumPos, variation)
+    getLinearVariation(dynamicsModel, equilibriumPoint, equilibriumPos, variation; period)
 
 Return linear variation about equilibrium point
 
 # Arguments
 - `dynamicsModel:::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `equilibriumPoint::Int64`: Equilibrium point identifier
 - `equilibriumPos::Vector{Float64}`: Equilibrium point position [ndim]
 - `variation::Vector{Float64}`: Variation from equilibrium point [ndim]
+- `period::String`: Equilateral equilibrium point linearization period
 """
-function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPos::Vector{Float64}, variation::Vector{Float64})
+function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPoint::Int64, equilibriumPos::Vector{Float64}, variation::Vector{Float64}, period::String = "Short")
+    mu::Float64 = getMassRatio(dynamicsModel.systemData)
     Uddot::Vector{Float64} = getPseudopotentialJacobian(dynamicsModel, equilibriumPos)
-    beta_1::Float64 = 2-(Uddot[1]+Uddot[2])/2
-    beta_2_2::Float64 = -Uddot[1]*Uddot[2]
-    s::Float64 = sqrt(beta_1+sqrt(beta_1^2+beta_2_2))
-    beta_3::Float64 = (s^2+Uddot[1])/(2*s)
-    q::Vector{Float64} = push!(equilibriumPos+variation, variation[2]*s/beta_3, -beta_3*variation[1]*s, 0)
+    if (1 <= equilibriumPoint <= 3)
+        beta_1::Float64 = 2-(Uddot[1]+Uddot[2])/2
+        beta_2_2::Float64 = -Uddot[1]*Uddot[2]
+        s::Float64 = sqrt(beta_1+sqrt(beta_1^2+beta_2_2))
+        beta_3::Float64 = (s^2+Uddot[1])/(2*s)
+        q::Vector{Float64} = push!(equilibriumPos+variation, variation[2]*s/beta_3, -beta_3*variation[1]*s, 0)
+    elseif (4 <= equilibriumPoint <= 5)
+        if period == "Short"
+            lambda::Complex{Float64} = sqrt(-0.5-0.5*sqrt(complex(1-27*mu*(1-mu))))
+        elseif period == "Long"
+            lambda::Complex{Float64} = sqrt(-0.5+0.5*sqrt(complex(1-27*mu*(1-mu))))
+        else
+            throw(ArgumentError("Invalid equilateral equilibrium point period $period"))
+        end
+        s::Float64 = imag(lambda)
+        alpha_1::Float64 = variation[1]
+        beta_1::Float64 = variation[2]
+        alpha_2::Float64 = (Uddot[4]*alpha_1+(Uddot[2]+s^2)*beta_1)/(2*s)
+        beta_2::Float64 = ((Uddot[1]+s^2)*alpha_1+Uddot[4]*beta_1)/(-2*s)
+        q::Vector{Float64} = push!(equilibriumPos+variation, alpha_2*s, beta_2*s, 0)
+    else
+        throw(ArgumentError("Invalid equilibrium point $equilibriumPoint"))
+    end
     tSpan::Vector{Float64} = [0, 2*pi/s]
     
     return (q, tSpan)
