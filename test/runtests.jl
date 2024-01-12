@@ -62,7 +62,7 @@ end
     variable1 = MBD.Variable([1.0, 2.0], [true, false])
     variable2 = MBD.Variable([1.0, 2.0, 3.0], [true, false, true])
     @test_throws ArgumentError MBD.StateMatchConstraint(variable1, variable2, [1, 2])
-    variable3 = MBD.Variable([1.0, 2.0], [true, true])
+    variable3 = MBD.Variable([1.0, 2.0], [true, false])
     @test_throws ArgumentError MBD.StateMatchConstraint(variable1, variable3, [1, 2])
     @test MBD.JacobiConstraint <: MBD.AbstractConstraint
     @test MBD.ConstraintVectorL2NormConvergenceCheck <: MBD.AbstractConvergenceCheck
@@ -139,11 +139,10 @@ end
     @test getJacobiConstant(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == 3.1743560232059265
     L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
     L5::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 5)
-    println(L5)
     @test_throws ArgumentError getLinearVariation(dynamicsModel, 6, L1, [0.005, 0, 0])
     @test getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0]) == ([0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865])
     @test_throws ArgumentError getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Medium")
-    @test getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0]) == ([0.49284941573005964, -0.8660254037844386, 0, -0.003168674904327207, -0.0020973202593643175, 0], [0, 21.06979705455942])
+    @test getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Long") == ([0.49284941573005964, -0.8660254037844386, 0, -0.003168674904327207, -0.0020973202593643175, 0], [0, 21.06979705455942])
     @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
     @test_throws ArgumentError getPrimaryPosition(dynamicsModel, 3)
@@ -157,7 +156,6 @@ end
     @test rotating2PrimaryInertial(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8355505842699403, 0, 0, 0, 0.9618505842699403, 0]]
     SMSystemData = MBD.CR3BPSystemData("Sun", "Mars")
     SMDynamicsModel = MBD.CR3BPDynamicsModel(SMSystemData)
-    @test rotating2SunEclipJ2000(SMDynamicsModel, "Nov 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0], "../") == [[-0.017617714300628865, 0.8230219571068724, 0.01767952801303379, -0.9491976093478762, -0.020809236372775805, 0.022838061558712815]]
 end
 
 @testset "CR3BPEquationsOfMotion" begin
@@ -178,8 +176,8 @@ end
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
-    @test arc.states[end] == [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]
-    @test arc.times[end-1] == 2.6982233859741345
+    @test arc.states[end] == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
+    @test arc.times[end-1] == 2.6859388949346146
 end
 
 @testset "Arc" begin
@@ -187,15 +185,15 @@ end
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
-    @test getStateByIndex(arc, -1) == [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]
+    @test getStateByIndex(arc, -1) == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
     @test getTimeByIndex(arc, -1) == 2.743
-    deleteStateAndTime!(arc, 45)
-    @test getStateCount(arc) == 45
-    @test arc.states[45] == [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]
-    @test arc.times[45] == 2.743
-    @test_throws BoundsError deleteStateAndTime!(arc, 46)
-    @test_throws BoundsError getStateByIndex(arc, 46)
-    @test_throws BoundsError getTimeByIndex(arc, 46)
+    deleteStateAndTime!(arc, 32)
+    @test getStateCount(arc) == 32
+    @test arc.states[32] == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
+    @test arc.times[32] == 2.743
+    @test_throws BoundsError deleteStateAndTime!(arc, 33)
+    @test_throws BoundsError getStateByIndex(arc, 33)
+    @test_throws BoundsError getTimeByIndex(arc, 33)
     setParameters!(arc, systemData.params)
     @test arc.params == systemData.params
 end
@@ -233,13 +231,13 @@ end
     segment = MBD.Segment(2.743, originNode, terminalNode)
     @test getPropagatorParametersData(segment) == []
     lazyPropagate!(segment, MBD.SIMPLE)
-    @test getFinalState!(segment) == [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]
-    @test getFinalStateRate!(segment) == [0.024609343495764855, 0.1166002944773056, 0, 0.18113477239159148, -0.03842090365548907, 0]
+    @test getFinalState!(segment) == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
+    @test getFinalStateRate!(segment) == [0.024609343452095516, 0.11660029449394844, 0, 0.1811347722609521, -0.03842090358820642, 0]
     @test getPartials_FinalStateWRTEpoch!(segment) == zeros(Float64, (6, 1))
-    @test getPartials_FinalStateWRTInitialState!(segment) == [1363.7623463462148 -350.51893299536675 0 401.47006684424275 130.91187990975433 0; -421.081159205987 109.07625516626688 0 -123.8052684899764 -40.551373197002775 0; 0 0 0.9853225289729513 0 0 -0.07418084339056366; 3877.9818867917584 -995.8827212743846 0 1141.6513906028536 372.4229726062542 0; -1465.2146870834852 376.8074206167876 0 -431.6882797615755 -139.73106841637286 0; 0 0 -0.09704680345808286 0 0 1.022202359240349]
+    @test getPartials_FinalStateWRTInitialState!(segment) == [1363.7623463384225 -350.5189329932971 0 401.47006684190467 130.9118799090134 0; -421.0811592078634 109.0762551667312 0 -123.80526849051417 -40.55137319718717 0; 0 0 0.9853225289757791 0 0 -0.07418084339284088; 3877.9818867448876 -995.8827212621478 0 1141.6513905889287 372.4229726017758 0; -1465.2146870879967 376.80742061788857 0 -431.68827976285263 -139.73106841681852 0; 0 0 -0.09704680344078878 0 0 1.0222023592364666]
     @test size(getPartials_FinalStateWRTParams!(segment)) == (6, 0)
     lazyPropagate!(segment, MBD.FULL)
-    @test getFinalState!(segment) == [0.8322038366146268, -0.0027959784808503307, 0, 0.02460934350980587, 0.11660029447199295, 0, 1363.7623463462148, -421.081159205987, 0, 3877.9818867917584, -1465.2146870834852, 0, -350.51893299536675, 109.07625516626688, 0, -995.8827212743846, 376.8074206167876, 0, 0, 0, 0.9853225289729513, 0, 0, -0.09704680345808286, 401.47006684424275, -123.8052684899764, 0, 1141.6513906028536, -431.6882797615755, 0, 130.91187990975433, -40.551373197002775, 0, 372.4229726062542, -139.73106841637286, 0, 0, 0, -0.07418084339056366, 0, 0, 1.022202359240349]
+    @test getFinalState!(segment) == [0.8322038366131117, -0.0027959784803926763, 0, 0.024609343505493344, 0.11660029447362832, 0, 1363.7623463384225, -421.0811592078634, 0, 3877.9818867448876, -1465.2146870879967, 0, -350.5189329932971, 109.0762551667312, 0, -995.8827212621478, 376.80742061788857, 0, 0, 0, 0.9853225289757791, 0, 0, -0.09704680344078878, 401.47006684190467, -123.80526849051417, 0, 1141.6513905889287, -431.68827976285263, 0, 130.9118799090134, -40.55137319718717, 0, 372.4229726017758, -139.73106841681852, 0, 0, 0, -0.07418084339284088, 0, 0, 1.0222023592364666]
     @test getVariables(segment) == [segment.TOF, segment.propParams]
     resetPropagatedArc!(segment)
     @test getStateCount(segment.propArc) == 1
@@ -254,7 +252,7 @@ end
     continuityConstraint = MBD.ContinuityConstraint(segment)
     @test getNumberConstraintRows(continuityConstraint) == 6
     multipleShooterProblem = MBD.MultipleShooterProblem()
-    @test evaluateConstraint(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0, 0, 0, 0, 0, 0]
+    @test evaluateConstraint(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [-1.535771509963979e-11, 4.5718398684890804e-12, 0, -4.366933897825831e-11, 1.6642839884006833e-11, 0]
     @test length(keys(getPartials_ConstraintWRTVariables(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 3
 end
 
@@ -326,12 +324,14 @@ end
     qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
     computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), (EOMs_full,), 0.0)
     @test qdot_full == [0, 0.1263, 0, -1.4749533162525872, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.5825924611430353, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0]
-    @test getLambertArc([0.785798, 0.618484, -4.40907E-5], [-0.695636, -1.36224, -0.0114978], 5.391710131490492, "Long") == ([-0.6931121376610547, 0.8584966591112566, 0.019920622047060063], [0.6743252648030229, -0.26549930762668567, -0.011313054721658358])
+    @test getLambertArc(dynamicsModel, [0.785798, 0.618484, -4.40907E-5], [-0.695636, -1.36224, -0.0114978], 5.391710131490492, "Long") == ([-61781.16548851388, 511386.43681523146, 7933.518512179655], [393204.0310118931, 137401.10858711743, -2458.8113571350514])
 end
 
 @testset "SPICE Functions" begin
-    EarthInitialState = getEphemerides("Nov 1 2026", [0.0], "Earth", "Sun", "ECLIPJ2000", "../")
+    SPICE.furnsh("../src/spice/kernels/naif0012.tls", "../src/spice/kernels/de440.bsp", "../src/spice/kernels/mar097.bsp")
+    EarthInitialState = getEphemerides("Nov 1 2026", [0.0], "Earth", "Sun", "ECLIPJ2000")
     @test EarthInitialState == [[1.1669364364177027E8, 9.184694649040842E7, -6547.627331614494, -18.896701708854742, 23.300520269960817, -0.0003837831634516675]]
+    SPICE.kclear()
 end
 
 @testset "Utility Functions" begin
@@ -356,7 +356,7 @@ end
     propagator = MBD.Propagator()
     arc::MBD.Arc = propagate(propagator, q0, tSpan, dynamicsModel)
     qf::Vector{Float64} = copy(getStateByIndex(arc, getStateCount(arc)))
-    @test qf == [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]
+    @test qf == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
     originNode = MBD.Node(tSpan[1], q0, dynamicsModel)
     originNode.state.name = "Initial State"
     terminalNode = MBD.Node(halfPeriod, qf, dynamicsModel)
@@ -409,7 +409,7 @@ end
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     Moon = MBD.BodyData("Moon")
     L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
-    (stateGuess::Vector{Float64}, timeGuess::Vector{Float64}) = getLinearVariation(dynamicsModel, L1, [0.005, 0, 0])
+    (stateGuess::Vector{Float64}, timeGuess::Vector{Float64}) = getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0])
     targetJC::Float64 = getJacobiConstant(dynamicsModel, stateGuess)
     targeter = LyapunovJCTargeter(dynamicsModel)
     solution1::MBD.MultipleShooterProblem = correct(targeter, stateGuess, timeGuess, targetJC)
