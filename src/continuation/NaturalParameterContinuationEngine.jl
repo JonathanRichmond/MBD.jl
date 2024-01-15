@@ -124,6 +124,7 @@ function doContinuation!(naturalParameterContinuationEngine::NaturalParameterCon
     while (!endContinuation(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress) && !naturalParameterContinuationEngine.dataInProgress.forceEndContinuation)
         naturalParameterContinuationEngine.printProgress && println("\nConverging family member $(naturalParameterContinuationEngine.dataInProgress.stepCount+1)...")
         naturalParameterContinuationEngine.dataInProgress.fullStep = computeFullStep(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress)
+        println(naturalParameterContinuationEngine.dataInProgress.fullStep)
         tryConverging!(naturalParameterContinuationEngine)
         while (!naturalParameterContinuationEngine.dataInProgress.converging && !naturalParameterContinuationEngine.dataInProgress.forceEndContinuation)
             tryConverging!(naturalParameterContinuationEngine)
