@@ -179,7 +179,7 @@ Return updated natural parameter continuation engine object
 """
 function tryConverging!(naturalParameterContinuationEngine::NaturalParameterContinuationEngine)
     updateStepSize!(naturalParameterContinuationEngine.stepSizeGenerator, naturalParameterContinuationEngine.dataInProgress)
-    naturalParameterContinuationEngine && println("Current step size: $(naturalParameterContinuationEngine.dataInProgress.currentStepSize)")
+    naturalParameterContinuationEngine.printProgress && println("Current step size: $(naturalParameterContinuationEngine.dataInProgress.currentStepSize)")
     naturalParameterContinuationEngine.dataInProgress.nextGuess = deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution)
     setFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.nextGuess, getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.previousSolution)+naturalParameterContinuationEngine.dataInProgress.fullStep.*naturalParameterContinuationEngine.dataInProgress.currentStepSize)
     constrainNextGuess!(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress)
