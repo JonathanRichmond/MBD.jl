@@ -124,7 +124,6 @@ function doContinuation!(naturalParameterContinuationEngine::NaturalParameterCon
     while (!endContinuation(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress) && !naturalParameterContinuationEngine.dataInProgress.forceEndContinuation)
         naturalParameterContinuationEngine.printProgress && println("\nConverging family member $(naturalParameterContinuationEngine.dataInProgress.stepCount+1)...")
         naturalParameterContinuationEngine.dataInProgress.fullStep = computeFullStep(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress)
-        println(naturalParameterContinuationEngine.dataInProgress.fullStep)
         tryConverging!(naturalParameterContinuationEngine)
         while (!naturalParameterContinuationEngine.dataInProgress.converging && !naturalParameterContinuationEngine.dataInProgress.forceEndContinuation)
             tryConverging!(naturalParameterContinuationEngine)
@@ -183,6 +182,7 @@ function tryConverging!(naturalParameterContinuationEngine::NaturalParameterCont
     naturalParameterContinuationEngine.printProgress && println("Current step size: $(naturalParameterContinuationEngine.dataInProgress.currentStepSize)")
     naturalParameterContinuationEngine.dataInProgress.nextGuess = deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution)
     setFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.nextGuess, getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.previousSolution)+naturalParameterContinuationEngine.dataInProgress.fullStep.*naturalParameterContinuationEngine.dataInProgress.currentStepSize)
+    println(naturalParameterContinuationEngine.dataInProgress.nextGuess.freeVariableVector)
     constrainNextGuess!(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress)
     try
         twoPreviousConvergedSolution::MBD.MultipleShooterProblem = naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution
