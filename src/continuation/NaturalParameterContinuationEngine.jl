@@ -79,7 +79,7 @@ function constrainNextGuess!(naturalParameterContinuationEngine::NaturalParamete
                 variableMask::Vector{Bool} = constraint.variable.freeVariableMask
                 freeCounter::Int64 = 0
                 continuationIndex::Int64 = 0
-                for i::Int64 in 1:length(variableVector)
+                for i::Int64 in 1:length(variableMask)
                     (variableMask[i] == true) && (freeCounter += 1)
                     (freeCounter == naturalParameterContinuationEngine.stepSizeGenerator.elementIndex) && (continuationIndex == i)
                 end
@@ -189,7 +189,6 @@ function tryConverging!(naturalParameterContinuationEngine::NaturalParameterCont
     naturalParameterContinuationEngine.printProgress && println("Current step size: $(naturalParameterContinuationEngine.dataInProgress.currentStepSize)")
     naturalParameterContinuationEngine.dataInProgress.nextGuess = deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution)
     setFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.nextGuess, getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.previousSolution)+naturalParameterContinuationEngine.dataInProgress.fullStep.*naturalParameterContinuationEngine.dataInProgress.currentStepSize)
-    println(naturalParameterContinuationEngine.dataInProgress.nextGuess.freeVariableVector)
     constrainNextGuess!(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress)
     try
         twoPreviousConvergedSolution::MBD.MultipleShooterProblem = naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution
