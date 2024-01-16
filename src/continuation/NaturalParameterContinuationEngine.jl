@@ -76,8 +76,15 @@ function constrainNextGuess!(naturalParameterContinuationEngine::NaturalParamete
     for constraint::MBD.AbstractConstraint in keys(data.nextGuess.constraintIndexMap)
         if typeof(constraint) == MBD.StateConstraint
             if constraint.variable.name == naturalParameterContinuationEngine.stepSizeGenerator.elementName
+                variableMask::Vector{Bool} = constraint.variable.freeVariableMask
+                freeCounter::Int64 = 0
+                continuationIndex::Int64 = 0
+                for i::Int64 in 1:length(variableVector)
+                    (variableMask[i] == true) && (freeCounter += 1)
+                    (freeCounter == naturalParameterContinuationEngine.stepSizeGenerator.elementIndex) && (continuationIndex == i)
+                end
                 for i::Int64 in 1:length(constraint.constrainedIndices)
-                    (constraint.constrainedIndices[i] == naturalParameterContinuationEngine.stepSizeGenerator.elementIndex) && (constraint.values[i] += data.currentStepSize)
+                    (constraint.constrainedIndices[i] == continuationIndex) && (constraint.values[i] += data.currentStepSize)
                 end
             end
         end
