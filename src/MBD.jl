@@ -555,7 +555,7 @@ struct ConstraintVectorL2NormConvergenceCheck <: AbstractConvergenceCheck
     maxVectorNorm::Float64                                  # Maximum allowable vector norm
 
     function ConstraintVectorL2NormConvergenceCheck()
-        return new(1E-11)
+        return new(1E-10)
     end
 end
 
