@@ -81,7 +81,7 @@ function constrainNextGuess!(naturalParameterContinuationEngine::NaturalParamete
                 continuationIndex::Int64 = 0
                 for i::Int64 in 1:length(variableMask)
                     (variableMask[i] == true) && (freeCounter += 1)
-                    (freeCounter == naturalParameterContinuationEngine.stepSizeGenerator.elementIndex) && (continuationIndex == i)
+                    (freeCounter == naturalParameterContinuationEngine.stepSizeGenerator.elementIndex) && (continuationIndex = i)
                 end
                 for i::Int64 in 1:length(constraint.constrainedIndices)
                     (constraint.constrainedIndices[i] == continuationIndex) && (constraint.values[i] += data.currentStepSize)
