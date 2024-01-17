@@ -547,15 +547,18 @@ end
 Base.:(==)(jacobiConstraint1::JacobiConstraint, jacobiConstraint2::JacobiConstraint) = ((jacobiConstraint1.dynamicsModel == jacobiConstraint2.dynamicsModel) && (jacobiConstraint1.state == jacobiConstraint2.state) && (jacobiConstraint1.epoch == jacobiConstraint2.epoch) && (jacobiConstraint1.value == jacobiConstraint2.value))
 
 """
-    ConstraintVectorL2NormConvergenceCheck()
+    ConstraintVectorL2NormConvergenceCheck(tol)
 
 Constraint vector L2 norm convergence check object
+
+# Arguments
+- `tol::Float64`: Convergence tolerance (optional)
 """
 mutable struct ConstraintVectorL2NormConvergenceCheck <: AbstractConvergenceCheck
     maxVectorNorm::Float64                                  # Maximum allowable vector norm
 
-    function ConstraintVectorL2NormConvergenceCheck()
-        return new(1E-10)
+    function ConstraintVectorL2NormConvergenceCheck(tol::Float64 = 1E-10)
+        return new(tol)
     end
 end
 
@@ -582,9 +585,12 @@ struct LeastSquaresUpdateGenerator <: AbstractUpdateGenerator
 end
 
 """
-    MultipleShooter()
+    MultipleShooter(tol)
 
 Multiple shooter object
+
+# Arguments
+- `tol::Float64`: Convergence tolerance (optional)
 """
 mutable struct MultipleShooter <: AbstractNonlinearProblemSolver
     convergenceCheck::AbstractConvergenceCheck              # Convergence check object
@@ -594,8 +600,8 @@ mutable struct MultipleShooter <: AbstractNonlinearProblemSolver
     solutionInProgress::MultipleShooterProblem              # Multiple shooter problem being solved
     updateGenerators::Vector{AbstractUpdateGenerator}       # Update generators
 
-    function MultipleShooter()
-        return new(ConstraintVectorL2NormConvergenceCheck(), 25, false, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
+    function MultipleShooter(tol::Float64 = 1E-10)
+        return new(ConstraintVectorL2NormConvergenceCheck(tol), 25, false, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
     end
 end
 
@@ -717,7 +723,7 @@ mutable struct BoundingBoxJumpCheck <: AbstractContinuationJumpCheck
 end
 
 """
-    NaturalParameterContinuationEngine(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
+    NaturalParameterContinuationEngine(paramName, paramIndex, initialParamStepSize, maxParamStepSize; tol)
 
 Natural parameter continuation engine object
 
@@ -726,6 +732,7 @@ Natural parameter continuation engine object
 - `paramIndex::Int64`: Natural parameter index to step in
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
+- `tol::Float64`: Convergence tolerance (optional)
 """
 mutable struct NaturalParameterContinuationEngine <: AbstractContinuationEngine
     corrector::MultipleShooter                              # Multiple shooter corrector for family
@@ -736,19 +743,20 @@ mutable struct NaturalParameterContinuationEngine <: AbstractContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator   # Step size generator
     storeIntermediateMembers::Bool                          # Store intermediate family members?
 
-    function NaturalParameterContinuationEngine(paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64)
-        return new(MultipleShooter(), ContinuationData(), [], [], true, AdaptiveStepSizeByElementGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize), true)
+    function NaturalParameterContinuationEngine(paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+        return new(MultipleShooter(tol), ContinuationData(), [], [], true, AdaptiveStepSizeByElementGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize), true)
     end
 end
 
 """
-    JacobiConstantContinuationEngine(initialParamStepSize, maxParamStepSize)
+    JacobiConstantContinuationEngine(initialParamStepSize, maxParamStepSize; tol)
 
 Jacobi constant continuation engine object
 
 # Arguments
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
+- `tol::Float64`: Convergence tolerance (optional)
 """
 mutable struct JacobiConstantContinuationEngine <: AbstractContinuationEngine
     corrector::MultipleShooter                              # Multiple shooter corrector for family
@@ -759,8 +767,8 @@ mutable struct JacobiConstantContinuationEngine <: AbstractContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator   # Step size generator
     storeIntermediateMembers::Bool                          # Store intermediate family members?
 
-    function JacobiConstantContinuationEngine(initialParamStepSize::Float64, maxParamStepSize::Float64)
-        return new(MultipleShooter(), ContinuationData(), [], [], true, AdaptiveStepSizeByElementGenerator("Jacobi Constant", 1, initialParamStepSize, maxParamStepSize), true)
+    function JacobiConstantContinuationEngine(initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+        return new(MultipleShooter(tol), ContinuationData(), [], [], true, AdaptiveStepSizeByElementGenerator("Jacobi Constant", 1, initialParamStepSize, maxParamStepSize), true)
     end
 end
 

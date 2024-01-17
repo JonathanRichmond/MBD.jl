@@ -210,7 +210,7 @@ Return linear variation about equilibrium point
 - `equilibriumPoint::Int64`: Equilibrium point identifier
 - `equilibriumPos::Vector{Float64}`: Equilibrium point position [ndim]
 - `variation::Vector{Float64}`: Variation from equilibrium point [ndim]
-- `period::String`: Equilateral equilibrium point linearization period
+- `period::String`: Equilateral equilibrium point linearization period (optional)
 """
 function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPoint::Int64, equilibriumPos::Vector{Float64}, variation::Vector{Float64}, period::String = "Short")
     mu::Float64 = getMassRatio(dynamicsModel.systemData)
