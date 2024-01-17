@@ -287,7 +287,7 @@ end
 """
     getResonantOrbit(dynamicsModel, secondaryData, p, q, e)
 
-Return two-body resonant orbit initial conditions
+Return two-body resonant orbit and period
 
 # Arguments
 - `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
@@ -300,8 +300,13 @@ function getResonantOrbit(dynamicsModel::TBPDynamicsModel, secondaryData::MBD.Bo
     a_p::Float64 = (q^2*secondaryData.orbitRadius^3/(p^2))^(1/3)
     r_p_p::Float64 = a_p*(1-e)
     v::Float64 = sqrt(2*dynamicsModel.systemData.gravParam*(1/r_p_p-1/(2*a_p)))
+    q0Dim::Vector{Float64} = [r_p_p, 0, 0, 0, v, 0]
+    resonantOrbit = MBD.TBPTrajectory(q0Dim, dynamicsModel)
+    resonantOrbit.a = a_p
+    resonantOrbit.e = e
+    P::Float64 = getPeriod(dynamicsModel, resonantOrbit)
 
-    return [r_p_p, 0, 0, 0, v, 0]
+    return (resonantOrbit, P)
 end
 
 """
