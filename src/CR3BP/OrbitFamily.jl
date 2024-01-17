@@ -199,9 +199,9 @@ function getTangentBifurcationOrbit(orbitFamily::CR3BPOrbitFamily, l::Int64, h::
         currentError = abs(paramValueBisect)
         println("Current parameter value = $paramValue")
         (sign(paramValueBisect) == sign(paramValuel)) ? (orbitl = orbitBisect) : (orbith = orbitBisect)
-        newInitialCondition::Vector{Float64} = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
-        newPeriod::Float64 = orbitl.period+0.5*(orbith.period-orbitl.period)
-        newJC::Float64 = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
+        newInitialCondition = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
+        newPeriod = orbitl.period+0.5*(orbith.period-orbitl.period)
+        newJC = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
         counter += 1
     end
     (currentError > 1E-9) ? println("Bisection failed to converge after 50 iterations") : (return orbitBisect)
