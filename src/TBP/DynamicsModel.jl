@@ -11,8 +11,8 @@ import MBD: TBPDynamicsModel
 export appendExtraInitialConditions, evaluateEquations, getCartesianState
 export getEquationsOfMotion, getEpochDependencies, getExcursion, getLambertArc
 export getOsculatingOrbitalElements, getParameterDependencies, getPeriod
-export getPrimaryPosition, getStateSize, getStateTransitionMatrix
-export isEpochIndependent, solveKeplersEquation
+export getPrimaryPosition, getResonantOrbit, getStateSize
+export getStateTransitionMatrix, isEpochIndependent, solveKeplersEquation
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -282,6 +282,26 @@ Return location of primary
 """
 function getPrimaryPosition(dynamicsModel::TBPDynamicsModel)
     return [0.0, 0.0, 0.0]
+end
+
+"""
+    getResonantOrbit(dynamicsModel, secondaryData, p, q, e)
+
+Return two-body resonant orbit initial conditions
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `secondaryData::BodyData`: Body data object
+- `p::Int64`: Spacecraft revolutions around primary
+- `q::Int64`: Secondary revolutions around primary
+- `e::Float64`: Eccentricity
+"""
+function getResonantOrbit(dynamicsModel::TBPDynamicsModel, secondaryData::MBD.BodyData, p::Int64, q::Int64, e::Float64)
+    a_p::Float64 = (q^2*secondaryData.orbitRadius^3/(p^2))^(1/3)
+    r_p_p::Float64 = a_p*(1-e)
+    v::Float64 = sqrt(2*dynamicsModel.systemData.gravParam*(1/r_p_p-1/(2*a_p)))
+
+    return [r_p_p, 0, 0, 0, v, 0]
 end
 
 """
