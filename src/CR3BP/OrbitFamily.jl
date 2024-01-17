@@ -74,7 +74,7 @@ function eigenSort!(orbitFamily::CR3BPOrbitFamily)
     alternateStabilityIndices::Vector{Vector{Complex{Float64}}} = Vector{Vector{Complex{Float64}}}(undef, length(orbitFamily.familyMembers))
     for i::Int64 in 1:length(sortedEigenvalues)
         stabilityIndices[i] = 0.5*[LinearAlgebra.norm(sortedEigenvalues[i][1])+1/LinearAlgebra.norm(sortedEigenvalues[i][1]), LinearAlgebra.norm(sortedEigenvalues[i][3])+1/LinearAlgebra.norm(sortedEigenvalues[i][3]), LinearAlgebra.norm(sortedEigenvalues[i][5])+1/LinearAlgebra.norm(sortedEigenvalues[i][5])]
-        alternateStabilityIndices[1] = 0.5*[sortedEigenvalues[i][1]+1/sortedEigenvalues[i][1], sortedEigenvalues[i][2]+1/sortedEigenvalues[i][2], sortedEigenvalues[i][3]+1/sortedEigenvalues[i][3]]
+        alternateStabilityIndices[i] = 0.5*[sortedEigenvalues[i][1]+1/sortedEigenvalues[i][1], sortedEigenvalues[i][2]+1/sortedEigenvalues[i][2], sortedEigenvalues[i][3]+1/sortedEigenvalues[i][3]]
     end
     orbitFamily.stabilityIndices = stabilityIndices
     orbitFamily.alternateIndices = alternateStabilityIndices
@@ -101,12 +101,12 @@ function exportData(orbitFamily::CR3BPOrbitFamily, filename::String)
     tau::Vector{Float64} = Vector{Float64}(undef, length(orbitFamily.familyMembers))
     alpha::Vector{Float64} = Vector{Float64}(undef, length(orbitFamily.familyMembers))
     beta::Vector{Float64} = Vector{Float64}(undef, length(orbitFamily.familyMembers))
-    eigenvalue1::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
-    eigenvalue2::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
-    eigenvalue3::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
-    eigenvalue4::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
-    eigenvalue5::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
-    eigenvalue6::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
+    lambda1::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
+    lambda2::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
+    lambda3::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
+    lambda4::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
+    lambda5::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
+    lambda6::Vector{Complex{Float64}} = Vector{Complex{Float64}}(undef, length(orbitFamily.familyMembers))
     stabilityIndex1::Vector{Float64} = Vector{Float64}(undef, length(orbitFamily.familyMembers))
     stabilityIndex2::Vector{Float64} = Vector{Float64}(undef, length(orbitFamily.familyMembers))
     stabilityIndex3::Vector{Float64} = Vector{Float64}(undef, length(orbitFamily.familyMembers))
@@ -126,12 +126,12 @@ function exportData(orbitFamily::CR3BPOrbitFamily, filename::String)
         tau[m] = orbitFamily.familyMembers[m].tau
         alpha[m] = orbitFamily.familyMembers[m].BrouckeStability[1]
         beta[m] = orbitFamily.familyMembers[m].BrouckeStability[2]
-        eigenvalue1[m] = orbitFamily.eigenvalues[m][1]
-        eigenvalue2[m] = orbitFamily.eigenvalues[m][2]
-        eigenvalue3[m] = orbitFamily.eigenvalues[m][3]
-        eigenvalue4[m] = orbitFamily.eigenvalues[m][4]
-        eigenvalue5[m] = orbitFamily.eigenvalues[m][5]
-        eigenvalue6[m] = orbitFamily.eigenvalues[m][6]
+        lambda1[m] = orbitFamily.eigenvalues[m][1]
+        lambda2[m] = orbitFamily.eigenvalues[m][2]
+        lambda3[m] = orbitFamily.eigenvalues[m][3]
+        lambda4[m] = orbitFamily.eigenvalues[m][4]
+        lambda5[m] = orbitFamily.eigenvalues[m][5]
+        lambda6[m] = orbitFamily.eigenvalues[m][6]
         stabilityIndex1[m] = orbitFamily.stabilityIndices[m][1]
         stabilityIndex2[m] = orbitFamily.stabilityIndices[m][2]
         stabilityIndex3[m] = orbitFamily.stabilityIndices[m][3]
@@ -139,6 +139,6 @@ function exportData(orbitFamily::CR3BPOrbitFamily, filename::String)
         alternateStabilityIndex2[m] = orbitFamily.alternateIndices[m][2]
         alternateStabilityIndex3[m] = orbitFamily.alternateIndices[m][3]
     end
-    familyData::DataFrames.DataFrame = DataFrames.DataFrame("x" => x, "y" => y, "z" => z, "xdot" => xdot, "ydot" => ydot, "zdot" => zdot, "JC" => JC, "Period" => p, "Stability Index" => nu, "Time Constant" => tau, "Broucke Stability Parameter 1" => alpha, "Broucke Stability Parameter 2" => beta, "Eigenvalue 1" => eigenvalue1, "Eigenvalue 2" => eigenvalue2, "Eigenvalue 3" => eigenvalue3, "Eigenvalue 4" => eigenvalue4, "Eigenvalue 5" => eigenvalue5, "Eigenvalue 6" => eigenvalue6, "Stability Index 1" => stabilityIndex1, "Stability Index 2" => stabilityIndex2, "Stability Index 3" => stabilityIndex3, "Alternate Stability Index 1" => alternateStabilityIndex1, "Alternate Stability Index 2" => alternateStabilityIndex2, "Alternate Stability Index 3" => alternateStabilityIndex3)
+    familyData::DataFrames.DataFrame = DataFrames.DataFrame("x" => x, "y" => y, "z" => z, "xdot" => xdot, "ydot" => ydot, "zdot" => zdot, "JC" => JC, "Period" => p, "Stability Index" => nu, "Time Constant" => tau, "Broucke Stability Parameter 1" => alpha, "Broucke Stability Parameter 2" => beta, "Eigenvalue 1" => lambda1, "Eigenvalue 2" => lambda2, "Eigenvalue 3" => lambda3, "Eigenvalue 4" => lambda4, "Eigenvalue 5" => lambda5, "Eigenvalue 6" => lambda6, "Stability Index 1" => stabilityIndex1, "Stability Index 2" => stabilityIndex2, "Stability Index 3" => stabilityIndex3, "Alternate Stability Index 1" => alternateStabilityIndex1, "Alternate Stability Index 2" => alternateStabilityIndex2, "Alternate Stability Index 3" => alternateStabilityIndex3)
     CSV.write(filename, familyData)
 end
