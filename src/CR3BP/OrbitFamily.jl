@@ -70,4 +70,12 @@ function eigenSort!(orbitFamily::CR3BPOrbitFamily)
     end
     orbitFamily.eigenvalues = sortedEigenvalues
     orbitFamily.eigenvectors = sortedEigenvectors
+    stabilityIndices::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(orbitFamily.familyMembers))
+    alternateStabilityIndices::Vector{Vector{Complex{Float64}}} = Vector{Vector{Complex{Float64}}}(undef, length(orbitFamily.familyMembers))
+    for i::Int64 in 1:length(sortedEigenvalues)
+        stabilityIndices[i] = 0.5*[LinearAlgebra.norm(sortedEigenvalues[i][1])+1/LinearAlgebra.norm(sortedEigenvalues[i][1]), LinearAlgebra.norm(sortedEigenvalues[i][3])+1/LinearAlgebra.norm(sortedEigenvalues[i][3]), LinearAlgebra.norm(sortedEigenvalues[i][5])+1/LinearAlgebra.norm(sortedEigenvalues[i][5])]
+        alternateStabilityIndices[1] = 0.5*[sortedEigenvalues[i][1]+1/sortedEigenvalues[i][1], sortedEigenvalues[i][2]+1/sortedEigenvalues[i][2], sortedEigenvalues[i][3]+1/sortedEigenvalues[i][3]]
+    end
+    orbitFamily.stabilityIndices = stabilityIndices
+    orbitFamily.alternateIndices = alternateStabilityIndices
 end

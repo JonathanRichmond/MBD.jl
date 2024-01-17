@@ -808,12 +808,14 @@ CR3BP orbit family object
 - `familyMembers::Vector{CR3BPPeriodicOrbit}`: Family members
 """
 mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
+    alternateIndices::Vector{Vector{Complex{Float64}}}      # Alternate stability indices
     eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
     eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
     familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
+    stabilityIndices::Vector{Vector{Float64}}               # Stability indices
 
     function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
-        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers)
+        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers, Vector{Vector{Float64}}(undef, length(familyMembers)))
     end
 end
 
