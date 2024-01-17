@@ -551,7 +551,7 @@ Base.:(==)(jacobiConstraint1::JacobiConstraint, jacobiConstraint2::JacobiConstra
 
 Constraint vector L2 norm convergence check object
 """
-struct ConstraintVectorL2NormConvergenceCheck <: AbstractConvergenceCheck
+mutable struct ConstraintVectorL2NormConvergenceCheck <: AbstractConvergenceCheck
     maxVectorNorm::Float64                                  # Maximum allowable vector norm
 
     function ConstraintVectorL2NormConvergenceCheck()
