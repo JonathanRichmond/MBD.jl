@@ -799,6 +799,27 @@ mutable struct CR3BPPeriodicOrbit <: AbstractTrajectoryStructure
 end
 
 """
+    CR3BPOrbitFamily(familyMembers)
+
+CR3BP orbit family object
+
+# Arguments
+- `familyMembers::Vector{CR3BPPeriodicOrbit}`: Family members
+"""
+mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
+    alternateIndices::Vector{Vector{Complex{Float64}}}      # Alternate stability indices
+    bifurcations::Vector{AbstractBifurcation}               # Bifurcations
+    eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
+    eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
+    familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
+    stabilityIndices::Vector{Vector{Float64}}               # Stability indices
+
+    function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
+        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), [], Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers, Vector{Vector{Float64}}(undef, length(familyMembers)))
+    end
+end
+
+"""
     CR3BPBifurcation(family, orbit, type, bifurcation)
 
 CR3BP bifurcation object
@@ -818,27 +839,6 @@ mutable struct CR3BPBifurcation <: AbstractBifurcation
     
     function CR3BPBifurcation(family::CR3BPOrbitFamily, orbit::CR3BPPeriodicOrbit, type::BifurcationType, bifurcation::Int64)
         return new(family, bifurcation, orbit, Vector{Float64}(undef, 6), type)
-    end
-end
-
-"""
-    CR3BPOrbitFamily(familyMembers)
-
-CR3BP orbit family object
-
-# Arguments
-- `familyMembers::Vector{CR3BPPeriodicOrbit}`: Family members
-"""
-mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
-    alternateIndices::Vector{Vector{Complex{Float64}}}      # Alternate stability indices
-    bifurcations::Vector{CR3BPBifurcation}                  # Bifurcations
-    eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
-    eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
-    familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
-    stabilityIndices::Vector{Vector{Float64}}               # Stability indices
-
-    function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
-        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), [], Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers, Vector{Vector{Float64}}(undef, length(familyMembers)))
     end
 end
 
