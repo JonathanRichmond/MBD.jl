@@ -8,8 +8,7 @@ U: 7/29/23
 module MBD
 
 import Base: ==
-import Combinatorics, DifferentialEquations, LightXML
-import LinearAlgebra, SPICE
+import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
@@ -800,6 +799,29 @@ mutable struct CR3BPPeriodicOrbit <: AbstractTrajectoryStructure
 end
 
 """
+    CR3BPBifurcation(family, orbit, type, bifurcation)
+
+CR3BP bifurcation object
+
+# Arguments
+- `family::CR3BPOrbitFamily`: CR3BP orbit family object
+- `orbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `type::BifurcationType`: Bifurcation type
+- `bifurcation::Int64`: Bifurcation identifier
+"""
+mutable struct CR3BPBifurcation <: AbstractBifurcation
+    family::CR3BPOrbitFamily                                # Original orbit family
+    number::Int64                                           # Bifurcation identifier
+    orbit::CR3BPPeriodicOrbit                               # Bifurcating orbit
+    step::Vector{Float64}                                   # Step into new family
+    type::BifurcationType                                   # Bifurcation type
+    
+    function CR3BPBifurcation(family::CR3BPOrbitFamily, orbit::CR3BPPeriodicOrbit, type::BifurcationType, bifurcation::Int64)
+        return new(family, bifurcation, orbit, Vector{Float64}(undef, 6), type)
+    end
+end
+
+"""
     CR3BPOrbitFamily(familyMembers)
 
 CR3BP orbit family object
@@ -809,13 +831,14 @@ CR3BP orbit family object
 """
 mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
     alternateIndices::Vector{Vector{Complex{Float64}}}      # Alternate stability indices
+    bifurcations::Vector{CR3BPBifurcation}                  # Bifurcations
     eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
     eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
     familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
     stabilityIndices::Vector{Vector{Float64}}               # Stability indices
 
     function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
-        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers, Vector{Vector{Float64}}(undef, length(familyMembers)))
+        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), [], Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers, Vector{Vector{Float64}}(undef, length(familyMembers)))
     end
 end
 
@@ -836,26 +859,6 @@ mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
 
     function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit)
         return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, real.(initialCondition)), periodicOrbit, 0.0)
-    end
-end
-
-"""
-    CR3BPBifurcation(family, type)
-
-CR3BP bifurcation object
-
-# Arguments
-- `family::CR3BPOrbitFamily`: Orbit family
-- `type::BifurcationType`: Bifurcation type
-"""
-mutable struct CR3BPBifurcation <: AbstractBifurcation
-    family::CR3BPOrbitFamily                                # Original orbit family
-    orbit::CR3BPPeriodicOrbit                               # Bifurcating orbit
-    step::Vector{Float64}                                   # Step into new family
-    type::BifurcationType                                   # Bifurcation type
-    
-    function CR3BPBifurcation(family::CR3BPOrbitFamily, type::BifurcationType)
-        return new(family, family.familyMembers[1], Vector{Float64}(undef, 6), type)
     end
 end
 

@@ -9,7 +9,32 @@ U: 9/10/23
 import Combinatorics, CSV, DataFrames, LinearAlgebra
 import MBD: CR3BPOrbitFamily
 
-export eigenSort!, exportData
+export detectBifurcations!, eigenSort!, exportData, getTangentBifurcationOrbit
+
+"""
+    detectBifurcations!(orbitFamily)
+
+Return  orbit family ovject with updated bifurcations
+
+# Arguments
+- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+"""
+function detectBifurcations!(orbitFamily::CR3BPOrbitFamily)
+    alpha1::Float64 = orbitFamily.familyMembers[1].BrouckeStability[1]
+    beta1::Float64 = orbitFamily.familyMembers[1].BrouckeStability[2]
+    tangentSign::Int64 = sign(2*alpha1+beta1+2)
+    tangentCount::Int64 = 0
+    for b::Int64 in 2:length(orbitFamily.familyMembers)
+        alpha::Float64 = orbitFamily.familyMembers[b].BrouckeStability[1]
+        beta::Float64 = orbitFamily.familyMembers[b].BrouckeStability[2]
+        if sign(2*alpha+beta+2) != tangentSign
+            tangentSign *= -1
+            tangentCount += 1
+            bifurcationOrbit::MBD.CR3BPPeriodicOrbit = getTangentBifurcationOrbit(orbitFamily, b-1, b)
+            push!(orbitFamily.bifurcations, MBD.CR3BPBifurcation(orbitFamily, bifurcationOrbit, MBD.TANGENT, tangentCount))
+        end
+    end
+end
 
 """
     eigenSort!(orbitFamily)
@@ -83,6 +108,8 @@ end
 """
     exportData(orbitFamily, filename)
 
+Export family data to .csv file
+
 # Arguments
 - `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
 - `filename::String`: Export file name
@@ -141,4 +168,41 @@ function exportData(orbitFamily::CR3BPOrbitFamily, filename::String)
     end
     familyData::DataFrames.DataFrame = DataFrames.DataFrame("x" => x, "y" => y, "z" => z, "xdot" => xdot, "ydot" => ydot, "zdot" => zdot, "JC" => JC, "Period" => p, "Stability Index" => nu, "Time Constant" => tau, "Broucke Stability Parameter 1" => alpha, "Broucke Stability Parameter 2" => beta, "Eigenvalue 1" => lambda1, "Eigenvalue 2" => lambda2, "Eigenvalue 3" => lambda3, "Eigenvalue 4" => lambda4, "Eigenvalue 5" => lambda5, "Eigenvalue 6" => lambda6, "Stability Index 1" => stabilityIndex1, "Stability Index 2" => stabilityIndex2, "Stability Index 3" => stabilityIndex3, "Alternate Stability Index 1" => alternateStabilityIndex1, "Alternate Stability Index 2" => alternateStabilityIndex2, "Alternate Stability Index 3" => alternateStabilityIndex3)
     CSV.write(filename, familyData)
+end
+
+"""
+    getTangentBifurcationOrbit(orbitFamily, l, h)
+
+Return tangent bifurcation orbit
+
+# Arguments
+- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+- `l::Int64`: Low orbit identifier
+- `h::Int64`: High orbit identifier
+"""
+function getTangentBifurcationOrbit(orbitFamily::CR3BPOrbitFamily, l::Int64, h::Int64)
+    orbitl::MBD.CR3BPPeriodicOrbit = orbitFamily.familyMembers[l]
+    orbith::MBD.CR3BPPeriodicOrbit = orbitFamily.familyMembers[h]
+    newInitialCondition::Vector{Float64} = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
+    newPeriod::Float64 = orbitl.period+0.5*(orbith.period-orbitl.period)
+    newJC::Float64 = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
+    currentError::Float64 = abs(2*orbitl.BrouckeStability[1]+orbitl.BrouckeStability[2]+2)
+    counter::Int64 = 0
+    while (currentError > 1E-9) && (counter < 50)
+        solutionBisect::MBD.MultipleShooterProblem = correct(orbitl.targeter, newInitialCondition, [0, newPeriod], newJC, 1E-9)
+        orbitBisect = MBD.CR3BPPeriodicOrbit(solutionBisect, orbitl.targeter)
+        getProperties!(orbitl.targeter, orbitBisect)
+        getMonodromy!(orbitl.targeter, orbitBisect)
+        getStability!(orbitBisect)
+        paramValuel::Float64 = 2*orbitl.BrouckeStability[1]+orbitl.BrouckeStability[2]+2
+        paramValueBisect::Float64 = 2*orbitBisect.BrouckeStability[1]+orbitBisect.BrouckeStability[2]+2
+        currentError = abs(paramValueBisect)
+        println("Current parameter value = $paramValue")
+        (sign(paramValueBisect) == sign(paramValuel)) ? (orbitl = orbitBisect) : (orbith = orbitBisect)
+        newInitialCondition::Vector{Float64} = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
+        newPeriod::Float64 = orbitl.period+0.5*(orbith.period-orbitl.period)
+        newJC::Float64 = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
+        counter += 1
+    end
+    (currentError > 1E-9) ? println("Bisection failed to converge after 50 iterations") : (return orbitBisect)
 end
