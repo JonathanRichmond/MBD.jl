@@ -820,13 +820,14 @@ mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
 end
 
 """
-    CR3BPBifurcation(family, orbit, type, bifurcation)
+    CR3BPBifurcation(family, orbit, index, type, bifurcation)
 
 CR3BP bifurcation object
 
 # Arguments
 - `family::CR3BPOrbitFamily`: CR3BP orbit family object
 - `orbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `index::Int64`: Orbit index
 - `type::BifurcationType`: Bifurcation type
 - `bifurcation::Int64`: Bifurcation identifier
 """
@@ -834,11 +835,13 @@ mutable struct CR3BPBifurcation <: AbstractBifurcation
     family::CR3BPOrbitFamily                                # Original orbit family
     number::Int64                                           # Bifurcation identifier
     orbit::CR3BPPeriodicOrbit                               # Bifurcating orbit
+    sortedEigenvalues::Vector{Complex{Float64}}             # Family-sorted eigenvalues
+    sortedEigenvectors::Matrix{Complex{Float64}}            # Family-sorted eigenvectors
     step::Vector{Float64}                                   # Step into new family
     type::BifurcationType                                   # Bifurcation type
     
-    function CR3BPBifurcation(family::CR3BPOrbitFamily, orbit::CR3BPPeriodicOrbit, type::BifurcationType, bifurcation::Int64)
-        return new(family, bifurcation, orbit, Vector{Float64}(undef, 6), type)
+    function CR3BPBifurcation(family::CR3BPOrbitFamily, orbit::CR3BPPeriodicOrbit, index::Int64, type::BifurcationType, bifurcation::Int64)
+        return new(family, bifurcation, orbit, family.eigenvalues[index], orbit, family.eigenvectors[index], Vector{Float64}(undef, 6), type)
     end
 end
 
