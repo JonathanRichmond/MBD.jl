@@ -841,7 +841,7 @@ mutable struct CR3BPBifurcation <: AbstractBifurcation
     type::BifurcationType                                   # Bifurcation type
     
     function CR3BPBifurcation(family::CR3BPOrbitFamily, orbit::CR3BPPeriodicOrbit, index::Int64, type::BifurcationType, bifurcation::Int64)
-        return new(family, bifurcation, orbit, family.eigenvalues[index], orbit, family.eigenvectors[index], Vector{Float64}(undef, 6), type)
+        return new(family, bifurcation, orbit, family.eigenvalues[index], family.eigenvectors[index], Vector{Float64}(undef, 6), type)
     end
 end
 
