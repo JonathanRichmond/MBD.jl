@@ -10,7 +10,7 @@ import MBD: CR3BPBifurcation
 export getTangentBifurcationStep!
 
 """
-    getTangentBifurcationStep(bifurcation)
+    getTangentBifurcationStep!(bifurcation)
 
 Return step in tangent bifurcation direction
 
