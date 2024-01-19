@@ -21,7 +21,7 @@ function getTangentBifurcationStep!(bifurcation::CR3BPBifurcation)
     stepDirection::Vector{Complex{Float64}} = bifurcation.sortedEigenvectors[:,3]
     step::Vector{Float64} = Vector{Float64}(undef, 6)
     for i::Int64 = 1:length(stepDirection)
-        (real(stepDirection[i]) >= 1E-4) ? (step[i] = real(stepDirection[i])) : (step[i] = 0.0)
+        (abs(real(stepDirection[i])) >= 1E-4) ? (step[i] = real(stepDirection[i])) : (step[i] = 0.0)
     end
     bifurcation.step = step
 end
