@@ -378,7 +378,7 @@ function primaryInertial2Rotating(dynamicsModel::TBPDynamicsModel, secondaryData
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         C::Matrix{Float64} = [cos(t[i]) -sin(t[i]) 0; sin(t[i]) cos(t[i]) 0; 0 0 1]
-        Cdot::Matrix{Float64} = [-sin(t[i]) -cos(t[i]) 0; cos(t[i]) -sin(t[i]) 0; 0 0 0]
+        Cdot::Matrix{Float64} = (2*pi/T)*[-sin(t[i]) -cos(t[i]) 0; cos(t[i]) -sin(t[i]) 0; 0 0 0]
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
         states[i] = N\states_primaryInertial[i]
     end
