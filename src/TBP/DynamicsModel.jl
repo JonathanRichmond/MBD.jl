@@ -12,7 +12,8 @@ export appendExtraInitialConditions, evaluateEquations, getCartesianState
 export getEquationsOfMotion, getEpochDependencies, getExcursion, getLambertArc
 export getOsculatingOrbitalElements, getParameterDependencies, getPeriod
 export getPrimaryPosition, getResonantOrbit, getStateSize
-export getStateTransitionMatrix, isEpochIndependent, solveKeplersEquation
+export getStateTransitionMatrix, isEpochIndependent, primaryInertial2Rotating
+export solveKeplersEquation
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -357,6 +358,32 @@ Return true if dynamics model is epoch independent
 """
 function isEpochIndependent(dynamicsModel::TBPDynamicsModel)
     return true
+end
+
+"""
+    primaryInertial2Rotating(dynamicsModel, secondaryData, states_inertial, times)
+
+Return rotating frame states
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `secondaryData::BodyData`: Body data object
+- `states_primaryInertial::Vector{Vector{Float64}}`: Primary-centered inertial states [dim]
+- `times::Vector{Float64}`: Epochs [dim]
+"""
+function primaryInertial2Rotating(dynamicsModel::TBPDynamicsModel, secondaryData::MBD.BodyData, states_primaryInertial::Vector{Vector{Float64}}, times::Vector{Float64})
+    (length(states_primaryInertial) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
+    T::Float64 = 2*pi*secondaryData.orbitRadius^(3/2)/sqrt(dynamicsModel.systemData.gravParam)
+    t::Vector{Float64} = 2*pi*times./T
+    states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
+    for i in 1:length(times)
+        C::Matrix{Float64} = [cos(t[i]) -sin(t[i]) 0; sin(t[i]) cos(t[i]) 0; 0 0 1]
+        Cdot::Matrix{Float64} = [-sin(t[i]) -cos(t[i]) 0; cos(t[i]) -sin(t[i]) 0; 0 0 0]
+        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
+        states[i] = N\states_primaryInertial[i]
+    end
+
+    return states
 end
 
 """
