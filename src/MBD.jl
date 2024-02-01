@@ -29,11 +29,6 @@ Enumerated type for integrators
 @enum IntegratorType AB5 ABM54 BS5 DP5 DP8
 
 """
-Abstract type for bifurcations
-"""
-abstract type AbstractBifurcation end
-
-"""
 Abstract type for constraints
 """
 abstract type AbstractConstraint end
@@ -820,32 +815,6 @@ mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
 end
 
 """
-    CR3BPBifurcation(family, orbit, index, type, bifurcation)
-
-CR3BP bifurcation object
-
-# Arguments
-- `family::CR3BPOrbitFamily`: CR3BP orbit family object
-- `orbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
-- `index::Int64`: Orbit index
-- `type::BifurcationType`: Bifurcation type
-- `bifurcation::Int64`: Bifurcation identifier
-"""
-mutable struct CR3BPBifurcation <: AbstractBifurcation
-    family::CR3BPOrbitFamily                                # Original orbit family
-    number::Int64                                           # Bifurcation identifier
-    orbit::CR3BPPeriodicOrbit                               # Bifurcating orbit
-    sortedEigenvalues::Vector{Complex{Float64}}             # Family-sorted eigenvalues
-    sortedEigenvectors::Matrix{Complex{Float64}}            # Family-sorted eigenvectors
-    step::Vector{Float64}                                   # Step into new family
-    type::BifurcationType                                   # Bifurcation type
-    
-    function CR3BPBifurcation(family::CR3BPOrbitFamily, orbit::CR3BPPeriodicOrbit, index::Int64, type::BifurcationType, bifurcation::Int64)
-        return new(family, bifurcation, orbit, family.eigenvalues[index], family.eigenvectors[index], Vector{Float64}(undef, 6), type)
-    end
-end
-
-"""
     CR3BPManifoldArc(initialCondition, periodicOrbit)
 
 CR3BP manifold arc object
@@ -963,6 +932,34 @@ mutable struct TBPTrajectory <: AbstractTrajectoryStructure
     end
 end
 
+"""
+    Bifurcation(family, orbit, index, type, bifurcation)
+
+Bifurcation object
+
+# Arguments
+- `family::AbstractStructureFamily`: Structure family object
+- `orbit::AbstractTrajectoryStructure`: Trajectory structure object
+- `index::Int64`: Orbit index
+- `type::BifurcationType`: Bifurcation type
+- `bifurcation::Int64`: Bifurcation identifier
+"""
+mutable struct Bifurcation
+    family::AbstractStructureFamily                         # Original family
+    FVVStep::Vector{Float64}                                # Free variable vector step into new family
+    ICStep::Vector{Float64}                                 # Initial condition step into new family
+    number::Int64                                           # Bifurcation identifier
+    orbit::AbstractTrajectoryStructure                      # Bifurcating structure
+    sortedEigenvalues::Vector{Complex{Float64}}             # Family-sorted eigenvalues
+    sortedEigenvectors::Matrix{Complex{Float64}}            # Family-sorted eigenvectors
+    type::BifurcationType                                   # Bifurcation type
+    
+    function Bifurcation(family::AbstractStructureFamily, orbit::AbstractTrajectoryStructure, index::Int64, type::BifurcationType, bifurcation::Int64)
+        return new(family, Vector{Float64}(undef, getNumberFreeVariables(orbit.problem)), Vector{Float64}(undef, 6), bifurcation, orbit, family.eigenvalues[index], family.eigenvectors[index], type)
+    end
+end
+
+include("bifurcation/Bifurcation.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
@@ -980,7 +977,6 @@ include("corrections/Segment.jl")
 include("corrections/StateConstraint.jl")
 include("corrections/StateMatchConstraint.jl")
 include("corrections/Variable.jl")
-include("CR3BP/Bifurcation.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
 include("CR3BP/JacobiConstraint.jl")
