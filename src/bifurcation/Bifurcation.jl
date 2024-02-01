@@ -43,7 +43,7 @@ function getTangentBifurcationStepSVD!(bifurcation::Bifurcation)
     step::Vector{Float64} = Vector{Float64}(undef, getNumberFreeVariables(bifurcation.orbit.problem))
     (length(stepDirection) == length(step)) || throw(ErrorException("Step length, $(length(stepDirection)), must match number of free variables, $(length(step))"))
     for i::Int64 = 1:length(stepDirection)
-        (stepDirection[i] < 1E-6) && (stepDirection[i] = 0.0)
+        (abs(stepDirection[i]) < 1E-9) && (stepDirection[i] = 0.0)
     end
     bifurcation.FVVStep = step
 end
