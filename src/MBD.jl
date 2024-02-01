@@ -767,6 +767,33 @@ mutable struct JacobiConstantContinuationEngine <: AbstractContinuationEngine
 end
 
 """
+    Bifurcation(family, orbit, index, type, bifurcation)
+
+Bifurcation object
+
+# Arguments
+- `family::AbstractStructureFamily`: Structure family object
+- `orbit::AbstractTrajectoryStructure`: Trajectory structure object
+- `index::Int64`: Orbit index
+- `type::BifurcationType`: Bifurcation type
+- `bifurcation::Int64`: Bifurcation identifier
+"""
+mutable struct Bifurcation
+    family::AbstractStructureFamily                         # Original family
+    FVVStep::Vector{Float64}                                # Free variable vector step into new family
+    ICStep::Vector{Float64}                                 # Initial condition step into new family
+    number::Int64                                           # Bifurcation identifier
+    orbit::AbstractTrajectoryStructure                      # Bifurcating structure
+    sortedEigenvalues::Vector{Complex{Float64}}             # Family-sorted eigenvalues
+    sortedEigenvectors::Matrix{Complex{Float64}}            # Family-sorted eigenvectors
+    type::BifurcationType                                   # Bifurcation type
+    
+    function Bifurcation(family::AbstractStructureFamily, orbit::AbstractTrajectoryStructure, index::Int64, type::BifurcationType, bifurcation::Int64)
+        return new(family, Vector{Float64}(undef, getNumberFreeVariables(orbit.problem)), Vector{Float64}(undef, 6), bifurcation, orbit, family.eigenvalues[index], family.eigenvectors[index], type)
+    end
+end
+
+"""
     CR3BPPeriodicOrbit(multipleShooterProblem, targeter)
 
 CR3BP periodic orbit object
@@ -929,33 +956,6 @@ mutable struct TBPTrajectory <: AbstractTrajectoryStructure
 
     function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
         return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    end
-end
-
-"""
-    Bifurcation(family, orbit, index, type, bifurcation)
-
-Bifurcation object
-
-# Arguments
-- `family::AbstractStructureFamily`: Structure family object
-- `orbit::AbstractTrajectoryStructure`: Trajectory structure object
-- `index::Int64`: Orbit index
-- `type::BifurcationType`: Bifurcation type
-- `bifurcation::Int64`: Bifurcation identifier
-"""
-mutable struct Bifurcation
-    family::AbstractStructureFamily                         # Original family
-    FVVStep::Vector{Float64}                                # Free variable vector step into new family
-    ICStep::Vector{Float64}                                 # Initial condition step into new family
-    number::Int64                                           # Bifurcation identifier
-    orbit::AbstractTrajectoryStructure                      # Bifurcating structure
-    sortedEigenvalues::Vector{Complex{Float64}}             # Family-sorted eigenvalues
-    sortedEigenvectors::Matrix{Complex{Float64}}            # Family-sorted eigenvectors
-    type::BifurcationType                                   # Bifurcation type
-    
-    function Bifurcation(family::AbstractStructureFamily, orbit::AbstractTrajectoryStructure, index::Int64, type::BifurcationType, bifurcation::Int64)
-        return new(family, Vector{Float64}(undef, getNumberFreeVariables(orbit.problem)), Vector{Float64}(undef, 6), bifurcation, orbit, family.eigenvalues[index], family.eigenvectors[index], type)
     end
 end
 
