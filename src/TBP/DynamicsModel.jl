@@ -305,9 +305,8 @@ function getResonantOrbit(dynamicsModel::TBPDynamicsModel, secondaryData::MBD.Bo
     resonantOrbit = MBD.TBPTrajectory(q0Dim, dynamicsModel)
     resonantOrbit.a = a_p
     resonantOrbit.e = e
-    P::Float64 = getPeriod(dynamicsModel, resonantOrbit)
 
-    return (resonantOrbit, P)
+    return (resonantOrbit, getPeriod(dynamicsModel, resonantOrbit)*p)
 end
 
 """
