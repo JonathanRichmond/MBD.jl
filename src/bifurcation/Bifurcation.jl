@@ -39,11 +39,10 @@ function getTangentBifurcationStepSVD!(bifurcation::Bifurcation)
     DF::Matrix{Float64} = getJacobian(bifurcation.orbit.problem)
     (U::Matrix{Float64}, S::Vector{Float64}, V::Matrix{Float64}) = LinearAlgebra.svd(DF)
     (S[end] < 0.01) || throw(ErrorException("DF matrix has no null space"))
-    stepDirection::Vector{Float64} = V[:,end]
-    step::Vector{Float64} = Vector{Float64}(undef, getNumberFreeVariables(bifurcation.orbit.problem))
-    (length(stepDirection) == length(step)) || throw(ErrorException("Step length, $(length(stepDirection)), must match number of free variables, $(length(step))"))
-    for i::Int64 = 1:length(stepDirection)
-        (abs(stepDirection[i]) < 1E-9) && (stepDirection[i] = 0.0)
+    step::Vector{Float64} = V[:,end]
+    (length(step) == getNumberFreeVariables(bifurcation.orbit.problem)) || throw(ErrorException("Step length, $(length(step)), must match number of free variables, $(getNumberFreeVariables(bifurcation.orbit.problem))"))
+    for i::Int64 = 1:length(step)
+        (abs(step[i]) < 1E-9) && (step[i] = 0.0)
     end
     bifurcation.FVVStep = step
 end
