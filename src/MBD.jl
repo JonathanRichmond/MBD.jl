@@ -803,7 +803,7 @@ CR3BP orbit family object
 """
 mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
     alternateIndices::Vector{Vector{Complex{Float64}}}      # Alternate stability indices
-    bifurcations::Vector{AbstractBifurcation}               # Bifurcations
+    bifurcations::Vector{Bifurcation}                       # Bifurcations
     eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
     eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
     familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
