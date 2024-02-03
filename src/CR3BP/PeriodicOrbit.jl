@@ -104,11 +104,3 @@ function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
     periodicOrbit.nu = LinearAlgebra.norm(periodicOrbit.eigenvalues, Inf)
     periodicOrbit.tau = periodicOrbit.period/log(periodicOrbit.nu)
 end
-
-#function arclengthCondition(state, time, integrator)
-#    state[43]-integrator.p[2]
-#end
-
-#function terminateAffect!(integrator)
-#    DifferentialEquations.terminate!(integrator)
-#end
