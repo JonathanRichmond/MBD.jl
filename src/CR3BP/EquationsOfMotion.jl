@@ -65,7 +65,7 @@ Return Taylor time derivative of state vector
 - `params::Tuple{CR3BPEquationsOfMotion, Float64}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
-@taylorize function computeTaylorDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Float64}, t::Float64)
+function computeTaylorDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Float64}, t::Float64)
     local mu::Float64 = params[2]
     omm::Float64 = 1-mu
     r_13::Float64 = sqrt((((q[1]+mu)^2)+(q[2]^2))+(q[3]^2))
