@@ -9,7 +9,6 @@ module MBD
 
 import Base: ==
 import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE
-import TaylorIntegration
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
@@ -27,7 +26,7 @@ Enumerated type for EOMs
 """
 Enumerated type for integrators
 """
-@enum IntegratorType AB5 ABM54 BS5 DP5 DP8 TAYLOR
+@enum IntegratorType AB5 ABM54 BS5 DP5 DP8
 
 """
 Abstract type for constraints
@@ -68,11 +67,6 @@ abstract type AbstractEquationsOfMotion end
 Abstract type for events
 """
 abstract type AbstractEvent end
-
-"""
-Abstract type for integrator factories
-"""
-abstract type AbstractIntegratorFactory end
 
 """
 Abstract type for linear solution generators
@@ -267,24 +261,6 @@ end
 Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
 
 """
-    CR3BPTaylorEquationsOfMotion(dynamicsModel)
-
-CR3BP Taylor EOM object
-
-# Arguments
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-"""
-struct CR3BPTaylorEquationsOfMotion <: AbstractEquationsOfMotion
-    dim::Int64                                              # State vector dimension
-    equationType::EquationType                              # EOM type
-
-    function CR3BPTaylorEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel)
-        return new(getStateSize(dynamicsModel, equationType), STM)
-    end
-end
-Base.:(==)(TaylorEOMs1::CR3BPTaylorEquationsOfMotion, TaylorEOMs2::CR3BPTaylorEquationsOfMotion) = (TaylorEOMs1.equationType == TaylorEOMs2.equationType)
-
-"""
     IntegratorFactory()
 
 Integrator object
@@ -299,22 +275,6 @@ mutable struct IntegratorFactory <: AbstractIntegratorFactory
     end
 end
 Base.:(==)(integratorFactory1::IntegratorFactory, integratorFactory2::IntegratorFactory) = ((integratorFactory1.integratorType == integratorFactory2.integratorType) && (integratorFactory1.numSteps == integratorFactory2.numSteps))
-
-"""
-    TaylorIntegratorFactory()
-
-Taylor integrator object
-"""
-mutable struct TaylorIntegratorFactory <: AbstractIntegratorFactory
-    integrator                                              # Integrator object
-    integratorType::IntegratorType                          # Integrator type
-    order::Int64                                            # Taylor method order
-
-    function TaylorIntegratorFactory()
-        return new(TaylorIntegration.TaylorMethod(25), TAYLOR, 25)
-    end
-end
-Base.:(==)(TaylorFactory1::TaylorIntegratorFactory, TaylorFactory2::TaylorIntegratorFactory) = ((TaylorFactory1.integratorType == TaylorFactory2.integratorType) && (TaylorFactory1.order == TaylorFactory2.order))
 
 """
     Propagator()

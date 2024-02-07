@@ -13,8 +13,8 @@ export appendExtraInitialConditions, evaluateEquations, get2BApproximation
 export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
 export getExcursion, getJacobiConstant, getLinearVariation
 export getParameterDependencies, getPrimaryPosition, getPseudopotentialJacobian
-export getStateSize, getStateTransitionMatrix, getTaylorEquationsOfMotion
-export isEpochIndependent, primaryInertial2Rotating, rotating2PrimaryInertial
+export getStateSize, getStateTransitionMatrix, isEpochIndependent
+export primaryInertial2Rotating, rotating2PrimaryInertial
 export rotating2SunEclipJ2000
 
 """
@@ -352,18 +352,6 @@ function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0_STM::Vec
     end
 
     return STM
-end
-
-"""
-    getTaylorEquationsOfMotion(dynamicsModel)
-
-Return Taylor EOMs
-
-# Arguments
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-"""
-function getTaylorEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel)
-    return MBD.CR3BPTaylorEquationsOfMotion(dynamicsModel)
 end
 
 """

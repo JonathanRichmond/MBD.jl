@@ -8,7 +8,7 @@ U: 2/7/24
 
 import MBD: CR3BPEquationsOfMotion
 
-export computeDerivatives!, computeTaylorDerivatives!
+export computeDerivatives!
 
 """
     computeDerivatives!(qdot, q, params, t)
@@ -51,33 +51,4 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
     if params[1].equationType == MBD.ARCLENGTH
         qdot[43] = sqrt(q[4]^2+q[5]^2+q[6]^2)
     end
-end
-
-"""
-    computeTaylorDerivatives!(qdot, q, params, t)
-
-Return Taylor time derivative of state vector
-
-# Arguments
-- `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
-- `q::Vector{Float64}`: State vector [ndim]
-- `params::Tuple{CR3BPEquationsOfMotion, Float64}`: Propagation parameters
-- `t::Float64`: Time [ndim]
-"""
-function computeTaylorDerivatives!(qdot, q, params, t)
-    local μ = params[1]
-    local onemμ = 1 - μ
-    x1 = q[1]-μ
-    x1sq = x1^2
-    y = q[2]
-    ysq = y^2
-    r1_1p5 = (x1sq+ysq)^1.5
-    x2 = q[1]+onemμ
-    x2sq = x2^2
-    r2_1p5 = (x2sq+ysq)^1.5
-    qdot[1] = q[3] + q[2]
-    qdot[2] = q[4] - q[1]
-    qdot[3] = (-((onemμ*x1)/r1_1p5) - ((μ*x2)/r2_1p5)) + q[4]
-    qdot[4] = (-((onemμ*y )/r1_1p5) - ((μ*y )/r2_1p5)) - q[3]
-    return nothing
 end
