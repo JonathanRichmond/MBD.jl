@@ -363,7 +363,7 @@ Return Taylor EOMs
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 - `equationType::EquationType`: EOM type
 """
-function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
+function getTaylorEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
     return MBD.CR3BPTaylorEquationsOfMotion(equationType, dynamicsModel)
 end
 
