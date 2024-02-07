@@ -285,7 +285,7 @@ mutable struct Propagator
     absTol::Float64                                         # Absolute tolerance
     equationType::EquationType                              # EOM type
     events::Vector{AbstractEvent}                           # Integration events
-    integratorFactory::AbstractIntegratorFactory            # Integrator object
+    integratorFactory::IntegratorFactory                    # Integrator object
     maxEvaluationCount::Int64                               # Maximum number of equation evaluations
     maxStep::Int64                                          # Maximum step size
     minEventTime::Float64                                   # Minimum time between initial time and first event occurrence
