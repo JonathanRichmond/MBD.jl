@@ -6,7 +6,7 @@ C: 9/2/22
 U: 2/7/24
 """
 
-import DifferentialEquations
+import DifferentialEquations, OrdinaryDiffEq
 import MBD: Propagator
 
 export propagate, propagateWithEvent, TaylorPropagate
@@ -98,8 +98,8 @@ function TaylorPropagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vec
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeTaylorDerivatives!, q, (t0, tf), (EOMs, [getMassRatio(dynamicsModel.systemData)]))
-        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol)
+        problem::OrdinaryDiffEq.ODEProblem = DifferentialEquations.ODEProblem(computeTaylorDerivatives!, q, (t0, tf), (EOMs, [getMassRatio(dynamicsModel.systemData)]))
+        sol::OrdinaryDiffEq.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol)
         arcOut.states = sol.u
         arcOut.times = sol.t
     end
