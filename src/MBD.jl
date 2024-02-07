@@ -265,7 +265,7 @@ Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOM
 
 Integrator object
 """
-mutable struct IntegratorFactory <: AbstractIntegratorFactory
+mutable struct IntegratorFactory
     integrator                                              # Integrator object
     integratorType::IntegratorType                          # Integrator type
     numSteps::Int64                                         # Number of steps for multi-step method
