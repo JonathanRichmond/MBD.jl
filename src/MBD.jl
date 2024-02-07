@@ -9,7 +9,7 @@ module MBD
 
 import Base: ==
 import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE
-import TaylorIntegration
+using TaylorIntegration
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
