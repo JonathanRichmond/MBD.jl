@@ -3,12 +3,13 @@ Multi-Body Dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 7/29/23
+U: 2/7/24
 """
 module MBD
 
 import Base: ==
 import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE
+import TaylorIntegration
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
@@ -26,7 +27,7 @@ Enumerated type for EOMs
 """
 Enumerated type for integrators
 """
-@enum IntegratorType AB5 ABM54 BS5 DP5 DP8
+@enum IntegratorType AB5 ABM54 BS5 DP5 DP8 TAYLOR
 
 """
 Abstract type for constraints
@@ -67,6 +68,11 @@ abstract type AbstractEquationsOfMotion end
 Abstract type for events
 """
 abstract type AbstractEvent end
+
+"""
+Abstract type for integrator factories
+"""
+abstract type AbstractIntegratorFactory end
 
 """
 Abstract type for linear solution generators
@@ -261,11 +267,30 @@ end
 Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
 
 """
+    CR3BPTaylorEquationsOfMotion(equationType, dynamicsModel)
+
+CR3BP Taylor EOM object
+
+# Arguments
+- `equationType::EquationType`: EOM type
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+"""
+struct CR3BPTaylorEquationsOfMotion <: AbstractEquationsOfMotion
+    dim::Int64                                              # State vector dimension
+    equationType::EquationType                              # EOM type
+
+    function CR3BPTaylorEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
+        return new(getStateSize(dynamicsModel, equationType), equationType)
+    end
+end
+Base.:(==)(TaylorEOMs1::CR3BPTaylorEquationsOfMotion, TaylorEOMs2::CR3BPTaylorEquationsOfMotion) = (TaylorEOMs1.equationType == TaylorEOMs2.equationType)
+
+"""
     IntegratorFactory()
 
 Integrator object
 """
-mutable struct IntegratorFactory
+mutable struct IntegratorFactory <: AbstractIntegratorFactory
     integrator                                              # Integrator object
     integratorType::IntegratorType                          # Integrator type
     numSteps::Int64                                         # Number of steps for multi-step method
@@ -274,6 +299,23 @@ mutable struct IntegratorFactory
         return new(DifferentialEquations.DP8(), DP8, 3)
     end
 end
+Base.:(==)(integratorFactory1::IntegratorFactory, integratorFactory2::IntegratorFactory) = ((integratorFactory1.integratorType == integratorFactory2.integratorType) && (integratorFactory1.numSteps == integratorFactory2.numSteps))
+
+"""
+    TaylorIntegratorFactory()
+
+Taylor integrator object
+"""
+mutable struct TaylorIntegratorFactory <: AbstractIntegratorFactory
+    integrator                                              # Integrator object
+    integratorType::IntegratorType                          # Integrator type
+    order::Int64                                            # Taylor method order
+
+    function TaylorIntegratorFactory()
+        return new(TaylorIntegration.TaylorMethod(25), TAYLOR, 25)
+    end
+end
+Base.:(==)(TaylorFactory1::TaylorIntegratorFactory, TaylorFactory2::TaylorIntegratorFactory) = ((TaylorFactory1.integratorType == TaylorFactory2.integratorType) && (TaylorFactory1.order == TaylorFactory2.order))
 
 """
     Propagator()
@@ -284,7 +326,7 @@ mutable struct Propagator
     absTol::Float64                                         # Absolute tolerance
     equationType::EquationType                              # EOM type
     events::Vector{AbstractEvent}                           # Integration events
-    integratorFactory::IntegratorFactory                    # Integrator object
+    integratorFactory::AbstractIntegratorFactory            # Integrator object
     maxEvaluationCount::Int64                               # Maximum number of equation evaluations
     maxStep::Int64                                          # Maximum step size
     minEventTime::Float64                                   # Minimum time between initial time and first event occurrence
@@ -294,7 +336,7 @@ mutable struct Propagator
         return new(1E-12, SIMPLE, [], IntegratorFactory(), typemax(Int64), 100, 1E-12, 1E-12)
     end
 end
-Base.:(==)(propagator1::Propagator, propagator2::Propagator) = ((propagator1.equationType == propagator2.equationType) && (propagator1.events == propagator2.events))
+Base.:(==)(propagator1::Propagator, propagator2::Propagator) = ((propagator1.equationType == propagator2.equationType) && (propagator1.events == propagator2.events) && (propagator1.integratorFactory == propagator2.integratorFactory))
 
 """
     Arc(dynamicsModel)

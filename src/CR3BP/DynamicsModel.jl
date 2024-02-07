@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 7/30/23
+U: 2/7/24
 """
 
 import LinearAlgebra, SPICE
@@ -13,8 +13,8 @@ export appendExtraInitialConditions, evaluateEquations, get2BApproximation
 export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
 export getExcursion, getJacobiConstant, getLinearVariation
 export getParameterDependencies, getPrimaryPosition, getPseudopotentialJacobian
-export getStateSize, getStateTransitionMatrix, isEpochIndependent
-export primaryInertial2Rotating, rotating2PrimaryInertial
+export getStateSize, getStateTransitionMatrix, getTaylorEquationsOfMotion
+export isEpochIndependent, primaryInertial2Rotating, rotating2PrimaryInertial
 export rotating2SunEclipJ2000
 
 """
@@ -352,6 +352,19 @@ function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0_STM::Vec
     end
 
     return STM
+end
+
+"""
+    getTaylorEquationsOfMotion(dynamicsModel, equationType)
+
+Return Taylor EOMs
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `equationType::EquationType`: EOM type
+"""
+function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
+    return MBD.CR3BPTaylorEquationsOfMotion(equationType, dynamicsModel)
 end
 
 """

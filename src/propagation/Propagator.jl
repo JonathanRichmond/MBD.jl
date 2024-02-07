@@ -3,13 +3,13 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 8/3/23
+U: 2/7/24
 """
 
 import DifferentialEquations
 import MBD: Propagator
 
-export propagate, propagateWithEvent
+export propagate, propagateWithEvent, TaylorPropagate
 
 """
     propagate(propagator, q0, tSpan, dynamicsModel; params)
@@ -69,6 +69,38 @@ function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialE
         tf::Float64 = tSpan[tIndex]
         problem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
+        arcOut.states = sol.u
+        arcOut.times = sol.t
+    end
+
+    return arcOut
+end
+
+"""
+    TaylorPropagate(propagator, q0, tSpan, dynamicsModel)
+
+Return propagated arc
+# Arguments
+- `propagator::Propagator`: Propagator object
+- `q0::Vector{Float64}`: Initial state vector [ndim]
+- `tSpan::Vector{Float64}`: Time span [ndim]
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+"""
+function TaylorPropagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel)
+    propagator.absTol = 1E-16
+    propagator.relTol = 1E-16
+    arcOut = MBD.Arc(dynamicsModel)
+    EOMs::MBD.AbstractEquationsOfMotion = getTaylorEquationsOfMotion(dynamicsModel, propagator.equationType)
+    q::Vector{Float64} = copy(q0)
+    for tIndex::Int64 in 2:length(tSpan)
+        if tIndex > 2
+            q = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
+            deleteStateAndTime!(arcOut, getStateCount(arcOut))
+        end
+        t0::Float64 = tSpan[tIndex-1]
+        tf::Float64 = tSpan[tIndex]
+        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeTaylorDerivatives!, q, (t0, tf), (EOMs, [getMassRatio(dynamicsModel.systemData)]))
+        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol)
         arcOut.states = sol.u
         arcOut.times = sol.t
     end
