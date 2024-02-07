@@ -6,6 +6,7 @@ C: 9/2/22
 U: 2/7/24
 """
 
+import TaylorIntegration
 import MBD: CR3BPEquationsOfMotion
 
 export computeDerivatives!, computeTaylorDerivatives!
@@ -64,7 +65,7 @@ Return Taylor time derivative of state vector
 - `params::Tuple{CR3BPEquationsOfMotion, Float64}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
-function computeTaylorDerivatives!(qdot, q, params, t)
+TaylorIntegration.@taylorize function computeTaylorDerivatives!(qdot, q, params, t)
     local μ = params[1]
     local onemμ = 1 - μ
     x1 = q[1]-μ
