@@ -355,16 +355,15 @@ function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0_STM::Vec
 end
 
 """
-    getTaylorEquationsOfMotion(dynamicsModel, equationType)
+    getTaylorEquationsOfMotion(dynamicsModel)
 
 Return Taylor EOMs
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-- `equationType::EquationType`: EOM type
 """
-function getTaylorEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-    return MBD.CR3BPTaylorEquationsOfMotion(equationType, dynamicsModel)
+function getTaylorEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel)
+    return MBD.CR3BPTaylorEquationsOfMotion(dynamicsModel)
 end
 
 """

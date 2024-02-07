@@ -267,20 +267,19 @@ end
 Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
 
 """
-    CR3BPTaylorEquationsOfMotion(equationType, dynamicsModel)
+    CR3BPTaylorEquationsOfMotion(dynamicsModel)
 
 CR3BP Taylor EOM object
 
 # Arguments
-- `equationType::EquationType`: EOM type
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
 struct CR3BPTaylorEquationsOfMotion <: AbstractEquationsOfMotion
     dim::Int64                                              # State vector dimension
     equationType::EquationType                              # EOM type
 
-    function CR3BPTaylorEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
-        return new(getStateSize(dynamicsModel, equationType), equationType)
+    function CR3BPTaylorEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel)
+        return new(getStateSize(dynamicsModel, equationType), STM)
     end
 end
 Base.:(==)(TaylorEOMs1::CR3BPTaylorEquationsOfMotion, TaylorEOMs2::CR3BPTaylorEquationsOfMotion) = (TaylorEOMs1.equationType == TaylorEOMs2.equationType)

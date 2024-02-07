@@ -88,9 +88,8 @@ Return propagated arc
 """
 function TaylorPropagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel)
     propagator.absTol = 1E-16
-    propagator.relTol = 1E-16
     arcOut = MBD.Arc(dynamicsModel)
-    EOMs::MBD.AbstractEquationsOfMotion = getTaylorEquationsOfMotion(dynamicsModel, propagator.equationType)
+    EOMs::MBD.AbstractEquationsOfMotion = getTaylorEquationsOfMotion(dynamicsModel)
     q::Vector{Float64} = copy(q0)
     for tIndex::Int64 in 2:length(tSpan)
         if tIndex > 2
@@ -100,7 +99,7 @@ function TaylorPropagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vec
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
         problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeTaylorDerivatives!, q, (t0, tf), (EOMs, [getMassRatio(dynamicsModel.systemData)]))
-        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol)
+        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol)
         arcOut.states = sol.u
         arcOut.times = sol.t
     end
