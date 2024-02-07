@@ -6,7 +6,7 @@ C: 9/2/22
 U: 2/7/24
 """
 
-import TaylorIntegration
+using TaylorIntegration
 import MBD: CR3BPEquationsOfMotion
 
 export computeDerivatives!, computeTaylorDerivatives!
@@ -65,8 +65,8 @@ Return Taylor time derivative of state vector
 - `params::Tuple{CR3BPEquationsOfMotion, Float64}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
-TaylorIntegration.@taylorize function computeTaylorDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Float64}, t::Float64)
-    local mu = params[2]
+@taylorize function computeTaylorDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Float64}, t::Float64)
+    local mu::Float64 = params[2]
     omm::Float64 = 1-mu
     r_13::Float64 = sqrt((((q[1]+mu)^2)+(q[2]^2))+(q[3]^2))
     r_23::Float64 = sqrt((((q[1]-omm)^2)+(q[2]^2))+(q[3]^2))
@@ -95,6 +95,6 @@ TaylorIntegration.@taylorize function computeTaylorDerivatives!(qdot::Vector{Flo
     #    qdot[11+(6*(c-1))] = (((pseudoPotentialJacobian[4]*q[7+(6*(c-1))])+(pseudoPotentialJacobian[2]*q[8+(6*(c-1))]))+(pseudoPotentialJacobian[6]*q[9+(6*(c-1))]))-(2*q[10+(6*(c-1))])
     #    qdot[12+(6*(c-1))] = ((pseudoPotentialJacobian[5]*q[7+(6*(c-1))])+(pseudoPotentialJacobian[6]*q[8+(6*(c-1))]))+(pseudoPotentialJacobian[3]*q[9+(6*(c-1))])
     #end
-    
+
     return nothing
 end
