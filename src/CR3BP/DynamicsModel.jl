@@ -13,8 +13,8 @@ export appendExtraInitialConditions, evaluateEquations, get2BApproximation
 export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
 export getExcursion, getJacobiConstant, getLinearVariation
 export getParameterDependencies, getPrimaryPosition, getPseudopotentialJacobian
-export getStateSize, getStateTransitionMatrix, isEpochIndependent
-export primaryInertial2Rotating, rotating2PrimaryInertial
+export getStateSize, getStateTransitionMatrix, getTidalAcceleration
+export isEpochIndependent, primaryInertial2Rotating, rotating2PrimaryInertial
 export rotating2SunEclipJ2000
 
 """
@@ -352,6 +352,27 @@ function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0_STM::Vec
     end
 
     return STM
+end
+
+"""
+    getTidalAcceleration(dynamicsModel, primary, r)
+
+Return tidal acceleration due to primary at given location
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `primary::Int64`: Primary identifier
+- `r::Vector{Float64}`: Position vector [ndim]
+"""
+function getTidalAcceleration(dynamicsModel::CR3BPDynamicsModel, primary::Int64, r::Vector{Float64})
+    (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
+    mu::Float64 = getMassRatio(dynamicsModel.systemData)
+    r_13::Float64 = sqrt((r[1]+mu)^2+r[2]^2+r[3]^2)
+    r_23::Float64 = sqrt((r[1]-1+mu)^2+r[2]^2+r[3]^2)
+    aMultiplier::Float64 = (primary == 1) ? -(1-mu)/r_13^3 : -mu/r_23^3
+    xDist::Float64 = (primary == 1) ? r[1]+mu : r[1]-1+mu
+
+    return [aMultiplier*xDist+r[1], aMultiplier*r[2]+r[2], aMultiplier*r[3]]
 end
 
 """
