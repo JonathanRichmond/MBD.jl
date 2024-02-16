@@ -3,11 +3,13 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
+U: 2/15/24
 """
 
 import DifferentialEquations
 
 export arclengthCondition, p2DistanceCondition, terminateAffect!
+export xzPlaneCrossingCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -48,4 +50,18 @@ Return event effect of termination
 """
 function terminateAffect!(integrator)
     DifferentialEquations.terminate!(integrator)
+end
+
+"""
+    xzPlaneCrossingCondition(state, time, integrator)
+
+Return event condition for xz-plane crossing
+
+# Arguments
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object
+"""
+function xzPlaneCrossingCondition(state::Vector{Float64}, time::Float64, integrator)
+    state[2]
 end
