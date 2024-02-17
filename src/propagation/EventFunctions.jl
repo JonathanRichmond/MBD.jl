@@ -9,7 +9,7 @@ U: 2/15/24
 import DifferentialEquations
 
 export arclengthCondition, p2DistanceCondition, terminateAffect!
-export xzPlaneCrossingCondition
+export xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -64,4 +64,18 @@ Return event condition for xz-plane crossing
 """
 function xzPlaneCrossingCondition(state::Vector{Float64}, time::Float64, integrator)
     state[2]
+end
+
+"""
+    zValueCondition(state, time, integrator)
+
+Return event condition for z-value crossing
+
+# Arguments
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object
+"""
+function zValueCondition(state::Vector{Float64}, time::Float64, integrator)
+    state[3]-integrator.p[2]
 end
