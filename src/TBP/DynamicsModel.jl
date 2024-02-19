@@ -219,7 +219,7 @@ function getOsculatingOrbitalElements(dynamicsModel::TBPDynamicsModel, state_dim
     trajectory.i = acos(angularMomentum[3]/trajectory.h)
     n::Vector{Float64} = LinearAlgebra.cross([0, 0, 1], angularMomentum)
     trajectory.Omega = (n[2] < 0) ? 2*pi-acos(n[1]/LinearAlgebra.norm(n)) : acos(n[1]/LinearAlgebra.norm(n))
-    eccentricityVector::Vector{Float64} = LinearAlgebra.cross(state_dim[4:6], angularMomentum)/dynamicsModel.systemData.gravParam-state_dim[1:3]./r
+    eccentricityVector::Vector{Float64} = LinearAlgebra.cross(state_dim[4:6], angularMomentum)./dynamicsModel.systemData.gravParam-state_dim[1:3]./r
     trajectory.e = LinearAlgebra.norm(eccentricityVector)
     trajectory.a = trajectory.h^2/(dynamicsModel.systemData.gravParam*(1-trajectory.e^2))
     trajectory.r_p = trajectory.a*(1-trajectory.e)
