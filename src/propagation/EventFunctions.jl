@@ -8,8 +8,8 @@ U: 2/15/24
 
 import DifferentialEquations
 
-export arclengthCondition, p2DistanceCondition, terminateAffect!
-export xzPlaneCrossingCondition, zValueCondition
+export arclengthCondition, p1DistanceCondition, p2DistanceCondition
+export terminateAffect!, xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -26,9 +26,24 @@ function arclengthCondition(state::Vector{Float64}, time::Float64, integrator)
 end
 
 """
+    p1DistanceCondition(state, time, integrator)
+
+Return event condition for specified distance from P1
+
+# Arguments
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object
+"""
+function p1DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
+    mu::Float64 = integrator.p[1].mu
+    sqrt((state[1]+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
+end
+
+"""
     p2DistanceCondition(state, time, integrator)
 
-Return event condition for specified distance
+Return event condition for specified distance from P2
 
 # Arguments
 - `state::Vector{Float64}`: State vector [ndim]
