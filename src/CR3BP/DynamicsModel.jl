@@ -528,7 +528,7 @@ Return rotating frame states
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states_secondaryInertial::Vector{Vector{Float64}}, times::Vector{Float64})
-    (length(states_primaryInertial) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
+    (length(states_secondaryInertial) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
     bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
