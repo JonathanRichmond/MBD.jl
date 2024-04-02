@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 2/7/24
+U: 4/1/24
 """
 
 import LinearAlgebra, SPICE
@@ -14,8 +14,8 @@ export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
 export getExcursion, getJacobiConstant, getLinearVariation
 export getParameterDependencies, getPrimaryPosition, getPseudopotentialJacobian
 export getStateSize, getStateTransitionMatrix, getTidalAcceleration
-export isEpochIndependent, primaryInertial2Rotating, rotating2PrimaryInertial
-export rotating2SunEclipJ2000
+export isEpochIndependent, primaryInertial2Rotating, rotating2PrimaryEclipJ2000
+export rotating2PrimaryInertial, rotating2SunEclipJ2000
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
