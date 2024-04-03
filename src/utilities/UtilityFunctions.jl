@@ -20,7 +20,6 @@ Return position relative to point in cylindrical coordinates
 function Cartesian2Cylindrical(pos::Vector{Float64}, c::Vector{Float64})
     r::Float64 = sqrt((pos[1]-c[1])^2+(pos[2]-c[2])^2)
     theta::Float64 = atan(pos[2]-c[2], pos[1]-c[1])
-    (theta < 0) && (theta += 2.0*pi)
     z::Float64 = pos[3]-c[3]
 
     return [r, theta, z]
