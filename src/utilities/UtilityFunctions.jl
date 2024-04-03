@@ -3,10 +3,27 @@ Utility functions
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 8/5/23
+U: 4/3/24
 """
 
-export checkIndices, maskData, updatePointer
+export Cartesian2Cylindrical, checkIndices, maskData, updatePointer
+
+"""
+    Cartesian2Cylindrical(pos, c)
+
+Return position relative to point in cylindrical coordinates
+
+# Arguments
+- `pos::Vector{Float64}`: Position vector
+- `c::Vector{Float64}`: Center of cylinder
+"""
+function Cartesian2Cylindrical(pos::Vector{Float64}, c::Vector{Float64})
+    r::Float64 = sqrt((pos[1]-c[1])^2+(pos[2]-c[2])^2)
+    theta::Float64 = atan(pos[2]-c[2], pos[1]-c[1])
+    z::Float64 = pos[3]-c[3]
+
+    return [r, theta, z]
+end
 
 """
     checkIndices(stateIndices, stateSize)
