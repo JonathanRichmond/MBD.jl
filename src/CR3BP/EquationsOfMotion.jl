@@ -18,10 +18,10 @@ Return time derivative of state vector
 # Arguments
 - `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
 - `q::Vector{Float64}`: State vector [ndim]
-- `params::Tuple{CR3BPEquationsOfMotion, Vararg{Float64}}`: Propagation parameters
+- `params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
-function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Vararg{Float64}}, t::Float64)
+function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}, t::Float64)
     omm::Float64 = 1-params[1].mu
     r_13::Float64 = sqrt((q[1]+params[1].mu)^2+q[2]^2+q[3]^2)
     r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
