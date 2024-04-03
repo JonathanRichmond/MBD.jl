@@ -75,8 +75,8 @@ Return arc object with propagation parameters
 
 # Arguments
 - `arc::Arc`: Arc object
-- `params::Vector{Any}`: System parameters
+- `params`: System parameters
 """
-function setParameters!(arc::Arc, params::Vector{Any})
+function setParameters!(arc::Arc, params)
     arc.params = copy(params)
 end

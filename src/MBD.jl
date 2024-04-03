@@ -307,7 +307,7 @@ Arc object
 """
 mutable struct Arc
     dynamicsModel::AbstractDynamicsModel                    # Dynamics model object
-    params::Vector{Any}                                     # System parameters
+    params                                                  # System parameters
     states::Vector{Vector{Float64}}                         # State vectors along arc [ndim]
     times::Vector{Float64}                                  # Times along arc [ndim]
 
