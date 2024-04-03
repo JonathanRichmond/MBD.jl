@@ -93,7 +93,7 @@ Return EOMs
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 - `equationType::EquationType`: EOM type
-- `params::Vector{Float64}`: System parameters (optional)
+- `params::Vector{Any}`: System parameters (optional)
 """
 function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType, params = nothing)
     return MBD.CR3BPEquationsOfMotion(equationType, dynamicsModel)
