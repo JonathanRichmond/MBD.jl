@@ -104,3 +104,25 @@ function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
     periodicOrbit.nu = LinearAlgebra.norm(periodicOrbit.eigenvalues, Inf)
     periodicOrbit.tau = periodicOrbit.period/log(periodicOrbit.nu)
 end
+
+"""
+    shallowClone!(periodicOrbit)
+
+Return copy of periodic orbit object
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+"""
+function shallowClone!(periodicOrbit::CR3BPPeriodicOrbit)
+    object = CR3BPPeriodicOrbit(deepClone!(periodicOrbit.problem), periodicOrbit.targeter)
+    object.BrouckeStability = copy(periodicOrbit.BrouckeStability)
+    object.eigenvalues = copy(periodicOrbit.eigenvalues)
+    object.eigenvectors = copy(periodicOrbit.eigenvectors)
+    object.initialCondition = copy(periodicOrbit.initialCondition)
+    object.JacobiConstant = periodicOrbit.JacobiConstant
+    object.monodromy = copy(periodicOrbit.monodromy)
+    object.nu = periodicOrbit.nu
+    object.tau = periodicOrbit.tau
+
+    return object
+end

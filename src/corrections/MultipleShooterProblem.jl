@@ -229,14 +229,14 @@ function checkValidGraph(multipleShooterProblem::MultipleShooterProblem, adjacen
 end
 
 """
-    deepClone(mulitpleShooterProblem)
+    deepClone!(mulitpleShooterProblem)
 
 Return deep copy of multiple shooter problem object
 
 # Arguments
 - `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
 """
-function deepClone(multipleShooterProblem::MultipleShooterProblem)
+function deepClone!(multipleShooterProblem::MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     object = MultipleShooterProblem()
     copiedObjectMap::Dict = Dict()
