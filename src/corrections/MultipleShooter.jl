@@ -35,7 +35,7 @@ Return converged solution
 """
 function solve!(multipleShooter::MultipleShooter, initialGuess::MBD.MultipleShooterProblem)
     buildProblem!(initialGuess)
-    solutionInProgress::MBD.MultipleShooterProblem = deepClone(initialGuess)
+    solutionInProgress::MBD.MultipleShooterProblem = deepClone!(initialGuess)
     ((getNumberFreeVariables(solutionInProgress) == 0) || (getNumberConstraints(solutionInProgress) == 0)) ? (return solutionInProgress) : multipleShooter.recentIterationCount = 0
     while !isConverged(multipleShooter.convergenceCheck, solutionInProgress) && (multipleShooter.recentIterationCount < multipleShooter.maxIterations)
         if multipleShooter.recentIterationCount > 0
