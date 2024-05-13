@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 2/7/24
+U: 5/13/24
 """
 module MBD
 
@@ -261,25 +261,45 @@ end
 Base.:(==)(EOMs1::CR3BPEquationsOfMotion, EOMs2::CR3BPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
 
 """
-    IntegratorFactory()
+    IntegratorFactory(integratorType)
 
 Integrator object
+
+# Arguments
+- `integratorType::IntegratorType`: Integrator type
 """
 mutable struct IntegratorFactory
     integrator                                              # Integrator object
     integratorType::IntegratorType                          # Integrator type
-    numSteps::Int64                                         # Number of steps for multi-step method
+    
+    function IntegratorFactory(integratorSolver::IntegratorType)
+        this = new()
 
-    function IntegratorFactory()
-        return new(DifferentialEquations.DP8(), DP8, 3)
+        this.integratorType = integratorSolver
+        if integratorSolver == DP8
+            this.integrator = DifferentialEquations.DP8()
+        elseif integratorSolver == AB5
+            this.integrator = DifferentialEquations.AB5()
+        elseif integratorSolver == ABM54
+            this.integrator = DifferentialEquations.ABM54()
+        elseif integratorSolver == BS5
+            this.integrator = DifferentialEquations.BS5()
+        elseif integratorSolver == DP5
+            this.integrator = DifferentialEquations.DP5()
+        end
+
+        return this
     end
 end
-Base.:(==)(integratorFactory1::IntegratorFactory, integratorFactory2::IntegratorFactory) = ((integratorFactory1.integratorType == integratorFactory2.integratorType) && (integratorFactory1.numSteps == integratorFactory2.numSteps))
+Base.:(==)(integratorFactory1::IntegratorFactory, integratorFactory2::IntegratorFactory) = (integratorFactory1.integratorType == integratorFactory2.integratorType)
 
 """
-    Propagator()
+    Propagator(integratorSolver)
 
 Propagator object
+
+# Arguments
+- `integratorSolver::IntegratorType`: Integrator type
 """
 mutable struct Propagator
     absTol::Float64                                         # Absolute tolerance
@@ -291,8 +311,8 @@ mutable struct Propagator
     minEventTime::Float64                                   # Minimum time between initial time and first event occurrence
     relTol::Float64                                         # Relative tolerance
 
-    function Propagator()
-        return new(1E-12, SIMPLE, [], IntegratorFactory(), typemax(Int64), 100, 1E-12, 1E-12)
+    function Propagator(integratorSolver::IntegratorType = DP8)
+        return new(1E-12, SIMPLE, [], IntegratorFactory(integratorSolver), typemax(Int64), 100, 1E-12, 1E-12)
     end
 end
 Base.:(==)(propagator1::Propagator, propagator2::Propagator) = ((propagator1.equationType == propagator2.equationType) && (propagator1.events == propagator2.events) && (propagator1.integratorFactory == propagator2.integratorFactory))
