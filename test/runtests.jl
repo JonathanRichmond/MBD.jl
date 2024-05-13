@@ -1,6 +1,15 @@
+"""
+Multi-Body Dynamics astrodynamics package tests
+
+Author: Jonathan Richmond
+C: 9/1/22
+U: 5/13/24
+"""
+
 using MBD
 using Test
 
+include("../src/bifurcation/Bifurcation.jl")
 include("../src/continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("../src/continuation/BoundingBoxContinuationEndCheck.jl")
 include("../src/continuation/BoundingBoxJumpCheck.jl")
@@ -39,6 +48,7 @@ include("ExampleLyapunovJCTargeter.jl")
 @testset "Files" begin
     @test isfile("../src/body_data.xml")
     @test isfile("../src/spice/kernels/de440.bsp")
+    @test isfile("../src/spice/kernels/naif0012.tls")
 end
 
 @testset "Constructors" begin
