@@ -52,46 +52,128 @@ include("ExampleLyapunovJCTargeter.jl")
 end
 
 @testset "Constructors" begin
+    Earth = MBD.BodyName("Earth")
+    @test Earth.name == "Earth"
+    EarthData = MBD.BodyData("Earth")
+    @test EarthData.spiceID == 399
+    @test EarthData.mass == 5.972580035423323E24
     @test MBD.CR3BPSystemData <: MBD.AbstractSystemData
     @test_throws ArgumentError MBD.CR3BPSystemData("Earth", "Mars")
-    @test MBD.CR3BPDynamicsModel <: MBD.AbstractDynamicsModel
-    @test MBD.CR3BPEquationsOfMotion <: MBD.AbstractEquationsOfMotion
-    @test_throws ArgumentError MBD.Variable([1.0, 1.0], [true, false, true])
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    @test systemData.primarySpiceIDs == [399, 301]
+    @test systemData.params[1] == 0.012150584269940356
+    @test MBD.CR3BPDynamicsModel <: MBD.AbstractDynamicsModel
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    @test dynamicsModel.systemData == systemData
+    @test MBD.CR3BPEquationsOfMotion <: MBD.AbstractEquationsOfMotion
+    EOMs = MBD.CR3BPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
+    @test EOMs.dim == 6
+    @test EOMs.mu == 0.012150584269940356
+    integratorFactory = MBD.IntegratorFactory(MBD.DP8)
+    @test integratorFactory.integrator == DifferentialEquations.DP8()
+    propagator = MBD.Propagator()
+    @test propagator.absTol == 1E-12
+    propagatorBS = MBD.Propagator(MBD.BS5)
+    @test propagatorBS.integratorFactory == MBD.IntegratorFactory(MBD.BS5)
+    arc = MBD.Arc(dynamicsModel)
+    @test arc.dynamicsModel == dynamicsModel
+    @test_throws ArgumentError MBD.Variable([1.0, 1.0], [true, false, true])
+    stateVariable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
+    @test stateVariable.freeVariableMask == [true, false, false, false, true, false]
     @test MBD.Node <: MBD.IHasVariables
     @test_throws ArgumentError MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263], dynamicsModel)
     originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    terminalNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    @test originNode.state.data == stateVariable.data
+    @test originNode.state.name == "Node State"
+    terminalNode = MBD.Node(0.0, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
     @test MBD.Segment <: MBD.IHasVariables
-    @test_throws ArgumentError MBD.Segment(2.743, originNode, terminalNode)
+    @test_throws ArgumentError MBD.Segment(2.743, originNode, originNode)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    @test segment.TOF == MBD.Variable([2.743], [true])
     @test MBD.MultipleShooterProblem <: MBD.AbstractNonlinearProblem
+    problem = MBD.MultipleShooterProblem()
+    @test !problem.hasBeenBuilt
     @test MBD.ContinuityConstraint <: MBD.AbstractConstraint
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    @test continuityConstraint.constrainedIndices == 1:6
     @test MBD.StateConstraint <: MBD.AbstractConstraint
+    @test_throws ArgumentError MBD.StateConstraint(originNode, [1, 5], [1.0])
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    @test_throws ArgumentError MBD.StateConstraint(originNode, [2], [1.0])
+    stateConstraint = MBD.StateConstraint(originNode, [1, 5], [0.8, 0.1])
+    @test stateConstraint.variable == originNode.state
     @test MBD.StateMatchConstraint <: MBD.AbstractConstraint
     variable1 = MBD.Variable([1.0, 2.0], [true, false])
-    variable2 = MBD.Variable([1.0, 2.0, 3.0], [true, false, true])
-    @test_throws ArgumentError MBD.StateMatchConstraint(variable1, variable2, [1, 2])
-    variable3 = MBD.Variable([1.0, 2.0], [true, false])
-    @test_throws ArgumentError MBD.StateMatchConstraint(variable1, variable3, [1, 2])
+    setFreeVariableMask!(terminalNode.state, [true, false, true, true, true, true])
+    @test_throws ArgumentError MBD.StateMatchConstraint(stateVariable, variable1, [1, 2])
+    @test_throws ArgumentError MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2])
+    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 5])
+    @test stateMatchConstraint.variable1 == originNode.state
     @test MBD.JacobiConstraint <: MBD.AbstractConstraint
+    systemDataTBP = MBD.TBPSystemData("Earth")
+    dynamicsModelTBP = MBD.TBPDynamicsModel(systemDataTBP)
+    nodeTBP = MBD.Node(0.0, originNode.state.data, dynamicsModelTBP)
+    @test_throws ArgumentError MBD.JacobiConstraint(nodeTBP, 3.0)
+    JacobiConstraint = MBD.JacobiConstraint(originNode, 3.0)
+    @test JacobiConstraint.epoch == originNode.epoch
     @test MBD.ConstraintVectorL2NormConvergenceCheck <: MBD.AbstractConvergenceCheck
+    convergenceCheck = MBD.ConstraintVectorL2NormConvergenceCheck()
+    @test convergenceCheck.maxVectorNorm == 1E-10
+    convergenceCheckTight = MBD.ConstraintVectorL2NormConvergenceCheck(1E-12)
+    @test convergenceCheckTight.maxVectorNorm == 1E-12
     @test MBD.MinimumNormUpdateGenerator <: MBD.AbstractUpdateGenerator
     @test MBD.LeastSquaresUpdateGenerator <: MBD.AbstractUpdateGenerator
     @test MBD.MultipleShooter <: MBD.AbstractNonlinearProblemSolver
+    multipleShooter = MBD.MultipleShooter()
+    @test multipleShooter.maxIterations == 25
+    multipleShooterTight = MBD.MultipleShooter(1E-12)
+    @test multipleShooterTight.convergenceCheck.maxVectorNorm == 1E-12
+    continuationData = MBD.ContinuationData()
+    @test continuationData.converging
     @test_throws ArgumentError MBD.AdaptiveStepSizeByElementGenerator("Initial State", -1, 1E-4, 1E-2)
+    stepSizeGenerator = MBD.AdaptiveStepSizeByElementGenerator("Initial State", 1, -1E-4, -1E-2)
+    @test stepSizeGenerator.minStepSize == -1E-10
     @test MBD.NumberStepsContinuationEndCheck <: MBD.AbstractContinuationEndCheck
+    stepsEndCheck = MBD.NumberStepsContinuationEndCheck(100)
+    @test stepsEndCheck.maxSteps == 100
     @test MBD.BoundingBoxContinuationEndCheck <: MBD.AbstractContinuationEndCheck
+    boxEndCheck = MBD.BoundingBoxContinuationEndCheck("Initial State", [0 0.99; NaN NaN])
+    @test isequal(boxEndCheck.paramBounds, [0 0.99; NaN NaN])
     @test MBD.BoundingBoxJumpCheck <: MBD.AbstractContinuationJumpCheck
+    boxJumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [0 1.2; 0 1.0])
+    @test isequal(boxJumpCheck.paramBounds, [0 1.2; 0 1.0])
     @test MBD.NaturalParameterContinuationEngine <: MBD.AbstractContinuationEngine
+    naturalParamContinuation = MBD.NaturalParameterContinuationEngine("Initial State", 1, -1E-4, -1E-2)
+    @test naturalParamContinuation.storeIntermediateMembers
+    naturalParamContinuationTight = MBD.NaturalParameterContinuationEngine("Initial State", 1, -1E-4, -1E-2, 1E-12)
+    @test naturalParamContinuationTight.corrector.convergenceCheck.maxVectorNorm == 1E-12
     @test MBD.JacobiConstantContinuationEngine <: MBD.AbstractContinuationEngine
+    JacobiContinuation = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1)
+    @test JacobiContinuation.storeIntermediateMembers
+    JacobiContinuationTight = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1, 1E-12)
+    @test JacobiContinuationTight.corrector.convergenceCheck.maxVectorNorm == 1E-12
+    #bifurcation = MBD.Bifurcation(orbitFamily, periodicOrbit, 1, MBD.TANGENT, 1)
+    #@test bifurcation.orbit == 1
     @test MBD.CR3BPPeriodicOrbit <: MBD.AbstractTrajectoryStructure
+    targeter = LyapunovJCTargeter(dynamicsModel)
+    periodicOrbit = MBD.CR3BPPeriodicOrbit(problem, targeter)
+    @test periodicOrbit.tau == 0
+    @test MBD.CR3BPOrbitFamily <: MBD.AbstractStructureFamily
+    orbitFamily = MBD.CR3BPOrbitFamily([periodicOrbit])
+    @test length(orbitFamily.familyMembers) == 1
     @test MBD.CR3BPManifoldArc <: MBD.AbstractTrajectoryStructure
-    @test MBD.CR3BPBifurcation <: MBD.AbstractBifurcation
+    manifoldArc = MBD.CR3BPManifoldArc([0.8234+0im, 0, 0, 0, 0.1263+0im, 0], periodicOrbit)
+    @test manifoldArc.TOF == 0
     @test MBD.TBPSystemData <: MBD.AbstractSystemData
+    @test systemDataTBP.charTime == 2.898139774118648e9
     @test MBD.TBPDynamicsModel <: MBD.AbstractDynamicsModel
+    @test dynamicsModelTBP.systemData == systemDataTBP
     @test MBD.TBPEquationsOfMotion <: MBD.AbstractEquationsOfMotion
+    EOMsTBP = MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModelTBP)
+    @test EOMsTBP.mu == systemDataTBP.gravParam
     @test MBD.TBPTrajectory <: MBD.AbstractTrajectoryStructure
+    trajectoryTBP = MBD.TBPTrajectory(originNode.state.data, dynamicsModelTBP)
+    @test trajectoryTBP.E == 0
 end
 
 @testset "Copy" begin

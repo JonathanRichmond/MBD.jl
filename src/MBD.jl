@@ -124,7 +124,7 @@ Body name object
 struct BodyName
     name::String                                            # Name
 
-    function BodyName(name)
+    function BodyName(name::String)
         return new(name)
     end
 end
@@ -286,6 +286,8 @@ mutable struct IntegratorFactory
             this.integrator = DifferentialEquations.BS5()
         elseif integratorSolver == DP5
             this.integrator = DifferentialEquations.DP5()
+        else
+            throw(ArgumentError("Invalid integrator type"))
         end
 
         return this
