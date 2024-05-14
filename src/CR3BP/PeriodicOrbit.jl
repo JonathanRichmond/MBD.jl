@@ -106,15 +106,15 @@ function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
 end
 
 """
-    shallowClone!(periodicOrbit)
+    shallowClone(periodicOrbit)
 
 Return copy of periodic orbit object
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
 """
-function shallowClone!(periodicOrbit::CR3BPPeriodicOrbit)
-    object = CR3BPPeriodicOrbit(deepClone!(periodicOrbit.problem), periodicOrbit.targeter)
+function shallowClone(periodicOrbit::CR3BPPeriodicOrbit)
+    object = CR3BPPeriodicOrbit(deepClone(periodicOrbit.problem), periodicOrbit.targeter)
     object.BrouckeStability = copy(periodicOrbit.BrouckeStability)
     object.eigenvalues = copy(periodicOrbit.eigenvalues)
     object.eigenvectors = copy(periodicOrbit.eigenvectors)

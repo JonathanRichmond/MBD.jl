@@ -229,15 +229,14 @@ function checkValidGraph(multipleShooterProblem::MultipleShooterProblem, adjacen
 end
 
 """
-    deepClone!(mulitpleShooterProblem)
+    deepClone(mulitpleShooterProblem)
 
 Return deep copy of multiple shooter problem object
 
 # Arguments
 - `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
 """
-function deepClone!(multipleShooterProblem::MultipleShooterProblem)
-    multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
+function deepClone(multipleShooterProblem::MultipleShooterProblem)
     object = MultipleShooterProblem()
     copiedObjectMap::Dict = Dict()
     object.freeVariableIndexMap = Dict{MBD.Variable, Int64}()
@@ -449,15 +448,14 @@ function setFreeVariableVector!(multipleShooterProblem::MultipleShooterProblem, 
 end
 
 """
-    shallowClone!(multipleShooterProblem)
+    shallowClone(multipleShooterProblem)
 
 Return copy of multiple shooter problem object
 
 # Arguments
 - `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
 """
-function shallowClone!(multipleShooterProblem::MultipleShooterProblem)
-    multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
+function shallowClone(multipleShooterProblem::MultipleShooterProblem)
     object = MultipleShooterProblem()
     object.constraintIndexMap = copy(multipleShooterProblem.constraintIndexMap)
     object.freeVariableIndexMap = copy(multipleShooterProblem.freeVariableIndexMap)

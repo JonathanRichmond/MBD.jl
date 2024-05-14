@@ -107,15 +107,16 @@ end
     setFreeVariableMask!(terminalNode.state, [true, false, true, true, true, true])
     @test_throws ArgumentError MBD.StateMatchConstraint(stateVariable, variable1, [1, 2])
     @test_throws ArgumentError MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2])
-    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 5])
+    setFreeVariableMask!(terminalNode.state, [true, true, true, true, true, true])
+    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2, 3, 4, 5, 6])
     @test stateMatchConstraint.variable1 == originNode.state
     @test MBD.JacobiConstraint <: MBD.AbstractConstraint
     systemDataTBP = MBD.TBPSystemData("Earth")
     dynamicsModelTBP = MBD.TBPDynamicsModel(systemDataTBP)
     nodeTBP = MBD.Node(0.0, originNode.state.data, dynamicsModelTBP)
     @test_throws ArgumentError MBD.JacobiConstraint(nodeTBP, 3.0)
-    JacobiConstraint = MBD.JacobiConstraint(originNode, 3.0)
-    @test JacobiConstraint.epoch == originNode.epoch
+    JCConstraint = MBD.JacobiConstraint(originNode, 3.0)
+    @test JCConstraint.epoch == originNode.epoch
     @test MBD.ConstraintVectorL2NormConvergenceCheck <: MBD.AbstractConvergenceCheck
     convergenceCheck = MBD.ConstraintVectorL2NormConvergenceCheck()
     @test convergenceCheck.maxVectorNorm == 1E-10
@@ -172,8 +173,8 @@ end
     EOMsTBP = MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModelTBP)
     @test EOMsTBP.mu == systemDataTBP.gravParam
     @test MBD.TBPTrajectory <: MBD.AbstractTrajectoryStructure
-    trajectoryTBP = MBD.TBPTrajectory(originNode.state.data, dynamicsModelTBP)
-    @test trajectoryTBP.E == 0
+    trajectory = MBD.TBPTrajectory(originNode.state.data, dynamicsModelTBP)
+    @test trajectory.E == 0
 end
 
 @testset "Copy" begin
@@ -184,18 +185,29 @@ end
     terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
     segment = MBD.Segment(2.743, originNode, terminalNode)
     @test MBD.shallowClone(segment) == segment
+    problem = MBD.MultipleShooterProblem()
+    @test MBD.shallowClone(problem) == problem
     continuityConstraint = MBD.ContinuityConstraint(segment)
     @test MBD.shallowClone(continuityConstraint) == continuityConstraint
-    stateConstraint = MBD.StateConstraint(originNode, [1], [originNode.state.data[1]])
+    stateConstraint = MBD.StateConstraint(originNode, [1, 5], [0.8, 0.1])
     @test MBD.shallowClone(stateConstraint) == stateConstraint
     stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2, 3, 4, 5, 6])
     @test MBD.shallowClone(stateMatchConstraint) == stateMatchConstraint
-    jacobiConstraint = MBD.JacobiConstraint(originNode, 3.1743560232059265)
+    jacobiConstraint = MBD.JacobiConstraint(originNode, 3.0)
     @test MBD.shallowClone(jacobiConstraint) == jacobiConstraint
+    targeter = LyapunovJCTargeter(dynamicsModel)
+    periodicOrbit = MBD.CR3BPPeriodicOrbit(problem, targeter)
+    @test shallowClone(periodicOrbit) == periodicOrbit
+    systemDataTBP = MBD.TBPSystemData("Earth")
+    dynamicsModelTBP = MBD.TBPDynamicsModel(systemDataTBP)
+    trajectory = MBD.TBPTrajectory(originNode.state.data, dynamicsModelTBP)
+    @test shallowClone(trajectory) == trajectory
 end
 
 @testset "Deep Copy" begin
-    variable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, false, false])
+    problem = MBD.MultipleShooterProblem()
+    @test MBD.deepClone(problem) == problem
+    variable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
     @test MBD.deepClone(variable) == variable
 end
 

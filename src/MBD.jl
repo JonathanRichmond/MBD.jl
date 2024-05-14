@@ -452,6 +452,7 @@ mutable struct MultipleShooterProblem <: AbstractNonlinearProblem
         return new(Dict{AbstractConstraint, Int64}(), [], Dict{Variable, Int64}(), [], false, [[]], [], [])
     end
 end
+Base.:(==)(problem1::MultipleShooterProblem, problem2::MultipleShooterProblem) = ((problem1.constraintVector == problem2.constraintVector) && (problem1.freeVariableVector == problem2.freeVariableVector) && (problem1.hasBeenBuilt == problem2.hasBeenBuilt) && (problem1.jacobian == problem2.jacobian) && (problem1.nodes == problem2.nodes) && (problem1.segments == problem2.segments))
 
 """
     ContinuityConstraint(segment)
@@ -842,6 +843,7 @@ mutable struct CR3BPPeriodicOrbit <: AbstractTrajectoryStructure
         return new(zeros(Float64, 2), Vector{Complex{Float64}}(undef, 6), Matrix{Complex{Float64}}(undef, 6, 6), Vector{Float64}(undef, 6), 0.0, Matrix{Float64}(undef, 6, 6), 0.0, 0.0, multipleShooterProblem, targeter, 0.0)
     end
 end
+Base.:(==)(orbit1::CR3BPPeriodicOrbit, orbit2::CR3BPPeriodicOrbit) = ((orbit1.BrouckeStability == orbit2.BrouckeStability) && (orbit1.initialCondition == orbit2.initialCondition) && (orbit1.nu == orbit2.nu) && (orbit1.period == orbit2.period) && (orbit1.tau == orbit2.tau))
 
 """
     CR3BPOrbitFamily(familyMembers)
@@ -981,6 +983,7 @@ mutable struct TBPTrajectory <: AbstractTrajectoryStructure
         return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     end
 end
+Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
 include("bifurcation/Bifurcation.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
