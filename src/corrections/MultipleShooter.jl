@@ -3,7 +3,7 @@ Multiple shooter wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
-U: 8/30/23
+U: 5/15/24
 """
 
 import LinearAlgebra
@@ -35,7 +35,7 @@ Return converged solution
 """
 function solve!(multipleShooter::MultipleShooter, initialGuess::MBD.MultipleShooterProblem)
     buildProblem!(initialGuess)
-    solutionInProgress::MBD.MultipleShooterProblem = deepClone!(initialGuess)
+    solutionInProgress::MBD.MultipleShooterProblem = deepClone(initialGuess)
     ((getNumberFreeVariables(solutionInProgress) == 0) || (getNumberConstraints(solutionInProgress) == 0)) ? (return solutionInProgress) : multipleShooter.recentIterationCount = 0
     while !isConverged(multipleShooter.convergenceCheck, solutionInProgress) && (multipleShooter.recentIterationCount < multipleShooter.maxIterations)
         if multipleShooter.recentIterationCount > 0

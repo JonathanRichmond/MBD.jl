@@ -142,7 +142,7 @@ Return true if Jacobian is accurate
 function checkJacobian(multipleShooterProblem::MultipleShooterProblem)
     stepSize::Float64 = 1E-8
     relTol::Float64 = 2E-3
-    problem::MultipleShooterProblem = shallowClone!(multipleShooterProblem)
+    problem::MultipleShooterProblem = shallowClone(multipleShooterProblem)
     jacobianNumerical::Matrix{Float64} = zeros(Float64, (getNumberConstraints(problem), getNumberFreeVariables(problem)))
     jacobianAnalytical::Matrix{Float64} = copy(getJacobian(problem))
     for varIndex::Int64 in 1:getNumberFreeVariables(problem)
@@ -411,7 +411,7 @@ Return multiple shooter problem object with constraint removed
 """
 function removeConstraint!(multipleShooterProblem::MultipleShooterProblem, constraint::MBD.AbstractConstraint)
     delete!(multipleShooterProblem.constraintIndexMap, constraint)
-    updateConstraintIndexMap!(multipleShooterProblem.constraintIndexMap)
+    updateConstraintIndexMap!(multipleShooterProblem)
 end
 
 """

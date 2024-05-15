@@ -85,7 +85,7 @@ end
     originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
     @test originNode.state.data == stateVariable.data
     @test originNode.state.name == "Node State"
-    terminalNode = MBD.Node(0.0, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
     @test MBD.Segment <: MBD.IHasVariables
     @test_throws ArgumentError MBD.Segment(2.743, originNode, originNode)
     segment = MBD.Segment(2.743, originNode, terminalNode)
@@ -262,7 +262,7 @@ end
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
     setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
-    terminalNode = MBD.Node(0.0, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
     segment = MBD.Segment(2.743, originNode, terminalNode)
     addSegment!(problem, segment)
     addBounds!(boxJumpCheck, problem, problem.segments[1].originNode.state, [0 0.9; NaN NaN])
@@ -326,6 +326,223 @@ end
     redirect_stdout(devnull)
     @test isContinuationDone(stepsEndCheck, continuationData)
     redirect_stdout(oldstd)
+end
+
+@testset "ConstraintVectorL2NormConvergenceCheck" begin
+    convergenceCheck = MBD.ConstraintVectorL2NormConvergenceCheck()
+    problem = MBD.MultipleShooterProblem()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    terminalNode = MBD.Node(2.743, [0.8, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    addSegment!(problem, segment)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    addConstraint!(problem, continuityConstraint)
+    @test !isConverged(convergenceCheck, problem)
+end
+
+@testset "ContinuityConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    problem = MBD.MultipleShooterProblem()
+    @test isApproxSigFigs(evaluateConstraint(continuityConstraint, problem.freeVariableIndexMap, problem.freeVariableVector), [-1.535771509964E-11, 4.571839868489E-12, 0, -4.366933897826E-11, 1.664283988401E-11, 0], 13)
+    @test getNumberConstraintRows(continuityConstraint) == 6
+    @test length(keys(getPartials_ConstraintWRTVariables(continuityConstraint, problem.freeVariableIndexMap, problem.freeVariableVector))) == 3
+    #updatePointers!
+end
+
+@testset "LeastSquaresUpdateGenerator" begin
+    leastSquaresUpdate = MBD.LeastSquaresUpdateGenerator()
+    problem = MBD.MultipleShooterProblem()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    addSegment!(problem, segment)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    addConstraint!(problem, continuityConstraint)
+    @test !canGenerateUpdate(leastSquaresUpdate, problem)
+    @test_throws ErrorException getFullUpdate(leastSquaresUpdate, problem)
+    JCConstraint = MBD.JacobiConstraint(originNode, 3.0)
+    stateConstraint = MBD.StateConstraint(terminalNode, [2, 4, 6], [0.0, 0.0, 0.0])
+    addConstraint!(problem, JCConstraint)
+    addConstraint!(problem, stateConstraint)
+    @test canGenerateUpdate(leastSquaresUpdate, problem)
+    @test isApproxSigFigs([LinearAlgebra.norm(getFullUpdate(leastSquaresUpdate, problem))], [1.2820039], 8)
+end
+
+@testset "MinimumNormUpdateGenerator" begin
+    minimumNormUpdate = MBD.MinimumNormUpdateGenerator()
+    problem = MBD.MultipleShooterProblem()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    addSegment!(problem, segment)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    JCConstraint = MBD.JacobiConstraint(originNode, 3.0)
+    stateConstraint = MBD.StateConstraint(terminalNode, [2, 4], [0.0, 0.0])
+    addConstraint!(problem, continuityConstraint)
+    addConstraint!(problem, JCConstraint)
+    addConstraint!(problem, stateConstraint)
+    @test canGenerateUpdate(minimumNormUpdate, problem)
+    @test isApproxSigFigs([LinearAlgebra.norm(getFullUpdate(minimumNormUpdate, problem))], [1.2820039], 8)
+    initialStateConstraint = MBD.StateConstraint(originNode, [1], [0.82])
+    addConstraint!(problem, initialStateConstraint)
+    @test !canGenerateUpdate(minimumNormUpdate, problem)
+    @test_throws ErrorException getFullUpdate(minimumNormUpdate, problem)
+end
+
+@testset "MultipleShooter" begin
+    multipleShooter = MBD.MultipleShooter()
+    setPrintProgress!(multipleShooter, true)
+    @test multipleShooter.printProgress
+    setPrintProgress!(multipleShooter, false)
+    problem = MBD.MultipleShooterProblem()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    addSegment!(problem, segment)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    JCConstraint = MBD.JacobiConstraint(originNode, 3.0)
+    stateConstraint = MBD.StateConstraint(terminalNode, [2, 4], [0.0, 0.0])
+    addConstraint!(problem, continuityConstraint)
+    addConstraint!(problem, JCConstraint)
+    addConstraint!(problem, stateConstraint)
+    @test_throws ErrorException solve!(multipleShooter, problem)
+    newProblem = MBD.MultipleShooterProblem()
+    addSegment!(newProblem, segment)
+    newJCConstraint = MBD.JacobiConstraint(originNode, 3.1743)
+    addConstraint!(newProblem, continuityConstraint)
+    addConstraint!(newProblem, newJCConstraint)
+    addConstraint!(newProblem, stateConstraint)
+    @test isApproxSigFigs([LinearAlgebra.norm(solveUpdateEquation(multipleShooter, newProblem))], [0.027973617], 8)
+    solution::MBD.MultipleShooterProblem = solve!(multipleShooter, newProblem)
+    @test isConverged(multipleShooter.convergenceCheck, solution)
+end
+
+@testset "MultipleShooterProblem" begin
+    problem = MBD.MultipleShooterProblem()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    addSegment!(problem, segment)
+    @test length(problem.segments) == 1
+    @test_throws ErrorException buildAdjacencyMatrix(problem)
+    continuityConstraint = MBD.ContinuityConstraint(segment)
+    addConstraint!(problem, continuityConstraint)
+    @test length(problem.constraintIndexMap) == 1
+    buildProblem!(problem)
+    @test problem.hasBeenBuilt
+    @test checkJacobian(problem)
+    @test length(getConstraints(problem)) == 1
+    @test isApproxSigFigs([LinearAlgebra.norm(getConstraintVector!(problem))], [4.804712395091E-5], 13)
+    @test length(getFreeVariableIndexMap!(problem)) == 6
+    @test isApproxSigFigs([LinearAlgebra.norm(getFreeVariableVector!(problem))], [2.987433787532], 13)
+    @test size(getJacobian(problem)) == (6, 9)
+    @test getNumberConstraints(problem) == 6
+    @test getNumberFreeVariables(problem) == 9
+    removeConstraint!(problem, collect(keys(problem.constraintIndexMap))[1])
+    @test length(problem.constraintIndexMap) == 0
+    newFreeVariableVector::Vector{Float64} = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    setFreeVariableVector!(problem, newFreeVariableVector)
+    @test getFreeVariableVector!(problem) == newFreeVariableVector
+    badProblem = MBD.MultipleShooterProblem()
+    stateVariable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
+    addVariable!(badProblem, stateVariable)
+    @test length(badProblem.freeVariableIndexMap) == 1
+    #checkValidGraph
+end
+
+@testset "Node" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    node = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    stateVariable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, true, true, true, true, true])
+    stateVariable.name = "Node State"
+    epochVariable = MBD.Variable([0.0], [false])
+    epochVariable.name = "Node Epoch"
+    @test getVariables(node) == [stateVariable, epochVariable]
+    #updatePointers!
+end
+
+@testset "Segment" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    @test isApproxSigFigs(getFinalState!(segment), [0.8322038365943, -0.002795978474764, 0, 0.02460934345210, 0.1166002944939, 0], 13)
+    @test isApproxSigFigs(getFinalStateRate!(segment), [0.02460934345210, 0.1166002944939, 0, 0.1811347722610, -0.03842090358821, 0], 13)
+    @test getPartials_FinalStateWRTEpoch!(segment) == zeros(Float64, (6, 1))
+    @test isApproxSigFigs(getPartials_FinalStateWRTInitialState!(segment)[1,:], [1363.762346338, -350.5189329933, 0, 401.4700668419, 130.9118799090, 0], 13)
+    @test size(getPartials_FinalStateWRTParams!(segment)) == (6, 0)
+    @test getPropagatorParametersData(segment) == []
+    TOFVariable = MBD.Variable([2.743], [true])
+    TOFVariable.name = "Segment Time-of-Flight"
+    paramsVariable = MBD.Variable(Array{Float64}(undef, 0), Array{Bool}(undef, 0))
+    paramsVariable.name = "Segment Propagation Parameters"
+    @test getVariables(segment) == [TOFVariable, paramsVariable]
+    lazyPropagate!(segment, MBD.FULL)
+    @test isApproxSigFigs(getStateByIndex(segment.propArc, -1), [0.8322038366131, -0.002795978480393, 0, 0.02460934350549, 0.1166002944736, 0, 1363.762346338, -421.0811592079, 0, 3877.981886745, -1465.214687088, 0, -350.5189329933, 109.0762551667, 0, -995.8827212621, 376.8074206179, 0, 0, 0, 0.9853225289758, 0, 0, -0.09704680344079, 401.4700668419, -123.8052684905, 0, 1141.651390589, -431.6882797629, 0, 130.9118799090, -40.55137319719, 0, 372.4229726018, -139.7310684168, 0, 0, 0, -0.07418084339284, 0, 0, 1.022202359236], 13)
+    resetPropagatedArc!(segment)
+    println(segment.propArc.states)
+    @test getStateCount(segment.propArc) == 1
+    #updatePointers!
+end
+
+@testset "StateConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    stateConstraint = MBD.StateConstraint(originNode, [1], [originNode.state.data[1]])
+    problem = MBD.MultipleShooterProblem()
+    @test evaluateConstraint(stateConstraint, problem.freeVariableIndexMap, problem.freeVariableVector) == [0]
+    @test getNumberConstraintRows(stateConstraint) == 1
+    @test length(keys(getPartials_ConstraintWRTVariables(stateConstraint, problem.freeVariableIndexMap, problem.freeVariableVector))) == 1
+    #updatePointers!
+end
+
+@testset "StateMatchConstraint" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2, 3, 4, 5, 6])
+    problem = MBD.MultipleShooterProblem()
+    @test isApproxSigFigs(evaluateConstraint(stateMatchConstraint, problem.freeVariableIndexMap, problem.freeVariableVector), [-0.008803836609691, 0.002795978479336, 0, -0.02460934349576, 0.009699705522694, 0], 13)
+    @test getNumberConstraintRows(stateMatchConstraint) == 6
+    @test length(keys(getPartials_ConstraintWRTVariables(stateMatchConstraint, problem.freeVariableIndexMap, problem.freeVariableVector))) == 2
+end
+
+@testset "Variable" begin
+    variable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
+    @test getData(variable) == [0.8234, 0, 0, 0, 0.1263, 0]
+    @test getFreeVariableData(variable) == [0.8234, 0.1263]
+    @test getFreeVariableMask(variable) == [true, false, false, false, true, false]
+    @test getNumberFreeVariables(variable) == 2
+    @test_throws ArgumentError setFreeVariableData!(variable, [4.0, 7.0, 8.5])
+    setFreeVariableData!(variable, [4.0, 7.0])
+    @test variable.data == [4.0, 0, 0, 0, 7.0, 0]
+    @test_throws ArgumentError setFreeVariableMask!(variable, [true, false])
+    setFreeVariableMask!(variable, [true, false, false, false, false, false])
+    @test variable.freeVariableMask == [true, false, false, false, false, false]
 end
 
 @testset "CR3BPSystemData" begin
@@ -412,87 +629,6 @@ end
     @test_throws BoundsError getTimeByIndex(arc, 33)
     setParameters!(arc, systemData.params)
     @test arc.params == systemData.params
-end
-
-@testset "Variable" begin
-    variable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
-    @test getData(variable) == [0.8234, 0, 0, 0, 0.1263, 0]
-    @test getFreeVariableMask(variable) == [true, false, false, false, true, false]
-    @test getFreeVariableData(variable) == [0.8234, 0.1263]
-    @test getNumberFreeVariables(variable) == 2
-    @test_throws ArgumentError setFreeVariableData!(variable, [4.0, 7.0, 8.5])
-    setFreeVariableData!(variable, [4.0, 7.0])
-    @test variable.data == [4.0, 0, 0, 0, 7.0, 0]
-    @test_throws ArgumentError setFreeVariableMask!(variable, [true, false])
-    setFreeVariableMask!(variable, [true, false, false, false, false, false])
-    @test variable.freeVariableMask == [true, false, false, false, false, false]
-end
-
-@testset "Node" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    node = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    state = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, true, true, true, true, true])
-    state.name = "Node State"
-    epoch = MBD.Variable([0.0], [false])
-    epoch.name = "Node Epoch"
-    @test getVariables(node) == [state, epoch]
-end
-
-@testset "Segment" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
-    segment = MBD.Segment(2.743, originNode, terminalNode)
-    @test getPropagatorParametersData(segment) == []
-    lazyPropagate!(segment, MBD.SIMPLE)
-    @test getFinalState!(segment) == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
-    @test getFinalStateRate!(segment) == [0.024609343452095516, 0.11660029449394844, 0, 0.1811347722609521, -0.03842090358820642, 0]
-    @test getPartials_FinalStateWRTEpoch!(segment) == zeros(Float64, (6, 1))
-    @test getPartials_FinalStateWRTInitialState!(segment) == [1363.7623463384225 -350.5189329932971 0 401.47006684190467 130.9118799090134 0; -421.0811592078634 109.0762551667312 0 -123.80526849051417 -40.55137319718717 0; 0 0 0.9853225289757791 0 0 -0.07418084339284088; 3877.9818867448876 -995.8827212621478 0 1141.6513905889287 372.4229726017758 0; -1465.2146870879967 376.80742061788857 0 -431.68827976285263 -139.73106841681852 0; 0 0 -0.09704680344078878 0 0 1.0222023592364666]
-    @test size(getPartials_FinalStateWRTParams!(segment)) == (6, 0)
-    lazyPropagate!(segment, MBD.FULL)
-    @test getFinalState!(segment) == [0.8322038366131117, -0.0027959784803926763, 0, 0.024609343505493344, 0.11660029447362832, 0, 1363.7623463384225, -421.0811592078634, 0, 3877.9818867448876, -1465.2146870879967, 0, -350.5189329932971, 109.0762551667312, 0, -995.8827212621478, 376.80742061788857, 0, 0, 0, 0.9853225289757791, 0, 0, -0.09704680344078878, 401.47006684190467, -123.80526849051417, 0, 1141.6513905889287, -431.68827976285263, 0, 130.9118799090134, -40.55137319718717, 0, 372.4229726017758, -139.73106841681852, 0, 0, 0, -0.07418084339284088, 0, 0, 1.0222023592364666]
-    @test getVariables(segment) == [segment.TOF, segment.propParams]
-    resetPropagatedArc!(segment)
-    @test getStateCount(segment.propArc) == 1
-end
-
-@testset "ContinuityConstraint" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
-    segment = MBD.Segment(2.743, originNode, terminalNode)
-    continuityConstraint = MBD.ContinuityConstraint(segment)
-    @test getNumberConstraintRows(continuityConstraint) == 6
-    multipleShooterProblem = MBD.MultipleShooterProblem()
-    @test evaluateConstraint(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [-1.535771509963979e-11, 4.5718398684890804e-12, 0, -4.366933897825831e-11, 1.6642839884006833e-11, 0]
-    @test length(keys(getPartials_ConstraintWRTVariables(continuityConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 3
-end
-
-@testset "StateConstraint" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    stateConstraint = MBD.StateConstraint(originNode, [1], [originNode.state.data[1]])
-    @test getNumberConstraintRows(stateConstraint) == 1
-    multipleShooterProblem = MBD.MultipleShooterProblem()
-    @test evaluateConstraint(stateConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0]
-    @test length(keys(getPartials_ConstraintWRTVariables(stateConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 1
-end
-
-@testset "StateMatchConstraint" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    terminalNode = MBD.Node(2.743, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
-    stateMatchConstraint = MBD.StateMatchConstraint(originNode.state, terminalNode.state, [1, 2, 3, 4, 5, 6])
-    @test getNumberConstraintRows(stateMatchConstraint) == 6
-    multipleShooterProblem = MBD.MultipleShooterProblem()
-    @test evaluateConstraint(stateMatchConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [-0.008803836609691418, 0.00279597847933625, 0, -0.024609343495764855, 0.00969970552269439, 0]
-    @test length(keys(getPartials_ConstraintWRTVariables(stateMatchConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 2
 end
 
 @testset "JacobiConstraint" begin

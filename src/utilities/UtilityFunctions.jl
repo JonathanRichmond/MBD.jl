@@ -3,10 +3,10 @@ Utility functions
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 4/3/24
+U: 5/15/24
 """
 
-export Cartesian2Cylindrical, checkIndices, maskData, updatePointer
+export Cartesian2Cylindrical, checkIndices, isApproxSigFigs, maskData, updatePointer
 
 """
     Cartesian2Cylindrical(pos, c)
@@ -42,6 +42,23 @@ function checkIndices(stateIndices::Vector{Int64}, stateSize::Int64)
             ((i != j) && (stateIndices[i] == stateIndices[j])) && throw(ArgumentError("Index $(stateIndices[i]) is included more than once"))
         end
     end
+end
+
+"""
+    isApproxSigFigs(a, b, sigFigs)
+
+# Arguments
+- `a::Vector{Float64}`: First number
+- `b::Vector{Float64}`: Second number
+- `sigFigs::Int64`: Number of significant figures
+"""
+function isApproxSigFigs(a::Vector{Float64}, b::Vector{Float64}, sigFigs::Int64)
+    (length(a) == length(b)) || throw(ArgumentError("Length of a, $(length(a)), must match lenght of b, $(length(b))"))
+    for i::Int64 = 1:length(a)
+        (round(a[i], RoundNearestTiesUp, sigdigits = sigFigs) == round(b[i], RoundNearestTiesUp, sigdigits = sigFigs)) || (return false)
+    end
+
+    return true
 end
 
 """
