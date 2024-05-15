@@ -529,6 +529,7 @@ end
     @test isApproxSigFigs(evaluateConstraint(stateMatchConstraint, problem.freeVariableIndexMap, problem.freeVariableVector), [-0.008803836609691, 0.002795978479336, 0, -0.02460934349576, 0.009699705522694, 0], 13)
     @test getNumberConstraintRows(stateMatchConstraint) == 6
     @test length(keys(getPartials_ConstraintWRTVariables(stateMatchConstraint, problem.freeVariableIndexMap, problem.freeVariableVector))) == 2
+    #updatePointers!
 end
 
 @testset "Variable" begin
@@ -545,23 +546,18 @@ end
     @test variable.freeVariableMask == [true, false, false, false, false, false]
 end
 
-@testset "CR3BPSystemData" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    @test getMassRatio(systemData) == 0.012150584269940356
-end
-
 @testset "CR3BPDynamicsModel" begin
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    @test getStateSize(dynamicsModel, MBD.SIMPLE) == 6
-    @test_throws ArgumentError appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1], MBD.SIMPLE)
+    @test_throws ArgumentError appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1.0], MBD.SIMPLE)
     @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.SIMPLE) == [0.8234, 0, 0, 0, 0.1263, 0]
     @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL) == [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
-    @test evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.8234, 0, 0, 0, 0.1263, 0], systemData.params) == [0, 0.1263, 0, 0.11033238649399063, 0, 0]
+    @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.ARCLENGTH) == [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]
+    @test isApproxSigFigs(evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.8234, 0, 0, 0, 0.1263, 0], systemData.params), [0, 0.1263, 0, 0.1103323864940, 0, 0], 13)
+    @test isApproxSigFigs(evaluateEquations(dynamicsModel, MBD.FULL, 0.0, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), systemData.params), [0, 0.1263, 0, 0.1103323864940, 0, 0, 0, 0, 0, 9.851145859594, 0, 0, 0, 0, 0, 0, -3.425572929797, 0, 0, 0, 0, 0, 0, -4.425572929797, 1.0, 0, 0, 0, -2.0, 0, 0, 1.0, 0, 2.0, 0, 0, 0, 0, 1.0, 0, 0, 0], 13)
+    @test isApproxSigFigs(evaluateEquations(dynamicsModel, MBD.ARCLENGTH, 0.0, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.ARCLENGTH), systemData.params), [0, 0.1263, 0, 0.1103323864940, 0, 0, 0, 0, 0, 9.851145859594, 0, 0, 0, 0, 0, 0, -3.425572929797, 0, 0, 0, 0, 0, 0, -4.425572929797, 1.0, 0, 0, 0, -2.0, 0, 0, 1.0, 0, 2.0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0.1263], 13)
     MoonData = MBD.BodyData("Moon")
-    @test get2BApproximation(dynamicsModel, MoonData, 2, 0.01) == [0.9778494157300597, 0, 0, 0, 1.1122968869565202, 0]
-    @test getEquationsOfMotion(dynamicsModel, MBD.SIMPLE) == MBD.CR3BPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
-    @test isEpochIndependent(dynamicsModel)
+    @test isApproxSigFigs(get2BApproximation(dynamicsModel, MoonData, 2, 0.01), [0.9778494157301, 0, 0, 0, 1.112296886957, 0], 13)
     @test_throws ArgumentError getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [0, 0, 0, 0, 0, 0]
     @test_throws ArgumentError getEquilibriumPoint(dynamicsModel, 6)
@@ -569,26 +565,44 @@ end
     @test getEquilibriumPoint(dynamicsModel, 2) == [1.1556821602923404, 0, 0]
     @test getEquilibriumPoint(dynamicsModel, 3) == [-1.005062645252109, 0, 0]
     @test getEquilibriumPoint(dynamicsModel, 4) == [0.48784941573005963, 0.8660254037844386, 0]
-    @test getJacobiConstant(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == 3.1743560232059265
+    @test isApproxSigFigs([getExcursion(dynamicsModel, 2, [0.8234, 0, 0, 0, 0.1263, 0])], [63271.58248957], 13)
+    @test isApproxSigFigs([getJacobiConstant(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])], [3.174356023206], 13)
     L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
     L5::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 5)
     @test_throws ArgumentError getLinearVariation(dynamicsModel, 6, L1, [0.005, 0, 0])
-    @test getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0]) == ([0.8419151323643023, 0, 0, 0, -0.04186136597442648, 0], [0, 2.6915795607981865])
     @test_throws ArgumentError getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Medium")
-    @test getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Long") == ([0.49284941573005964, -0.8660254037844386, 0, -0.003168674904327207, -0.0020973202593643175, 0], [0, 21.06979705455942])
+    @test isApproxSigFigs(getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0])[1], [0.8419151323643, 0, 0, 0, -0.04186136597443, 0], 13)
+    @test isApproxSigFigs(getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0])[2], [0, 2.691579560798], 13)
+    @test isApproxSigFigs(getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Long")[1], [0.4928494157301, -0.8660254037844, 0, -0.003168674904327, -0.002097320259364, 0], 13)
+    @test isApproxSigFigs(getLinearVariation(dynamicsModel, 5, L5, [0.005, 0, 0], "Long")[2], [0, 21.06979705456], 13)
     @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
     @test_throws ArgumentError getPrimaryPosition(dynamicsModel, 3)
-    @test getPrimaryPosition(dynamicsModel, 1) == [-0.012150584269940356, 0, 0]
-    @test getPseudopotentialJacobian(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]) == [9.851145859594304, -3.4255729297971507, -4.42557292979715, 0, 0, 0]
+    @test isApproxSigFigs(getPrimaryPosition(dynamicsModel, 1), [-0.01215058426994, 0, 0], 13)
+    @test isApproxSigFigs(getPseudopotentialJacobian(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0]), [9.851145859594, -3.425572929797, -4.425572929797, 0, 0, 0], 13)
+    @test getStateSize(dynamicsModel, MBD.SIMPLE) == 6
+    @test getStateSize(dynamicsModel, MBD.FULL) == 42
+    @test getStateSize(dynamicsModel, MBD.ARCLENGTH) == 43
     @test_throws ArgumentError getStateTransitionMatrix(dynamicsModel, [0.8324, 0, 0, 0, 0.1263, 0])
-    @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
+    @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
+    @test_throws ArgumentError getTidalAcceleration(dynamicsModel, 3, [0.8234, 0, 0])
+    @test isApproxSigFigs(getTidalAcceleration(dynamicsModel, 1, [0.8234, 0, 0]), [-0.5915635514335, 0, 0], 13)
+    @test isApproxSigFigs(getTidalAcceleration(dynamicsModel, 2, [0.8234, 0, 0]), [1.272695937927, 0, 0], 13)
+    @test isEpochIndependent(dynamicsModel)
     @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 2, [[1.0, 0, 0, 0, 1.0, 0], [1.1, 0, 0, 0, 1.1, 0]], [0.0])
     @test_throws ArgumentError primaryInertial2Rotating(dynamicsModel, 3, [[1.0, 0, 0, 0, 1.0, 0]], [0.0])
-    @test primaryInertial2Rotating(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8112494157300597, 0, 0, 0, -0.6971, 0]]
-    @test rotating2PrimaryInertial(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0]], [0.0]) == [[0.8355505842699403, 0, 0, 0, 0.9618505842699403, 0]]
-    SMSystemData = MBD.CR3BPSystemData("Sun", "Mars")
-    SMDynamicsModel = MBD.CR3BPDynamicsModel(SMSystemData)
+    @test isApproxSigFigs(primaryInertial2Rotating(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[1], [0.8112494157301, 0, 0, 0, -0.6971, 0], 13)
+    @test isApproxSigFigs(primaryInertial2Rotating(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[2], [-0.7802015843359, -0.3204195756524, 0, -0.2978446415273, 0.6510398005646, 0], 13)
+    SPICE.furnsh("../src/spice/kernels/naif0012.tls", "../src/spice/kernels/de440.bsp", "../src/spice/kernels/mar097.bsp")
+    @test isApproxSigFigs(rotating2PrimaryEclipJ2000(dynamicsModel, "Jan 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[1], [0.3093978367126, 0.7726559358880, 0.07362446772986, -0.8930326868322, 0.3572626063404, 0.003549199984676], 13)
+    @test isApproxSigFigs(rotating2PrimaryEclipJ2000(dynamicsModel, "Jan 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[2], [-0.5944039158312, -0.5959053293302, -0.06725346738315, 0.6649246782108, -0.6932473627690, -0.03831818053376], 13)
+    @test isApproxSigFigs(rotating2PrimaryInertial(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[1], [0.8355505842699, 0, 0, 0, 0.9618505842699, 0], 13)
+    @test isApproxSigFigs(rotating2PrimaryInertial(dynamicsModel, 1, [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[2], [-0.7770787174211, 0.3302890741241, 0, -0.3982243502394, -0.8749870761992, 0], 13)
+    @test isApproxSigFigs(rotating2SunEclipJ2000(dynamicsModel, "Jan 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[1], [0.3338038885097, 0.7624427656725, 0.07348994464091, -0.8813086468342, 0.3852438101716, 0.006230746360073], 13)
+    @test isApproxSigFigs(rotating2SunEclipJ2000(dynamicsModel, "Jan 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[2], [-0.6130761226760, -0.5767984348495, -0.06620754424084, 0.6426274696210, -0.7138340110843, -0.04069344599638], 13)
+    @test isApproxSigFigs(secondaryEclipJ20002Rotating(dynamicsModel, "Jan 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[1], [1.292747986260, -0.7644878803039, -0.02413923274187, -0.6476948978804, -0.2579866406325, -0.01050524106962], 13)
+    @test isApproxSigFigs(secondaryEclipJ20002Rotating(dynamicsModel, "Jan 1 2026", [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[2], [0.4059409161323, 0.5944489928956, -0.02416476991132, 0.4946209535941, 0.5176664845539, -0.01041991035573], 13)
+    SPICE.kclear()
 end
 
 @testset "CR3BPEquationsOfMotion" begin
@@ -597,20 +611,38 @@ end
     EOMs_simple = MBD.CR3BPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
     qdot_simple = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.SIMPLE))
     computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], (EOMs_simple,), 0.0)
-    @test qdot_simple == [0, 0.1263, 0, 0.11033238649399063, 0, 0]
+    @test isApproxSigFigs(qdot_simple, [0, 0.1263, 0, 0.1103323864940, 0, 0], 13)
     EOMs_full = MBD.CR3BPEquationsOfMotion(MBD.FULL, dynamicsModel)
     qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
     computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), (EOMs_full,), 0.0)
-    @test qdot_full == [0, 0.1263, 0, 0.11033238649399063, 0, 0, 0, 0, 0, 9.851145859594295, 0, 0, 0, 0, 0, 0, -3.425572929797148, 0, 0, 0, 0, 0, 0, -4.4255729297971484, 1, 0, 0, 0, -2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0]
+    @test isApproxSigFigs(qdot_full, [0, 0.1263, 0, 0.1103323864940, 0, 0, 0, 0, 0, 9.851145859594, 0, 0, 0, 0, 0, 0, -3.425572929797, 0, 0, 0, 0, 0, 0, -4.425572929797, 1, 0, 0, 0, -2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0], 13)
+    EOMs_arclength = MBD.CR3BPEquationsOfMotion(MBD.ARCLENGTH, dynamicsModel)
+    qdot_arclength = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.ARCLENGTH))
+    computeDerivatives!(qdot_arclength, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.ARCLENGTH), (EOMs_arclength,), 0.0)
+    @test isApproxSigFigs(qdot_arclength, [0, 0.1263, 0, 0.1103323864940, 0, 0, 0, 0, 0, 9.851145859594, 0, 0, 0, 0, 0, 0, -3.425572929797, 0, 0, 0, 0, 0, 0, -4.425572929797, 1, 0, 0, 0, -2, 0, 0, 1, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0.1263], 13)
 end
 
-@testset "Propagator" begin
-    propagator = MBD.Propagator()
+@testset "JacobiConstraint" begin
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
-    @test arc.states[end] == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
-    @test arc.times[end-1] == 2.6859388949346146
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    JCConstraint = MBD.JacobiConstraint(originNode, 3.1743)
+    problem = MBD.MultipleShooterProblem()
+    @test isApproxSigFigs(evaluateConstraint(JCConstraint, problem.freeVariableIndexMap, problem.freeVariableVector), [5.602320592635E-5], 13)
+    @test getNumberConstraintRows(JCConstraint) == 1
+    @test length(keys(getPartials_ConstraintWRTVariables(JCConstraint, problem.freeVariableIndexMap, problem.freeVariableVector))) == 1
+    #updatePointers!
+end
+
+#@testset "CR3BPOrbitFamily" begin
+#end
+
+#@testset "CR3BPPeriodicOrbit" begin
+#end
+
+@testset "CR3BPSystemData" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    @test isApproxSigFigs([getMassRatio(systemData)], [0.01215058426994], 13)
 end
 
 @testset "Arc" begin
@@ -631,15 +663,13 @@ end
     @test arc.params == systemData.params
 end
 
-@testset "JacobiConstraint" begin
+@testset "Propagator" begin
+    propagator = MBD.Propagator()
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
-    jacobiConstraint = MBD.JacobiConstraint(originNode, 3.1743560232059265)
-    @test getNumberConstraintRows(jacobiConstraint) == 1
-    multipleShooterProblem = MBD.MultipleShooterProblem()
-    @test evaluateConstraint(jacobiConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector) == [0.0]
-    @test length(keys(getPartials_ConstraintWRTVariables(jacobiConstraint, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector))) == 1
+    arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
+    @test arc.states[end] == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
+    @test arc.times[end-1] == 2.6859388949346146
 end
 
 @testset "TBPDynamicsModel" begin

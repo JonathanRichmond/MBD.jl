@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 4/1/24
+U: 5/15/24
 """
 
 import LinearAlgebra, SPICE
@@ -39,7 +39,7 @@ function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simp
         q0_out = q0_simple[1:n_out]
     else
         q0_out[1:n_in] = q0_simple
-        (n_in == n_simple) && [q0_out[i] = 1 for i in n_simple+1:n_simple+1:n_STM]
+        [q0_out[i] = 1 for i in n_simple+1:n_simple+1:n_STM]
     end
 
     return q0_out
@@ -333,22 +333,22 @@ function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.Equat
 end
 
 """
-    getStateTransitionMatrix(dynamicsModel, q0_STM)
+    getStateTransitionMatrix(dynamicsModel, q0)
 
 Return STM
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-- `q0_STM::Vector{Float64}`: Initial state vector with STM in column-major order [ndim]
+- `q0::Vector{Float64}`: Initial state vector with STM in column-major order [ndim]
 """
-function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0_STM::Vector{Float64})
+function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64})
     n_STM::Int64 = getStateSize(dynamicsModel, MBD.STM)
-    (length(q0_STM) < n_STM) && throw(ArgumentError("State vector length is $(length(q0_STM)), but should be $n_STM"))
+    (length(q0) < n_STM) && throw(ArgumentError("State vector length is $(length(q0)), but should be at least $n_STM"))
     n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
     STM::Matrix{Float64} = zeros(Float64, (n_simple, n_simple))
     for r::Int64 in 1:n_simple
         for c::Int64 in 1:n_simple
-            STM[r,c] = q0_STM[n_simple+n_simple*(c-1)+r]
+            STM[r,c] = q0[n_simple+n_simple*(c-1)+r]
         end
     end
 
