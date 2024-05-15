@@ -13,7 +13,7 @@ export updateStepSize!
 """
     updateStepSize!(adaptiveStepSizeByElementGenerator, data)
 
-Return adaptive step size by element generator with updated step size
+Return continuation data with updated step size
 
 # Arguments
 - `adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator`: Adaptive step size by element generator object

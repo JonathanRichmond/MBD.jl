@@ -675,7 +675,7 @@ mutable struct AdaptiveStepSizeByElementGenerator
         this.minStepSize = (initialStepSize < 0) ? -1E-10 : 1E-10
         this.maxStepSize = 1E-1
         this.scaleFactor = 2
-        this.minIterations = 10
+        this.minIterations = 12
         this.maxIterations = 3
         this.elementName = elementName
         (elementIndex < 1) && throw(ArgumentError("Element index must be positive"))

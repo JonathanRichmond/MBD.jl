@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 5/13/24
+U: 5/15/24
 """
 
 using MBD
@@ -149,10 +149,10 @@ end
     naturalParamContinuationTight = MBD.NaturalParameterContinuationEngine("Initial State", 1, -1E-4, -1E-2, 1E-12)
     @test naturalParamContinuationTight.corrector.convergenceCheck.maxVectorNorm == 1E-12
     @test MBD.JacobiConstantContinuationEngine <: MBD.AbstractContinuationEngine
-    JacobiContinuation = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1)
-    @test JacobiContinuation.storeIntermediateMembers
-    JacobiContinuationTight = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1, 1E-12)
-    @test JacobiContinuationTight.corrector.convergenceCheck.maxVectorNorm == 1E-12
+    JCContinuation = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1)
+    @test JCContinuation.storeIntermediateMembers
+    JCContinuationTight = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1, 1E-12)
+    @test JCContinuationTight.corrector.convergenceCheck.maxVectorNorm == 1E-12
     #bifurcation = MBD.Bifurcation(orbitFamily, periodicOrbit, 1, MBD.TANGENT, 1)
     #@test bifurcation.orbit == 1
     @test MBD.CR3BPPeriodicOrbit <: MBD.AbstractTrajectoryStructure
@@ -211,9 +211,121 @@ end
     @test MBD.deepClone(variable) == variable
 end
 
+#@testset "Bifurcation" begin    
+#end
+
 @testset "BodyName" begin
     bodyName = MBD.BodyName("Earth")
     @test getIDCode(bodyName) == 399
+end
+
+@testset "AdaptiveStepSizeByElementGenerator" begin
+    stepSizeGenerator = MBD.AdaptiveStepSizeByElementGenerator("Initial State", 1, -1E-4, -1E-2)
+    continuationData = MBD.ContinuationData()
+    continuationData.currentStepSize = stepSizeGenerator.initialStepSize
+    updateStepSize!(stepSizeGenerator, continuationData)
+    @test continuationData.currentStepSize == -0.0002
+    continuationData.numIterations = 15
+    updateStepSize!(stepSizeGenerator, continuationData)
+    @test continuationData.currentStepSize == -0.0001
+    continuationData.numIterations = 1
+    continuationData.currentStepSize = -0.05
+    updateStepSize!(stepSizeGenerator, continuationData)
+    @test continuationData.currentStepSize == -0.01
+    continuationData.currentStepSize = stepSizeGenerator.initialStepSize
+    continuationData.converging = false
+    updateStepSize!(stepSizeGenerator, continuationData)
+    @test continuationData.currentStepSize == -0.00005
+    continuationData.currentStepSize = -1E-10
+    updateStepSize!(stepSizeGenerator, continuationData)
+    @test continuationData.forceEndContinuation
+end
+
+@testset "BoundingBoxContinuationEndCheck" begin
+    boxEndCheck = MBD.BoundingBoxContinuationEndCheck("Initial State", [0 0.99; NaN NaN])
+    stateVariable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
+    stateVariable.name = "Initial State"
+    checkBounds(boxEndCheck, stateVariable)
+    setFreeVariableMask!(stateVariable, [true, false, false, false, false, false])
+    @test_throws ArgumentError checkBounds(boxEndCheck, stateVariable)
+    boxEndCheck.paramBounds = [0 0.5 0.99]
+    @test_throws ArgumentError checkBounds(boxEndCheck, stateVariable)
+    boxEndCheck.paramBounds = [0.5 0]
+    @test_throws ArgumentError checkBounds(boxEndCheck, stateVariable)
+    #isContinuationDone
+end
+
+@testset "BoundingBoxJumpCheck" begin
+    boxJumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [0 0.99; NaN NaN])
+    problem = MBD.MultipleShooterProblem()
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    originNode = MBD.Node(0.0, [0.8234, 0, 0, 0, 0.1263, 0], dynamicsModel)
+    setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
+    terminalNode = MBD.Node(0.0, [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], dynamicsModel)
+    segment = MBD.Segment(2.743, originNode, terminalNode)
+    addSegment!(problem, segment)
+    addBounds!(boxJumpCheck, problem, problem.segments[1].originNode.state, [0 0.9; NaN NaN])
+    @test length(boxJumpCheck.variableBounds) == 1
+    stateVariable = MBD.Variable([0.8234, 0, 0, 0, 0.1263, 0], [true, false, false, false, true, false])
+    @test_throws MethodError addBounds!(boxJumpCheck, problem, stateVariable, [0 0.89; NaN NaN])
+    setFreeVariableMask!(stateVariable, [true, false, false, false, false, false])
+    @test_throws ArgumentError checkBounds(boxJumpCheck, stateVariable, [0 0.9; NaN NaN])
+    @test_throws ArgumentError checkBounds(boxJumpCheck, stateVariable, [0 0.5 0.9])
+    @test_throws ArgumentError checkBounds(boxJumpCheck, stateVariable, [0.9 0])
+    removeBounds!(boxJumpCheck, problem, problem.segments[1].originNode.state)
+    @test length(boxJumpCheck.variableBounds) == 0
+    @test_throws MethodError removeBounds!(boxJumpCheck, problem, stateVariable)
+    #isFamilyMember
+end
+
+@testset "JacobiConstantContinuationEngine" begin
+    JCContinuation = MBD.JacobiConstantContinuationEngine(-1E-4, -1E-1)
+    stepsEndCheck = MBD.NumberStepsContinuationEndCheck(100)
+    addEndCheck!(JCContinuation, stepsEndCheck)
+    @test length(JCContinuation.endChecks) == 1
+    boxJumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [0 1.2; 0 1.0])
+    addJumpCheck!(JCContinuation, boxJumpCheck)
+    @test length(JCContinuation.jumpChecks) == 1
+    JCContinuation.dataInProgress.converging = false
+    resetEngine!(JCContinuation)
+    @test JCContinuation.dataInProgress.converging
+    #computeFullStep
+    #constrainNextGuess!
+    #convergeInitialSolution
+    #doContinuation!
+    #endContinuation
+    #tryConverging!
+end
+
+@testset "NaturalParameterContinuationEngine" begin
+    naturalParamContinuation = MBD.NaturalParameterContinuationEngine("Initial State", 1, -1E-4, -1E-2)
+    stepsEndCheck = MBD.NumberStepsContinuationEndCheck(100)
+    addEndCheck!(naturalParamContinuation, stepsEndCheck)
+    @test length(naturalParamContinuation.endChecks) == 1
+    boxJumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [0 1.2; 0 1.0])
+    addJumpCheck!(naturalParamContinuation, boxJumpCheck)
+    @test length(naturalParamContinuation.jumpChecks) == 1
+    naturalParamContinuation.dataInProgress.converging = false
+    resetEngine!(naturalParamContinuation)
+    @test naturalParamContinuation.dataInProgress.converging
+    #computeFullStep
+    #constrainNextGuess!
+    #convergeInitialSolution
+    #doContinuation!
+    #endContinuation
+    #tryConverging!
+end
+
+@testset "NumberStepsContinuationEndCheck" begin
+    stepsEndCheck = MBD.NumberStepsContinuationEndCheck(100)
+    continuationData = MBD.ContinuationData()
+    @test !isContinuationDone(stepsEndCheck, continuationData)
+    continuationData.stepCount = 100
+    oldstd = stdout
+    redirect_stdout(devnull)
+    @test isContinuationDone(stepsEndCheck, continuationData)
+    redirect_stdout(oldstd)
 end
 
 @testset "CR3BPSystemData" begin

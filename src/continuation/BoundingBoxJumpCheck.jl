@@ -3,7 +3,7 @@ Bounding box jump check wrapper
 
 Author: Jonathan Richmond
 C: 1/8/23
-U: 9/9/23
+U: 5/14/23
 """
 
 import MBD: BoundingBoxJumpCheck
@@ -22,7 +22,7 @@ Return bounding box jump check object with updated bounds
 - `bounds::Matrix{Float64}`: Minimum/maximum values for each free variable
 """
 function addBounds!(boundingBoxJumpCheck::BoundingBoxJumpCheck, problem::MBD.MultipleShooterProblem, variable::MBD.Variable, bounds::Matrix{Float64})
-    index0::Int64 = get(getFreeVariableIndexMap!(problem), variable, "Variable is not part of problem")
+    index0::Int64 = get(getFreeVariableIndexMap!(problem), variable, ArgumentError("Variable is not part of problem"))
     checkBounds(boundingBoxJumpCheck, variable, bounds)
     for i::Int64 in 1:getNumberFreeVariables(variable)
         if (!isnan(bounds[i,1]) && !isnan(bounds[i,2]))
@@ -83,6 +83,6 @@ Return bounding box jump check object with updated bounds
 - `variable::Variable`: Bounded free variable
 """
 function removeBounds!(boundingBoxJumpCheck::BoundingBoxJumpCheck, problem::MBD.MultipleShooterProblem, variable::MBD.Variable)
-    index0::Int64 = get(getFreeVariableIndexMap!(problem), variable, "Variable is not part of problem")
+    index0::Int64 = get(getFreeVariableIndexMap!(problem), variable, ArgumentError("Variable is not part of problem"))
     [delete!(boundingBoxJumpCheck.variableBounds, index0+i-1) for i in 1:getNumberFreeVariables(variable)]
 end
