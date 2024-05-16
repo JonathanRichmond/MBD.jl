@@ -678,6 +678,18 @@ end
     @test isApproxSigFigs(getStateByIndex(eventArc, -1), [0.8399883237735, 0.05525880501532, 0, 0.03871870586244, 0.01970130539743, 0], 13)
 end
 
+@testset "BodyName" begin
+    Earth = MBD.BodyName("Earth")
+    @test getIDCode(Earth) == 399
+end
+
+@testset "SPICE Functions" begin
+    SPICE.furnsh("../src/spice/kernels/naif0012.tls", "../src/spice/kernels/de440.bsp", "../src/spice/kernels/mar097.bsp")
+    @test isApproxSigFigs(getEphemerides("Jan 1 2026", [0.0, 2.743], "Earth", "Sun", "ECLIPJ2000")[1], [-2.607419930072E7, 1.447743004812E8, -8892.894259885, -29.78885492734, -5.396685723327, 0.0004108777077585], 13)
+    @test isApproxSigFigs(getEphemerides("Jan 1 2026", [0.0, 2.743], "Earth", "Sun", "ECLIPJ2000")[2], [-2.607428101155E7, 1.447742856780E8, -8892.893132836, -29.78885190443, -5.396702185040, 0.0004108878034403], 13)
+    SPICE.kclear()
+end
+
 @testset "TBPDynamicsModel" begin
     systemData = MBD.TBPSystemData("Sun")
     dynamicsModel = MBD.TBPDynamicsModel(systemData)
@@ -713,13 +725,6 @@ end
     computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), (EOMs_full,), 0.0)
     @test qdot_full == [0, 0.1263, 0, -1.4749533162525872, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.5825924611430353, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0]
     @test getLambertArc(dynamicsModel, [0.785798, 0.618484, -4.40907E-5], [-0.695636, -1.36224, -0.0114978], 5.391710131490492, "Long") == ([-61781.16548851388, 511386.43681523146, 7933.518512179655], [393204.0310118931, 137401.10858711743, -2458.8113571350514])
-end
-
-@testset "SPICE Functions" begin
-    SPICE.furnsh("../src/spice/kernels/naif0012.tls", "../src/spice/kernels/de440.bsp", "../src/spice/kernels/mar097.bsp")
-    EarthInitialState = getEphemerides("Nov 1 2026", [0.0], "Earth", "Sun", "ECLIPJ2000")
-    @test EarthInitialState == [[1.1669364364177027E8, 9.184694649040842E7, -6547.627331614494, -18.896701708854742, 23.300520269960817, -0.0003837831634516675]]
-    SPICE.kclear()
 end
 
 @testset "Utility Functions" begin
