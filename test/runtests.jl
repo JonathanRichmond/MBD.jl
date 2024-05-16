@@ -650,15 +650,16 @@ end
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
-    @test getStateByIndex(arc, -1) == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
-    @test getTimeByIndex(arc, -1) == 2.743
-    deleteStateAndTime!(arc, 32)
-    @test getStateCount(arc) == 32
-    @test arc.states[32] == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
-    @test arc.times[32] == 2.743
-    @test_throws BoundsError deleteStateAndTime!(arc, 33)
-    @test_throws BoundsError getStateByIndex(arc, 33)
-    @test_throws BoundsError getTimeByIndex(arc, 33)
+    stateCount::Int64 = getStateCount(arc)
+    @test_throws BoundsError deleteStateAndTime!(arc, stateCount+1)
+    deleteStateAndTime!(arc, stateCount)
+    @test getStateCount(arc) == stateCount-1
+    @test_throws BoundsError getStateByIndex(arc, stateCount)
+    @test isApproxSigFigs(getStateByIndex(arc, 20), [0.8539411656065, -0.02977875863679, 0.0, -0.009955440103157, -0.1123143040871, 0.0], 13)
+    @test isApproxSigFigs(getStateByIndex(arc, -1), [0.8310879651381, -0.009487114340839, 0.0, 0.01461933192466, 0.1174961788604, 0.0], 13)
+    @test_throws BoundsError getTimeByIndex(arc, stateCount)
+    @test isApproxSigFigs([getTimeByIndex(arc, 20)], [1.605767991164], 13)
+    @test isApproxSigFigs([getTimeByIndex(arc, -1)], [2.685938894935], 13)
     setParameters!(arc, systemData.params)
     @test arc.params == systemData.params
 end
@@ -668,8 +669,13 @@ end
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     arc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel)
-    @test arc.states[end] == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
-    @test arc.times[end-1] == 2.6859388949346146
+    @test isApproxSigFigs(getStateByIndex(arc, -1), [0.8322038365943, -0.002795978474764, 0, 0.02460934345210, 0.1166002944939, 0], 13)
+    @test isApproxSigFigs([getTimeByIndex(arc, -2)], [2.685938894935], 13)
+    paramArc::MBD.Arc = propagate(propagator, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel, systemData.params)
+    @test isApproxSigFigs(getStateByIndex(paramArc, -1), [0.8322038365943, -0.002795978474764, 0, 0.02460934345210, 0.1166002944939, 0], 13)
+    distanceEvent = DifferentialEquations.ContinuousCallback(p2DistanceCondition, terminateAffect!)
+    eventArc::MBD.Arc = propagateWithEvent(propagator, distanceEvent, [0.8234, 0, 0, 0, 0.1263, 0], [0, 2.743], dynamicsModel, [getPrimaryPosition(dynamicsModel, 2)[1]-0.83])
+    @test isApproxSigFigs(getStateByIndex(eventArc, -1), [0.8399883237735, 0.05525880501532, 0, 0.03871870586244, 0.01970130539743, 0], 13)
 end
 
 @testset "TBPDynamicsModel" begin
