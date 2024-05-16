@@ -3,6 +3,7 @@ TBP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/14/23
+U: 5/15/24
 """
 
 import LinearAlgebra
@@ -100,19 +101,6 @@ function getCartesianState(dynamicsModel::TBPDynamicsModel, a::Float64, e::Float
 end
 
 """
-    getEquationsOfMotion(dynamicsModel, equationType)
-
-Return EOMs
-
-# Arguments
-- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
-- `equationType::EquationType`: EOM type
-"""
-function getEquationsOfMotion(dynamicsModel::TBPDynamicsModel, equationType::MBD.EquationType)
-    return MBD.TBPEquationsOfMotion(equationType, dynamicsModel)
-end
-
-"""
     getEpochDependencies(dynamicsModel, q)
 
 Return derivative of state with respect to epoch
@@ -127,6 +115,19 @@ function getEpochDependencies(dynamicsModel::TBPDynamicsModel, q_full::Vector{Fl
     n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
+end
+
+"""
+    getEquationsOfMotion(dynamicsModel, equationType)
+
+Return EOMs
+
+# Arguments
+- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+- `equationType::EquationType`: EOM type
+"""
+function getEquationsOfMotion(dynamicsModel::TBPDynamicsModel, equationType::MBD.EquationType)
+    return MBD.TBPEquationsOfMotion(equationType, dynamicsModel)
 end
 
 """
@@ -319,7 +320,7 @@ Return number of state variables
 - `equationType::EquationType`: EOM type
 """
 function getStateSize(dynamicsModel::TBPDynamicsModel, equationType::MBD.EquationType)
-    type = Dict(MBD.SIMPLE => 6, MBD.STM => 42, MBD.FULL => 42)
+    type = Dict(MBD.SIMPLE => 6, MBD.STM => 42, MBD.FULL => 42, MBD.ARCLENGTH => 43)
 
     return type[equationType]
 end

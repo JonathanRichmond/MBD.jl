@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 5/15/24
+U: 5/16/24
 """
 
 using MBD
@@ -691,40 +691,68 @@ end
 end
 
 @testset "TBPDynamicsModel" begin
-    systemData = MBD.TBPSystemData("Sun")
+    systemData = MBD.TBPSystemData("Earth")
     dynamicsModel = MBD.TBPDynamicsModel(systemData)
-    @test getStateSize(dynamicsModel, MBD.SIMPLE) == 6
-    @test_throws ArgumentError appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1], MBD.SIMPLE)
+    @test_throws ArgumentError appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1.0], MBD.SIMPLE)
     @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.SIMPLE) == [0.8234, 0, 0, 0, 0.1263, 0]
     @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL) == [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
-    @test evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.8234, 0, 0, 0, 0.1263, 0]) == [0, 0.1263, 0, -1.4749533162525872, 0, 0]
-    @test getEquationsOfMotion(dynamicsModel, MBD.SIMPLE) == MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
-    @test isEpochIndependent(dynamicsModel)
+    @test appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.ARCLENGTH) == [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]
+    @test isApproxSigFigs(evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.8234, 0, 0, 0, 0.1263, 0]), [0, 0.1263, 0, -1.474953316253, 0, 0], 13)
+    @test isApproxSigFigs(evaluateEquations(dynamicsModel, MBD.FULL, 0.0, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL)), [0, 0.1263, 0, -1.474953316253, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 3.582592461143, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0], 13)
+    @test isApproxSigFigs(evaluateEquations(dynamicsModel, MBD.ARCLENGTH, 0.0, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.ARCLENGTH)), [0, 0.1263, 0, -1.474953316253, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 0, 0, 0, 0, 0, 0, 1.0, 3.582592461143, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0, 0.1263], 13)
+    stateTrajectory::MBD.TBPTrajectory = getCartesianState(dynamicsModel, 100000.0, 0.1, 0.05, 1.0*pi, 1.0*pi, 0.0)
+    @test isApproxSigFigs(stateTrajectory.initialCondition, [90000.0, -2.202986797819E-11, 5.508614670424E-13, 5.402731156714E-16, 2.204453172147, -0.1103146027681], 13)
     @test_throws ArgumentError getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test getEpochDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [0, 0, 0, 0, 0, 0]
+    @test isApproxSigFigs([getExcursion(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])], [1.231789044173E8], 13)
+    @test isApproxSigFigs(getLambertArc(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], 2.734, "Short")[1], [962.62693, -0.81942927, 0, 7.2123647, 144.41729, 0], 8)
+    @test isApproxSigFigs(getLambertArc(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], 2.734, "Short")[2], [-958.88199, 2.4108220, 0, -21.219315, -137.55345, 0], 8)
+    @test isApproxSigFigs(getLambertArc(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], 2.734, "Long")[1], [-313.30686, 96.924284, 0, -853.09776, 335.00117, 0], 8)
+    @test isApproxSigFigs(getLambertArc(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0], 2.734, "Long")[2], [-297.06180, 96.896974, 0, -852.85739, 337.38504, 0], 8)
+    elementTrajectory::MBD.TBPTrajectory = getOsculatingOrbitalElements(dynamicsModel, stateTrajectory.initialCondition)
+    @test isApproxSigFigs([elementTrajectory.a], [100000.0], 13)
     @test_throws ArgumentError getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0])
     @test size(getParameterDependencies(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1])) == (6, 0)
+    @test isApproxSigFigs([getPeriod(dynamicsModel, stateTrajectory)], [314710.3195678], 13)
     @test getPrimaryPosition(dynamicsModel) == [0.0, 0.0, 0.0]
+    Moon = MBD.BodyData("Moon")
+    (resonantOrbit::MBD.TBPTrajectory, period::Float64) = getResonantOrbit(dynamicsModel, Moon, 3, 4, 0.7113)
+    @test isApproxSigFigs(resonantOrbit.initialCondition, [134559.8941719, 0, 0, 0, 2.251511352682, 0], 13)
+    @test getStateSize(dynamicsModel, MBD.SIMPLE) == 6
+    @test getStateSize(dynamicsModel, MBD.FULL) == 42
+    @test getStateSize(dynamicsModel, MBD.ARCLENGTH) == 43
     @test_throws ArgumentError getStateTransitionMatrix(dynamicsModel, [0.8324, 0, 0, 0, 0.1263, 0])
-    @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
-    systemDataEarth = MBD.TBPSystemData("Earth")
-    dynamicsModelEarth = MBD.TBPDynamicsModel(systemDataEarth)
-    trajectory = getOsculatingOrbitalElements(dynamicsModel, [1.231789044172658E8, 0, 0, 0, 0.006519428065716839, 0])
-    @test trajectory.E == -1077.3958252913806
+    @test getStateTransitionMatrix(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]) == [1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1]
+    @test isEpochIndependent(dynamicsModel)
+    @test isApproxSigFigs(primaryInertial2Rotating(dynamicsModel, Moon, [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[1], [0.8234, 0, 0, 0, 0.1262978217125, 0], 13)
+    @test isApproxSigFigs(primaryInertial2Rotating(dynamicsModel, Moon, [[0.8234, 0, 0, 0, 0.1263, 0], [0.8322038366096914, -0.00279597847933625, 0, 0.024609343495764855, 0.1166002944773056, 0]], [0, 2.743])[2], [0.8322038162986, -0.002802017407416, 0, 0.02461018219822, 0.1165979143175, 0], 13)
+    KeplerTrajectory::MBD.TBPTrajectory = getCartesianState(dynamicsModel, 100000.0, 0.1, 0.05, 1.0*pi, 1.0*pi, 1.5)
+    @test isApproxSigFigs([solveKeplersEquation(dynamicsModel, KeplerTrajectory)], [65208.33705602], 13)
 end
 
 @testset "TBPEquationsOfMotion" begin
-    systemData = MBD.TBPSystemData("Sun")
+    systemData = MBD.TBPSystemData("Earth")
     dynamicsModel = MBD.TBPDynamicsModel(systemData)
     EOMs_simple = MBD.TBPEquationsOfMotion(MBD.SIMPLE, dynamicsModel)
     qdot_simple = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.SIMPLE))
     computeDerivatives!(qdot_simple, [0.8234, 0, 0, 0, 0.1263, 0], (EOMs_simple,), 0.0)
-    @test qdot_simple == [0, 0.1263, 0, -1.4749533162525872, 0, 0]
+    @test isApproxSigFigs(qdot_simple, [0, 0.1263, 0, -1.474953316253, 0, 0], 13)
     EOMs_full = MBD.TBPEquationsOfMotion(MBD.FULL, dynamicsModel)
     qdot_full = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.FULL))
     computeDerivatives!(qdot_full, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.FULL), (EOMs_full,), 0.0)
-    @test qdot_full == [0, 0.1263, 0, -1.4749533162525872, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.5825924611430353, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0, 0, 0, 0, -1.791296230571517, 0, 0, 0]
-    @test getLambertArc(dynamicsModel, [0.785798, 0.618484, -4.40907E-5], [-0.695636, -1.36224, -0.0114978], 5.391710131490492, "Long") == ([-61781.16548851388, 511386.43681523146, 7933.518512179655], [393204.0310118931, 137401.10858711743, -2458.8113571350514])
+    @test isApproxSigFigs(qdot_full, [0, 0.1263, 0, -1.474953316253, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.582592461143, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0], 13)
+    EOMs_arclength = MBD.TBPEquationsOfMotion(MBD.ARCLENGTH, dynamicsModel)
+    qdot_arclength = Vector{Float64}(undef, getStateSize(dynamicsModel, MBD.ARCLENGTH))
+    computeDerivatives!(qdot_arclength, appendExtraInitialConditions(dynamicsModel, [0.8234, 0, 0, 0, 0.1263, 0], MBD.ARCLENGTH), (EOMs_arclength,), 0.0)
+    @test isApproxSigFigs(qdot_arclength, [0, 0.1263, 0, -1.474953316253, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 3.582592461143, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0, 0, 0, 0, -1.791296230572, 0, 0, 0, 0.1263], 13)
+end
+
+@testset "TBPTrajectory" begin
+    systemData = MBD.TBPSystemData("Earth")
+    dynamicsModel = MBD.TBPDynamicsModel(systemData)
+    stateTrajectory::MBD.TBPTrajectory = getCartesianState(dynamicsModel, 100000.0, 0.1, 0.05, 1.0*pi, 1.0*pi, 0.0)
+    KeplerTrajectory::MBD.TBPTrajectory = getCartesianState(dynamicsModel, 100000.0, 0.1, 0.05, 1.0*pi, 1.0*pi, 1.5)
+    @test getCartesianState(stateTrajectory, 1.5) == KeplerTrajectory
 end
 
 @testset "Utility Functions" begin
