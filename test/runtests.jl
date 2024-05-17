@@ -756,8 +756,10 @@ end
 end
 
 @testset "Utility Functions" begin
+    @test isApproxSigFigs(Cartesian2Cylindrical([0.8234, 0.125, 0.4], [0.01, 0, 0]), [0.8229486982795, 0.1524830343520, 0.4], 13)
     @test_throws BoundsError checkIndices([1, 7], 6)
     @test_throws ArgumentError checkIndices([1, 1], 6)
+    checkIndices([1, 4], 6)
     @test_throws ArgumentError maskData([true], [1.0 2.0 3.0; 4.0 5.0 6.0])
     mask1 = [true, false, true]
     data = [1.0 2.0 3.0; 4.0 5.0 6.0]
@@ -766,6 +768,7 @@ end
     @test size(maskData(mask2, data)) == (1, 0)
     mask3 = [true, true, true]
     @test maskData(mask3, data) == data
+    #updatePointer
 end
 
 @testset "Lyapunov Example" begin
