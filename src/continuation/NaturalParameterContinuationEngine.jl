@@ -3,7 +3,7 @@ Natural parameter continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/4/23
-U: 9/8/23
+U: 5/16/24
 """
 
 import MBD: NaturalParameterContinuationEngine
@@ -125,7 +125,7 @@ function doContinuation!(naturalParameterContinuationEngine::NaturalParameterCon
     naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution = convergeInitialSolution(naturalParameterContinuationEngine, initialGuess1)
     naturalParameterContinuationEngine.dataInProgress.previousSolution = convergeInitialSolution(naturalParameterContinuationEngine, initialGuess2)
     naturalParameterContinuationEngine.dataInProgress.numIterations = naturalParameterContinuationEngine.corrector.recentIterationCount
-    push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone!(naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution), deepClone!(naturalParameterContinuationEngine.dataInProgress.previousSolution))
+    push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone(naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution), deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution))
     naturalParameterContinuationEngine.dataInProgress.initialGuess = initialGuess2
     naturalParameterContinuationEngine.dataInProgress.stepCount = 2
     naturalParameterContinuationEngine.dataInProgress.converging = true
@@ -138,13 +138,13 @@ function doContinuation!(naturalParameterContinuationEngine::NaturalParameterCon
         while (!naturalParameterContinuationEngine.dataInProgress.converging && !naturalParameterContinuationEngine.dataInProgress.forceEndContinuation)
             tryConverging!(naturalParameterContinuationEngine)
         end
-        (naturalParameterContinuationEngine.storeIntermediateMembers && naturalParameterContinuationEngine.dataInProgress.converging) && push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone!(naturalParameterContinuationEngine.dataInProgress.previousSolution))
+        (naturalParameterContinuationEngine.storeIntermediateMembers && naturalParameterContinuationEngine.dataInProgress.converging) && push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution))
     end
     if (!naturalParameterContinuationEngine.dataInProgress.converging && (naturalParameterContinuationEngine.dataInProgress.stepCount == 2))
         throw(ErrorException("Could not converge any solutions beyond initial guess"))
     end
     if (!naturalParameterContinuationEngine.storeIntermediateMembers && (naturalParameterContinuationEngine.dataInProgress.stepCount > 2))
-        push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone!(naturalParameterContinuationEngine.dataInProgress.previousSolution))
+        push!(naturalParameterContinuationEngine.dataInProgress.familyMembers, deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution))
     end
 
     return naturalParameterContinuationEngine.dataInProgress.familyMembers
@@ -190,13 +190,13 @@ Return updated natural parameter continuation engine object
 function tryConverging!(naturalParameterContinuationEngine::NaturalParameterContinuationEngine)
     updateStepSize!(naturalParameterContinuationEngine.stepSizeGenerator, naturalParameterContinuationEngine.dataInProgress)
     naturalParameterContinuationEngine.printProgress && println("Current step size: $(naturalParameterContinuationEngine.dataInProgress.currentStepSize)")
-    naturalParameterContinuationEngine.dataInProgress.nextGuess = deepClone!(naturalParameterContinuationEngine.dataInProgress.previousSolution)
+    naturalParameterContinuationEngine.dataInProgress.nextGuess = deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution)
     setFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.nextGuess, getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.previousSolution)+naturalParameterContinuationEngine.dataInProgress.fullStep.*naturalParameterContinuationEngine.dataInProgress.currentStepSize)
     constrainNextGuess!(naturalParameterContinuationEngine, naturalParameterContinuationEngine.dataInProgress)
     try
         twoPreviousConvergedSolution::MBD.MultipleShooterProblem = naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution
         previousConvergedSolution::MBD.MultipleShooterProblem = naturalParameterContinuationEngine.dataInProgress.previousSolution
-        naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution = deepClone!(naturalParameterContinuationEngine.dataInProgress.previousSolution)
+        naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution)
         naturalParameterContinuationEngine.dataInProgress.previousSolution = solve!(naturalParameterContinuationEngine.corrector, naturalParameterContinuationEngine.dataInProgress.nextGuess)
         naturalParameterContinuationEngine.dataInProgress.converging = true
         for jumpCheck::MBD.AbstractContinuationJumpCheck in naturalParameterContinuationEngine.jumpChecks

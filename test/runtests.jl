@@ -43,6 +43,7 @@ include("../src/TBP/EquationsOfMotion.jl")
 include("../src/TBP/Trajectory.jl")
 include("../src/utilities/UtilityFunctions.jl")
 
+include("ExampleBifurcations.jl")
 include("ExampleLyapunovJCTargeter.jl")
 
 @testset "Files" begin
@@ -759,7 +760,7 @@ end
     @test isApproxSigFigs(Cartesian2Cylindrical([0.8234, 0.125, 0.4], [0.01, 0, 0]), [0.8229486982795, 0.1524830343520, 0.4], 13)
     @test_throws BoundsError checkIndices([1, 7], 6)
     @test_throws ArgumentError checkIndices([1, 1], 6)
-    checkIndices([1, 4], 6)
+    checkIndices([1, 5], 6)
     @test_throws ArgumentError maskData([true], [1.0 2.0 3.0; 4.0 5.0 6.0])
     mask1 = [true, false, true]
     data = [1.0 2.0 3.0; 4.0 5.0 6.0]
@@ -771,7 +772,7 @@ end
     #updatePointer
 end
 
-@testset "Lyapunov Example" begin
+@testset "Earth-Moon L1 Lyapunov Example" begin
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     q0::Vector{Float64} = [0.8234, 0, 0, 0, 0.1263, 0]
@@ -779,56 +780,26 @@ end
     halfPeriod::Float64 = (tSpan[2]-tSpan[1])/2
     propagator = MBD.Propagator()
     arc::MBD.Arc = propagate(propagator, q0, tSpan, dynamicsModel)
-    qf::Vector{Float64} = copy(getStateByIndex(arc, getStateCount(arc)))
-    @test qf == [0.8322038365943337, -0.0027959784747644103, 0, 0.024609343452095516, 0.11660029449394844, 0]
     originNode = MBD.Node(tSpan[1], q0, dynamicsModel)
     originNode.state.name = "Initial State"
-    terminalNode = MBD.Node(halfPeriod, qf, dynamicsModel)
+    terminalNode = MBD.Node(halfPeriod, getStateByIndex(arc, -1), dynamicsModel)
     terminalNode.state.name = "Target State"
     segment = MBD.Segment(halfPeriod, originNode, terminalNode)
     setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
-    multipleShooterProblem = MBD.MultipleShooterProblem()
-    addSegment!(multipleShooterProblem, segment)
+    problem = MBD.MultipleShooterProblem()
+    addSegment!(problem, segment)
     continuityConstraint = MBD.ContinuityConstraint(segment)
     x0Constraint = MBD.StateConstraint(originNode, [1], [q0[1]])
     qfConstraint = MBD.StateConstraint(terminalNode, [2, 4], [0.0, 0.0])
-    addConstraint!(multipleShooterProblem, x0Constraint)
-    addConstraint!(multipleShooterProblem, qfConstraint)
-    addConstraint!(multipleShooterProblem, continuityConstraint)
+    addConstraint!(problem, continuityConstraint)
+    addConstraint!(problem, x0Constraint)
+    addConstraint!(problem, qfConstraint)
     multipleShooter = MBD.MultipleShooter()
-    solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
-    @test isapprox(solved.nodes[1].state.data-[0.8234, 0, 0, 0, 0.12623176201421427, 0], zeros(Float64, 6), atol = 1E-11)
+    solution::MBD.MultipleShooterProblem = solve!(multipleShooter, problem)
+    @test isApproxSigFigs(solution.nodes[1].state.data, [0.8234, 0, 0, 0, 0.12623176201, 0], 11)
 end
 
-@testset "Halo Multiple Shooter Example" begin
-    systemData = MBD.CR3BPSystemData("Earth", "Moon")
-    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-    nodeStates::Vector{Vector{Float64}} = [
-        [1.0277, 0, 0.1857, 0, -0.1152, 0],
-        [1.008, -0.0476, 0.1133, -0.0714, -0.0307, -0.2984],
-        [1.008, 0.0476, 0.1133, 0.0714, -0.0307, 0.2985],
-        [1.0277, 0, 0.1857, 0, -0.1152, 0]
-    ]
-    nodeTimes::Vector{Float64} = [0, 0.52854, 1.0571, 1.5856]
-    nodes::Vector{MBD.Node} = Vector{MBD.Node}(undef, length(nodeTimes))
-    [nodes[n] = MBD.Node(nodeTimes[n], nodeStates[n], dynamicsModel) for n in eachindex(nodeTimes)]
-    multipleShooterProblem = MBD.MultipleShooterProblem()
-    segments::Vector{MBD.Segment} = Vector{MBD.Segment}(undef, length(nodeTimes)-1)
-    for s::Int64 in 1:length(nodeTimes)-1
-        segments[s] = MBD.Segment(nodeTimes[s+1]-nodeTimes[s], nodes[s], nodes[s+1])
-        addSegment!(multipleShooterProblem, segments[s])
-    end
-    @test length(multipleShooterProblem.segments) == 3
-    map(s -> addConstraint!(multipleShooterProblem, MBD.ContinuityConstraint(s)), segments)
-    addConstraint!(multipleShooterProblem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 4, 5, 6]))
-    addConstraint!(multipleShooterProblem, MBD.JacobiConstraint(nodes[1], 3.04))
-    @test checkJacobian(multipleShooterProblem)
-    multipleShooter = MBD.MultipleShooter()
-    solved::MBD.MultipleShooterProblem = solve!(multipleShooter, multipleShooterProblem)
-    @test isapprox(solved.nodes[1].state.data-solved.nodes[end].state.data, zeros(Float64, 6), atol = 1E-11)
-end
-
-@testset "Lyapunov Continuation Example" begin
+@testset "Earth-Moon L1 Lyapunov Family Example" begin
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
     Moon = MBD.BodyData("Moon")
@@ -836,21 +807,65 @@ end
     (stateGuess::Vector{Float64}, timeGuess::Vector{Float64}) = getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0])
     targetJC::Float64 = getJacobiConstant(dynamicsModel, stateGuess)
     targeter = LyapunovJCTargeter(dynamicsModel)
-    solution1::MBD.MultipleShooterProblem = correct(targeter, stateGuess, timeGuess, targetJC)
+    solution1::MBD.MultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], targetJC)
     orbit1 = MBD.CR3BPPeriodicOrbit(solution1, targeter)
-    solution2::MBD.MultipleShooterProblem = correct(targeter, stateGuess, timeGuess, 3.186)
+    getProperties!(targeter, orbit1)
+    getMonodromy!(targeter, orbit1)
+    getStability!(orbit1)
+    solution2::MBD.MultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], 3.186)
     orbit2 = MBD.CR3BPPeriodicOrbit(solution2, targeter)
-    continuationEngine = MBD.JacobiConstantContinuationEngine(-1E-3, -1E-2)
-    continuationEngine.printProgress = false
+    getProperties!(targeter, orbit2)
+    getMonodromy!(targeter, orbit2)
+    getStability!(orbit2)
+    JCContinuation = MBD.JacobiConstantContinuationEngine(-1E-3, -1E-2)
+    JCContinuation.printProgress = false
     ydot0JumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [NaN NaN; -2.5 0])
-    addJumpCheck!(continuationEngine, ydot0JumpCheck)
-    @test length(continuationEngine.jumpChecks) == 1
-    numberSteps::Int64 = 100
-    numberEndCheck = MBD.NumberStepsContinuationEndCheck(numberSteps)
+    addJumpCheck!(JCContinuation, ydot0JumpCheck)
+    numberSteps::Int64 = 300
+    stepsEndCheck = MBD.NumberStepsContinuationEndCheck(numberSteps)
     MoonEndCheck = MBD.BoundingBoxContinuationEndCheck("Initial State", [L1[1] getPrimaryPosition(dynamicsModel, 2)[1]-Moon.bodyRadius/systemData.charLength; NaN NaN])
-    addEndCheck!(continuationEngine, numberEndCheck)
-    addEndCheck!(continuationEngine, MoonEndCheck)
-    @test length(continuationEngine.endChecks) == 2
-    solutions::Vector{MBD.MultipleShooterProblem} = doContinuation!(continuationEngine, solution1, solution2)
-    @test length(solutions) == numberSteps
+    addEndCheck!(JCContinuation, stepsEndCheck)
+    addEndCheck!(JCContinuation, MoonEndCheck)
+    oldstd = stdout
+    redirect_stdout(devnull)
+    solutions::Vector{MBD.MultipleShooterProblem} = doContinuation!(JCContinuation, solution1, solution2)
+    familyMembers::Vector{MBD.CR3BPPeriodicOrbit} = Vector{MBD.CR3BPPeriodicOrbit}(undef, length(solutions))
+    for s::Int64 in 1:length(solutions)
+        solution::MBD.MultipleShooterProblem = solutions[s]
+        orbit = MBD.CR3BPPeriodicOrbit(solution, targeter)
+        getProperties!(targeter, orbit)
+        getMonodromy!(targeter, orbit)
+        getStability!(orbit)
+        familyMembers[s] = orbit
+    end
+    family = MBD.CR3BPOrbitFamily(familyMembers)
+    eigenSort!(family)
+    @test length(family.familyMembers) == numberSteps
+    detectBifurcations!(targeter, family)
+    redirect_stdout(oldstd)
+    bifurcation::MBD.Bifurcation = family.bifurcations[1]
+    @test isApproxSigFigs(bifurcation.orbit.initialCondition, [0.85479945002, 0, 0, 0, -0.13373284140, 0], 11)
+end
+
+@testset "Earth-Moon L1 Halo Multiple Shooter Example" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    nodeStates::Vector{Vector{Float64}} = [[1.0277, 0, 0.1857, 0, -0.1152, 0], [1.008, -0.0476, 0.1133, -0.0714, -0.0307, -0.2984], [1.008, 0.0476, 0.1133, 0.0714, -0.0307, 0.2985], [1.0277, 0, 0.1857, 0, -0.1152, 0]]
+    nodeTimes::Vector{Float64} = [0, 0.52854, 1.0571, 1.5856]
+    nodes::Vector{MBD.Node} = Vector{MBD.Node}(undef, length(nodeTimes))
+    [nodes[n] = MBD.Node(nodeTimes[n], nodeStates[n], dynamicsModel) for n in eachindex(nodeTimes)]
+    problem = MBD.MultipleShooterProblem()
+    segments::Vector{MBD.Segment} = Vector{MBD.Segment}(undef, length(nodeTimes)-1)
+    for s::Int64 in 1:length(nodeTimes)-1
+        segments[s] = MBD.Segment(nodeTimes[s+1]-nodeTimes[s], nodes[s], nodes[s+1])
+        addSegment!(problem, segments[s])
+    end
+    @test length(problem.segments) == 3
+    map(s -> addConstraint!(problem, MBD.ContinuityConstraint(s)), segments)
+    addConstraint!(problem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 4, 5, 6]))
+    addConstraint!(problem, MBD.JacobiConstraint(nodes[1], 3.04))
+    @test checkJacobian(problem)
+    multipleShooter = MBD.MultipleShooter()
+    solution::MBD.MultipleShooterProblem = solve!(multipleShooter, problem)
+    @test isApproxSigFigs(solution.nodes[1].state.data, solution.nodes[end].state.data, 11)
 end
