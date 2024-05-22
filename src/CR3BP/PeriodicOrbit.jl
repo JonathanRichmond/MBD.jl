@@ -37,12 +37,13 @@ function getManifoldByArclength(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel
         arclengthEvent = DifferentialEquations.ContinuousCallback(arclengthCondition, terminateAffect!)
         arc::MBD.Arc = propagateWithEvent(propagator, arclengthEvent, vcat(appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), 0.0), [0, periodicOrbit.period], dynamicsModel, [arclength[a]])
         q::Vector{Float64} = getStateByIndex(arc, -1)
+        t::Float64 = getTimeByIndex(arc, -1)
         state::Vector{Float64} = q[1:6]
         Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
         arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
         normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
-        posManifoldArc = MBD.CR3BPManifoldArc(state+d.*normEigenvector, periodicOrbit)
-        negManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition-d.*normEigenvector, periodicOrbit)
+        posManifoldArc = MBD.CR3BPManifoldArc(state+d.*normEigenvector, periodicOrbit, t)
+        negManifoldArc = MBD.CR3BPManifoldArc(state-d.*normEigenvector, periodicOrbit, t)
         push!(posManifold, posManifoldArc)
         push!(negManifold, negManifoldArc)
     end
@@ -77,8 +78,8 @@ function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3
         Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
         arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
         normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
-        posManifoldArc = MBD.CR3BPManifoldArc(state+d.*normEigenvector, periodicOrbit)
-        negManifoldArc = MBD.CR3BPManifoldArc(periodicOrbit.initialCondition-d.*normEigenvector, periodicOrbit)
+        posManifoldArc = MBD.CR3BPManifoldArc(state+d.*normEigenvector, periodicOrbit, time[a])
+        negManifoldArc = MBD.CR3BPManifoldArc(state-d.*normEigenvector, periodicOrbit, time[a])
         push!(posManifold, posManifoldArc)
         push!(negManifold, negManifoldArc)
     end

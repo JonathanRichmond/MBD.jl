@@ -867,22 +867,24 @@ mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
 end
 
 """
-    CR3BPManifoldArc(initialCondition, periodicOrbit)
+    CR3BPManifoldArc(initialCondition, periodicOrbit, orbitTime)
 
 CR3BP manifold arc object
 
 # Arguments
 - `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
+- `orbitTime::Float64`: Time along orbit from initial condition [ndim]
 """
 mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
     initialCondition::Vector{Float64}                       # Initial conditions [ndim]
     JacobiConstant::Float64                                 # Jacobi constant
+    orbitTime::Float64                                      # Time along orbit from initial condition [ndim]
     periodicOrbit::CR3BPPeriodicOrbit                       # Underlying periodic orbit
-    TOF::Float64                                            # Time of flight
+    TOF::Float64                                            # Time of flight [ndim]
 
-    function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit)
-        return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, real.(initialCondition)), periodicOrbit, 0.0)
+    function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64)
+        return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, real.(initialCondition)), orbitTime, periodicOrbit, 0.0)
     end
 end
 
