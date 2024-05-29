@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 5/15/24
+U: 5/29/24
 """
 
 import LinearAlgebra, SPICE
@@ -539,6 +539,7 @@ function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initial
         state_secondaryInertialDim::Vector{Float64} = append!(states_secondaryInertial[i][1:3].*dynamicsModel.systemData.charLength, states_secondaryInertial[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
         bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
         bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
+        state_primaryInertialDim::Vector{Float64} = bodyStateDim+state_secondaryInertialDim
         xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
         zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
         yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
@@ -546,9 +547,9 @@ function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initial
         thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
         Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        state_secondaryDim::Vector{Float64} = N\state_secondaryInertialDim
-        state_secondary::Vector{Float64} = append!(state_secondaryDim[1:3]./dynamicsModel.systemData.charLength, state_secondaryDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
-        states[i] = state_secondary+push!(getPrimaryPosition(dynamicsModel, 2), 0, 0, 0)
+        state_primaryDim::Vector{Float64} = N\state_primaryInertialDim
+        state_primary::Vector{Float64} = append!(state_primaryDim[1:3]./dynamicsModel.systemData.charLength, state_primaryDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
+        states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, 2), 0, 0, 0)
     end
 
     return states
