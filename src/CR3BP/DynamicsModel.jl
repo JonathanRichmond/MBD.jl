@@ -549,7 +549,7 @@ function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initial
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
         state_primaryDim::Vector{Float64} = N\state_primaryInertialDim
         state_primary::Vector{Float64} = append!(state_primaryDim[1:3]./dynamicsModel.systemData.charLength, state_primaryDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
-        states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, 2), 0, 0, 0)
+        states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, 1), 0, 0, 0)
     end
 
     return states
