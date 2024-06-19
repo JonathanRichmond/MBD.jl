@@ -9,7 +9,38 @@ U: 9/10/23
 import DifferentialEquations, LinearAlgebra
 import MBD: CR3BPPeriodicOrbit
 
-export getManifoldByArclength, getManifoldByTime, getStability!
+export getManifoldArcByTime, getManifoldByArclength, getManifoldByTime
+export getStability!
+
+"""
+    getManifoldArcByTime(periodicOrbit, dynamicsModel, stabilitity, d, orbitTime, direction)
+
+Return stable or unstable manifold tubes spaced by time
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
+- `stability::String`: Desired manifold stability
+- `d::Float64`: Step-off distance [ndim]
+- `orbitTime::Float64`: Time along orbit from initial condition [ndim]
+- `direction::String`: Step-off direction
+"""
+function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime::Float64, directino::String)
+    index::Int64 = (stability == "Stable") ?  argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
+    eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
+    propagator = MBD.Propagator()
+    propagator.equationType = MBD.STM
+    orbitArc::MBD.Arc = propagate(propagator, appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, orbitTime], dynamicsModel)
+    q::Vector{Float64} = getStateByIndex(orbitArc, -1)
+    state::Vector{Float64} = q[1:6]
+    Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
+    arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
+    normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
+    step::Int64 = (direction == "Negative") ? -1 : 1
+    manifoldArc = MBD.CR3BPManifoldArc(state+step*d.*normEigenvector, periodicOrbit, orbitTime)
+
+    return manifoldArc
+end
 
 """
     getManifoldByArclength(periodicOrbit, dynamicsModel, stabilitity, d, nArcs)
@@ -20,7 +51,7 @@ Return stable or unstable manifold tubes spaced by arclength
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
-- `d::Float64`: Stepoff distance [ndim]
+- `d::Float64`: Step-off distance [ndim]
 - `nArcs::Int64`: Number of manifold arcs
 """
 function getManifoldByArclength(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, nArcs::Int64)
@@ -60,7 +91,7 @@ Return stable or unstable manifold tubes spaced by time
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
-- `d::Float64`: Stepoff distance [ndim]
+- `d::Float64`: Step-off distance [ndim]
 - `nArcs::Int64`: Number of manifold arcs
 """
 function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, nArcs::Int64)
