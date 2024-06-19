@@ -25,7 +25,7 @@ Return stable or unstable manifold tubes spaced by time
 - `orbitTime::Float64`: Time along orbit from initial condition [ndim]
 - `direction::String`: Step-off direction
 """
-function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime::Float64, directino::String)
+function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime::Float64, direction::String)
     index::Int64 = (stability == "Stable") ?  argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
     propagator = MBD.Propagator()
