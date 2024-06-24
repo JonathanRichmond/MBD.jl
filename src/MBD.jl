@@ -879,7 +879,7 @@ CR3BP manifold arc object
 mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
     initialCondition::Vector{Float64}                       # Initial conditions [ndim]
     JacobiConstant::Float64                                 # Jacobi constant
-    orbitTime::Float64                                      # Time along orbit from initial condition [ndim]
+    orbitTime::Float64                                      # Normalized time along orbit from initial condition
     periodicOrbit::CR3BPPeriodicOrbit                       # Underlying periodic orbit
     TOF::Float64                                            # Time of flight [ndim]
 
