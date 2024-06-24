@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 5/13/24
+U: 6/24/24
 """
 module MBD
 

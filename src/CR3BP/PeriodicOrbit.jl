@@ -3,7 +3,7 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 9/10/23
+U: 6/24/24
 """
 
 import DifferentialEquations, LinearAlgebra
