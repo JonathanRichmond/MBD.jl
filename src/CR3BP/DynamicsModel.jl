@@ -189,9 +189,9 @@ Return CR3BP Jacobi constant
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-- `q::Vector{Float64}`: State vector [ndim]
+- `q::Vector`: State vector [ndim]
 """
-function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector)
     mu::Float64 = getMassRatio(dynamicsModel.systemData)
     v_2::Float64 = q[4]^2+q[5]^2+q[6]^2
     r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
