@@ -3,7 +3,7 @@ CR3BP equations of motion wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 2/7/24
+U: 6/25/24
 """
 
 import MBD: CR3BPEquationsOfMotion
@@ -16,12 +16,12 @@ export computeDerivatives!
 Return time derivative of state vector
 
 # Arguments
-- `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
-- `q::Vector{Float64}`: State vector [ndim]
+- `qdot::Vector`: Time derivative of state vector [ndim]
+- `q::Vector`: State vector [ndim]
 - `params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}`: Propagation parameters
-- `t::Float64`: Time [ndim]
+- `t`: Time [ndim]
 """
-function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}, t::Float64)
+function computeDerivatives!(qdot::Vector, q::Vector, params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}, t)
     omm::Float64 = 1-params[1].mu
     r_13::Float64 = sqrt((q[1]+params[1].mu)^2+q[2]^2+q[3]^2)
     r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
