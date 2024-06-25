@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/24/24
+U: 6/25/24
 """
 module MBD
 
@@ -330,8 +330,8 @@ Arc object
 mutable struct Arc
     dynamicsModel::AbstractDynamicsModel                    # Dynamics model object
     params                                                  # System parameters
-    states::Vector{Vector{Float64}}                         # State vectors along arc [ndim]
-    times::Vector{Float64}                                  # Times along arc [ndim]
+    states::Vector{Vector}                                  # State vectors along arc [ndim]
+    times::Vector                                           # Times along arc [ndim]
 
     function Arc(dynamicsModel::AbstractDynamicsModel)
         return new(dynamicsModel, [], [[]], [])
