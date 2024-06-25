@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/25/24
+U: 6/24/24
 """
 module MBD
 
@@ -330,8 +330,8 @@ Arc object
 mutable struct Arc
     dynamicsModel::AbstractDynamicsModel                    # Dynamics model object
     params                                                  # System parameters
-    states::Vector{Vector}                                  # State vectors along arc [ndim]
-    times::Vector                                           # Times along arc [ndim]
+    states::Vector{Vector{Float64}}                         # State vectors along arc [ndim]
+    times::Vector{Float64}                                  # Times along arc [ndim]
 
     function Arc(dynamicsModel::AbstractDynamicsModel)
         return new(dynamicsModel, [], [[]], [])
@@ -872,18 +872,18 @@ end
 CR3BP manifold arc object
 
 # Arguments
-- `initialCondition::Vector`: Initial conditions [ndim]
+- `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
-- `orbitTime`: Time along orbit from initial condition [ndim]
+- `orbitTime::Float64`: Time along orbit from initial condition [ndim]
 """
 mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
-    initialCondition::Vector                                # Initial conditions [ndim]
-    JacobiConstant                                          # Jacobi constant
-    orbitTime                                               # Normalized time along orbit from initial condition
+    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
+    JacobiConstant::Float64                                 # Jacobi constant
+    orbitTime::Float64                                      # Normalized time along orbit from initial condition
     periodicOrbit::CR3BPPeriodicOrbit                       # Underlying periodic orbit
     TOF::Float64                                            # Time of flight [ndim]
 
-    function CR3BPManifoldArc(initialCondition::Vector, periodicOrbit::CR3BPPeriodicOrbit, orbitTime)
+    function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64)
         return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, real.(initialCondition)), orbitTime, periodicOrbit, 0.0)
     end
 end

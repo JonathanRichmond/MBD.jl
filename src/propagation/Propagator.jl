@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 6/25/24
+U: 2/7/24
 """
 
 import DifferentialEquations
@@ -17,23 +17,23 @@ export propagate, propagateWithEvent
 Return propagated arc
 # Arguments
 - `propagator::Propagator`: Propagator object
-- `q0::Vector`: Initial state vector [ndim]
-- `tSpan::Vector`: Time span [ndim]
+- `q0::Vector{Float64}`: Initial state vector [ndim]
+- `tSpan::Vector{Float64}`: Time span [ndim]
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagate(propagator::Propagator, q0::Vector, tSpan::Vector, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
+function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
-    q::Vector = copy(q0)
+    q::Vector{Float64} = copy(q0)
     for tIndex::Int64 in 2:length(tSpan)
         if tIndex > 2
             q = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
             deleteStateAndTime!(arcOut, getStateCount(arcOut))
         end
-        t0 = tSpan[tIndex-1]
-        tf = tSpan[tIndex]
+        t0::Float64 = tSpan[tIndex-1]
+        tf::Float64 = tSpan[tIndex]
         problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs,))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         arcOut.states = sol.u
@@ -50,23 +50,23 @@ Return propagated arc
 # Arguments
 - `propagator::Propagator`: Propagator object
 - `callbackEvent::ContinuousCallback`: Propagation callback
-- `q0::Vector`: Initial state vector [ndim]
-- `tSpan::Vector`: Time span [ndim]
+- `q0::Vector{Float64}`: Initial state vector [ndim]
+- `tSpan::Vector{Float64}`: Time span [ndim]
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector, tSpan::Vector, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
+function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
-    q::Vector = copy(q0)
+    q::Vector{Float64} = copy(q0)
     for tIndex::Int64 in 2:length(tSpan)
         if tIndex > 2
             q = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
             deleteStateAndTime!(arcOut, getStateCount(arcOut))
         end
-        t0 = tSpan[tIndex-1]
-        tf = tSpan[tIndex]
+        t0::Float64 = tSpan[tIndex-1]
+        tf::Float64 = tSpan[tIndex]
         problem = DifferentialEquations.ODEProblem(computeDerivatives!, q, (t0, tf), (EOMs, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         arcOut.states = sol.u

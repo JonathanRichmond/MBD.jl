@@ -3,7 +3,7 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 6/25/24
+U: 2/15/24
 """
 
 import DifferentialEquations
@@ -46,11 +46,11 @@ end
 Return event condition for specified distance from P2
 
 # Arguments
-- `state::Vector`: State vector [ndim]
-- `time`: Time [ndim]
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
 - `integrator`: Integrator object
 """
-function p2DistanceCondition(state::Vector, time, integrator)
+function p2DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
     mu::Float64 = integrator.p[1].mu
     sqrt((state[1]-1+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
 end

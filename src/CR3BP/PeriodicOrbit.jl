@@ -3,7 +3,7 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 6/25/24
+U: 6/24/24
 """
 
 import DifferentialEquations, LinearAlgebra
@@ -22,20 +22,20 @@ Return stable or unstable manifold tubes spaced by time
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
 - `d::Float64`: Step-off distance [ndim]
-- `orbitTime`: Normalized time along orbit from initial condition
+- `orbitTime::Float64`: Normalized time along orbit from initial condition
 - `direction::String`: Step-off direction
 """
-function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime, direction::String)
+function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime::Float64, direction::String)
     index::Int64 = (stability == "Stable") ?  argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
     orbitArc::MBD.Arc = propagate(propagator, appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, orbitTime*periodicOrbit.period], dynamicsModel)
-    q::Vector = getStateByIndex(orbitArc, -1)
-    state::Vector = q[1:6]
-    Phi::Matrix = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
-    arcEigenvector::Vector = Phi*eigenvector
-    normEigenvector::Vector = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
+    q::Vector{Float64} = getStateByIndex(orbitArc, -1)
+    state::Vector{Float64} = q[1:6]
+    Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
+    arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
+    normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
     step::Int64 = (direction == "Negative") ? -1 : 1
     manifoldArc = MBD.CR3BPManifoldArc(state+step*d.*normEigenvector, periodicOrbit, orbitTime)
 
