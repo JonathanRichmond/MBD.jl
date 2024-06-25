@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 5/29/24
+U: 6/25/24
 """
 
 import LinearAlgebra, SPICE
@@ -193,10 +193,10 @@ Return CR3BP Jacobi constant
 """
 function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector)
     mu::Float64 = getMassRatio(dynamicsModel.systemData)
-    v_2::Float64 = q[4]^2+q[5]^2+q[6]^2
-    r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
-    r_23::Float64 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
-    U::Float64 = (1-mu)/r_13+mu/r_23+(1/2)*(q[1]^2+q[2]^2)
+    v_2 = q[4]^2+q[5]^2+q[6]^2
+    r_13 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
+    r_23 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
+    U = (1-mu)/r_13+mu/r_23+(1/2)*(q[1]^2+q[2]^2)
 
     return 2*U-v_2
 end
