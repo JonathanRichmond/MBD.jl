@@ -422,10 +422,10 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 - `initialEpoch::String`: Initial epoch
-- `states::Vector{Vector}`: Rotating states [ndim]
+- `states::Vector`: Rotating states [ndim]
 - `times::Vector`: Epochs [ndim]
 """
-function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector}, times::Vector)
+function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector, times::Vector)
     (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
