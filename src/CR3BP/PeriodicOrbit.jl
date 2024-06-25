@@ -3,7 +3,7 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 6/24/24
+U: 6/25/24
 """
 
 import DifferentialEquations, LinearAlgebra
@@ -22,10 +22,10 @@ Return stable or unstable manifold tubes spaced by time
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
 - `d::Float64`: Step-off distance [ndim]
-- `orbitTime::Float64`: Normalized time along orbit from initial condition
+- `orbitTime`: Normalized time along orbit from initial condition
 - `direction::String`: Step-off direction
 """
-function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime::Float64, direction::String)
+function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::CR3BPDynamicsModel, stability::String, d::Float64, orbitTime, direction::String)
     index::Int64 = (stability == "Stable") ?  argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
     propagator = MBD.Propagator()
