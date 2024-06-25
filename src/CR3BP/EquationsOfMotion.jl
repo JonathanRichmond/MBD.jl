@@ -23,18 +23,18 @@ Return time derivative of state vector
 """
 function computeDerivatives!(qdot::Vector, q::Vector, params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}, t)
     omm::Float64 = 1-params[1].mu
-    r_13::Float64 = sqrt((q[1]+params[1].mu)^2+q[2]^2+q[3]^2)
-    r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
-    r_13_3::Float64 = r_13^3
-    r_23_3::Float64 = r_23^3
+    r_13 = sqrt((q[1]+params[1].mu)^2+q[2]^2+q[3]^2)
+    r_23 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
+    r_13_3 = r_13^3
+    r_23_3 = r_23^3
     qdot[1:3] = q[4:6]
     qdot[4] = 2*q[5]+q[1]-omm*(q[1]+params[1].mu)/r_13_3-params[1].mu*(q[1]-omm)/r_23_3
     qdot[5] = q[2]-2*q[4]-omm*q[2]/r_13_3-params[1].mu*q[2]/r_23_3
     qdot[6] = -omm*q[3]/r_13_3-params[1].mu*q[3]/r_23_3
     if (params[1].equationType == MBD.STM) || (params[1].equationType == MBD.FULL) || (params[1].equationType == MBD.ARCLENGTH)
-        r_13_5::Float64 = r_13_3*r_13^2
-        r_23_5::Float64 = r_23_3*r_23^2
-        pseudoPotentialJacobian::Vector{Float64} = Vector{Float64}(undef, 6)
+        r_13_5 = r_13_3*r_13^2
+        r_23_5 = r_23_3*r_23^2
+        pseudoPotentialJacobian::Vector = Vector(undef, 6)
         pseudoPotentialJacobian[1] = 1-omm/r_13_3-params[1].mu/r_23_3+3*omm*(q[1]+params[1].mu)^2/r_13_5+3*params[1].mu*(q[1]-omm)^2/r_23_5
         pseudoPotentialJacobian[2] = 1-omm/r_13_3-params[1].mu/r_23_3+3*omm*q[2]^2/r_13_5+3*params[1].mu*q[2]^2/r_23_5
         pseudoPotentialJacobian[3] = -omm/r_13_3-params[1].mu/r_23_3+3*omm*q[3]^2/r_13_5+3*params[1].mu*q[3]^2/r_23_5
