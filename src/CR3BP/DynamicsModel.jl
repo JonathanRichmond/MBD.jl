@@ -422,30 +422,30 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 - `initialEpoch::String`: Initial epoch
-- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
-- `times::Vector{Float64}`: Epochs [ndim]
+- `states::Vector{Vector}`: Rotating states [ndim]
+- `times::Vector`: Epochs [ndim]
 """
-function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
+function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector}, times::Vector)
     (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam)
-    timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
-    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
+    timesDim::Vector = times.*dynamicsModel.systemData.charTime
+    thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
+    states_primaryInertial::Vector{Vector} = Vector{Vector}(undef, length(times))
     for i in 1:length(times)
-        stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
-        state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
-        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
-        xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
-        zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
-        yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
-        C::Matrix{Float64} = [xhat yhat zhat]
-        thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
-        Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
+        stateDim::Vector = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
+        state_primaryDim::Vector = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
+        bodyElements::Vector = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyStateDim::Vector = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
+        xhat::Vector = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
+        zhat::Vector = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
+        yhat::Vector = LinearAlgebra.cross(zhat, xhat)
+        C::Matrix = [xhat yhat zhat]
+        Cdot::Matrix = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
+        N::Matrix = [C zeros(Float64, (3,3)); Cdot C]
+        state_primaryInertialDim::Vector = N*state_primaryDim
         states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
     end
 
@@ -496,6 +496,7 @@ function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch:
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
+    thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
@@ -506,7 +507,6 @@ function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch:
         zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
         yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
         C::Matrix{Float64} = [xhat yhat zhat]
-        thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
         Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
         state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
@@ -534,6 +534,7 @@ function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initial
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
+    thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         state_secondaryInertialDim::Vector{Float64} = append!(states_secondaryInertial[i][1:3].*dynamicsModel.systemData.charLength, states_secondaryInertial[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
@@ -544,7 +545,6 @@ function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initial
         zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
         yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
         C::Matrix{Float64} = [xhat yhat zhat]
-        thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
         Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
         N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
         state_primaryDim::Vector{Float64} = N\state_primaryInertialDim
