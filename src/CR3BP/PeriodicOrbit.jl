@@ -31,11 +31,11 @@ function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
     orbitArc::MBD.Arc = propagate(propagator, appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, orbitTime*periodicOrbit.period], dynamicsModel)
-    q::Vector{Float64} = getStateByIndex(orbitArc, -1)
-    state::Vector{Float64} = q[1:6]
-    Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
-    arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
-    normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
+    q::Vector = getStateByIndex(orbitArc, -1)
+    state::Vector = q[1:6]
+    Phi::Matrix = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
+    arcEigenvector::Vector = Phi*eigenvector
+    normEigenvector::Vector = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
     step::Int64 = (direction == "Negative") ? -1 : 1
     manifoldArc = MBD.CR3BPManifoldArc(state+step*d.*normEigenvector, periodicOrbit, orbitTime)
 
