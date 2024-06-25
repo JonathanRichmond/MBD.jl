@@ -17,12 +17,12 @@ export propagate, propagateWithEvent
 Return propagated arc
 # Arguments
 - `propagator::Propagator`: Propagator object
-- `q0::Vector{Float64}`: Initial state vector [ndim]
+- `q0::Vector`: Initial state vector [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
+function propagate(propagator::Propagator, q0::Vector, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
@@ -50,12 +50,12 @@ Return propagated arc
 # Arguments
 - `propagator::Propagator`: Propagator object
 - `callbackEvent::ContinuousCallback`: Propagation callback
-- `q0::Vector{Float64}`: Initial state vector [ndim]
+- `q0::Vector`: Initial state vector [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
+function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
