@@ -22,7 +22,7 @@ Return propagated arc
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagate(propagator::Propagator, q0::Vector, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
+function propagate(propagator::Propagator, q0::Vector, tSpan::Vector, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
@@ -55,7 +55,7 @@ Return propagated arc
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector, tSpan::Vector{Float64}, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
+function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialEquations.ContinuousCallback, q0::Vector, tSpan::Vector, dynamicsModel::MBD.AbstractDynamicsModel, params = [])
     arcOut = MBD.Arc(dynamicsModel)
     isempty(params) || setParameters!(arcOut, params)
     EOMs::MBD.AbstractEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType, params)
