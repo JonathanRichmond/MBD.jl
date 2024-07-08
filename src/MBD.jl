@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/24/24
+U: 7/8/24
 """
 module MBD
 
@@ -21,7 +21,7 @@ Enumerated type for bifurcations
 """
 Enumerated type for EOMs
 """
-@enum EquationType ARCLENGTH FULL SIMPLE STM
+@enum EquationType ARCLENGTH FULL MOMENTUM SIMPLE STM
 
 """
 Enumerated type for integrators

@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 5/29/24
+U: 7/8/24
 """
 
 import LinearAlgebra, SPICE
@@ -327,7 +327,7 @@ Return number of state variables
 - `equationType::EquationType`: EOM type
 """
 function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-    type = Dict(MBD.SIMPLE => 6, MBD.STM => 42, MBD.FULL => 42, MBD.ARCLENGTH => 43)
+    type = Dict(MBD.SIMPLE => 6, MBD.STM => 42, MBD.FULL => 42, MBD.ARCLENGTH => 43, MBD.MOMENTUM => 43)
 
     return type[equationType]
 end
