@@ -83,18 +83,17 @@ function getManifoldByArclength(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel
 end
 
 """
-    getManifoldByStepOff(periodicOrbit, dynamicsModel, stability, d_max, nArcs)
+    getManifoldByStepOff(periodicOrbit, stability, d_max, nArcs)
 
 Return stable or unstable manifold tubes spaced by step-off
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
 - `d_max::Float64`: Maximum step-off distance [ndim]
 - `nArcs::int64`: Number of manifold arcs
 """
-function getManifoldByStepOff(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::MBD.CR3BPDynamicsModel, stability::String, d_max::Float64, nArcs::Int64)
+function getManifoldByStepOff(periodicOrbit::CR3BPPeriodicOrbit, stability::String, d_max::Float64, nArcs::Int64)
     index::Int64 = (stability == "Stable") ? argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
     eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
     normEigenvector::Vector{Complex{Float64}} = eigenvector./LinearAlgebra.norm(eigenvector[1:3])
