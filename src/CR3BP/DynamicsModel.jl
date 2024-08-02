@@ -431,13 +431,14 @@ function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEp
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam)
+    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
     thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
         state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0, 0.0], bodySPICEElements[4:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
         bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
         xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
         zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
@@ -495,13 +496,14 @@ function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch:
     Sun = MBD.BodyData("Sun")
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam)
+    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
     thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
         state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0, 0.0], bodySPICEElements[4:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
         bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
         xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
         zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
@@ -533,12 +535,13 @@ function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initial
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
     bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam)
+    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
     thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
         state_secondaryInertialDim::Vector{Float64} = append!(states_secondaryInertial[i][1:3].*dynamicsModel.systemData.charLength, states_secondaryInertial[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0, 0.0], bodySPICEElements[4:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
         bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
         state_primaryInertialDim::Vector{Float64} = bodyStateDim+state_secondaryInertialDim
         xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
