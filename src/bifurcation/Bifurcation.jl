@@ -23,7 +23,7 @@ Return step in period-doubling bifurcation direction from singular value decompo
 function getDoublingBifurcationStepSVD!(bifurcation::Bifurcation)
     DF::Matrix{Float64} = getJacobian(bifurcation.orbit.problem)
     (U::Matrix{Float64}, S::Vector{Float64}, V::Matrix{Float64}) = LinearAlgebra.svd(DF)
-    (S[end] < 0.35) || throw(ErrorException("DF matrix has no null space"))
+    (S[end] < 0.2) || throw(ErrorException("DF matrix has no null space"))
     step::Vector{Float64} = V[:,end]
     (length(step) == getNumberFreeVariables(bifurcation.orbit.problem)) || throw(ErrorException("Step length, $(length(step)), must match number of free variables, $(getNumberFreeVariables(bifurcation.orbit.problem))"))
     for i::Int64 = 1:length(step)
