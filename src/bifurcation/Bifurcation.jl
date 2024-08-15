@@ -3,12 +3,34 @@ Bifurcation wrapper
 
 Author: Jonathan Richmond
 C: 1/18/24
+U: 8/15/24
 """
 
 import LinearAlgebra
 import MBD: Bifurcation
 
-export getTangentBifurcationStepEigen!, getTangentBifurcationStepSVD!
+export getDoublingBifurcationStepSVD!, getTangentBifurcationStepEigen!
+export getTangentBifurcationStepSVD!
+
+"""
+    getDoublingBifurcationStepSVD!(bifurcation)
+
+Return step in period-doubling bifurcation direction from singular value decomposition
+
+# Arguments
+- `bifurcation::Bifurcation`: Bifurcation object
+"""
+function getDoublingBifurcationStepSVD!(bifurcation::Bifurcation)
+    DF::Matrix{Float64} = getJacobian(bifurcation.orbit.problem)
+    (U::Matrix{Float64}, S::Vector{Float64}, V::Matrix{Float64}) = LinearAlgebra.svd(DF)
+    (S[end] < 0.35) || throw(ErrorException("DF matrix has no null space"))
+    step::Vector{Float64} = V[:,end]
+    (length(step) == getNumberFreeVariables(bifurcation.orbit.problem)) || throw(ErrorException("Step length, $(length(step)), must match number of free variables, $(getNumberFreeVariables(bifurcation.orbit.problem))"))
+    for i::Int64 = 1:length(step)
+        (abs(step[i]) < 1E-9) && (step[i] = 0.0)
+    end
+    bifurcation.FVVStep = step
+end
 
 """
     getTangentBifurcationStepEigen!(bifurcation)
