@@ -1534,15 +1534,9 @@ version = "0.2.3"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "Accessors", "ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "Expronicon", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "SciMLStructures", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface"]
-<<<<<<< HEAD
 git-tree-sha1 = "f48e0239fbb7799e8d81133ea71a726ec510c9ef"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
 version = "2.65.1"
-=======
-git-tree-sha1 = "6f156f48d3603e8023e59917547b141218f2656d"
-uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.64.0"
->>>>>>> 51bc7d872c5bba3c422d3af84cb8adf06bc9ea61
 
     [deps.SciMLBase.extensions]
     SciMLBaseChainRulesCoreExt = "ChainRulesCore"
