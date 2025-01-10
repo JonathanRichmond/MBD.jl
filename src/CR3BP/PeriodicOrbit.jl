@@ -3,14 +3,18 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 7/9/24
+U: 1/10/25
 """
 
 import DifferentialEquations, LinearAlgebra
 import MBD: CR3BPPeriodicOrbit
 
-export getManifoldArcByTime, getManifoldByArclength, getManifoldByStepOff
+export getBrouckeStability, getManifoldArcByTime, getManifoldByArclength, getManifoldByStepOff
 export getManifoldByTime, getStability!
+
+"""
+    getBrouckeStability()
+"""
 
 """
     getManifoldArcByTime(periodicOrbit, dynamicsModel, stabilitity, d, orbitTime, direction)

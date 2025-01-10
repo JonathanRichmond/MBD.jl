@@ -3,12 +3,12 @@ CR3BP equations of motion wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 7/8/24
+U: 1/9/25
 """
 
 import MBD: CR3BPEquationsOfMotion
 
-export computeDerivatives!
+export computeDerivatives!, getMassRatio, getStateDim
 
 """
     computeDerivatives!(qdot, q, params, t)
@@ -53,4 +53,28 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
     elseif params[1].equationType == MBD.MOMENTUM
         qdot[43] = q[1]*q[4]+q[2]*q[5]+q[3]*q[6]
     end
+end
+
+"""
+    getMassRatio(EOMs)
+
+Return CR3BP system mass ratio
+
+# Arguments
+- `EOMs::CR3BPEquationsOfMotion`: CR3BP equations of motion object
+"""
+function getMassRatio(EOMs::CR3BPEquationsOfMotion)
+    return getMassRatio(EOMs.dynamicsModel.systemData)
+end
+
+"""
+    getStateDim(EOMs)
+
+Return dimension of state vector
+
+# Arguments
+- `EOMs::CR3BPEquationsOfMotion`: CR3BP equations of motion object
+"""
+function getStateDim(EOMs::CR3BPEquationsOfMotion)
+    return getStateSize(EOMs.dynamicsModel, EOMs.equationType)
 end

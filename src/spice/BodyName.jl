@@ -3,7 +3,7 @@ Body name wrapper
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 7/29/23
+U: 1/9/25
 """
 
 import SPICE
@@ -20,5 +20,5 @@ Return body ID code
 - `bodyName::BodyName`: BodyName object
 """
 function getIDCode(bodyName::BodyName)
-    return SPICE.bods2c(bodyName.name)
+    return Int16(SPICE.bods2c(bodyName.name))
 end

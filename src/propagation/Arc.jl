@@ -1,14 +1,14 @@
 """
-Arc wrapper
+CR3BP arc wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 8/5/23
+U: 1/10/25
 """
 
-import MBD: Arc
+import MBD: CR3BPArc
 
-export deleteStateAndTime!, getStateByIndex, getStateCount, getTimeByIndex
+export deleteStateAndTime!, getMassRatio, getStateByIndex, getStateCount, getTimeByIndex
 export setParameters!
 
 """
@@ -24,6 +24,18 @@ function deleteStateAndTime!(arc::Arc, index::Int64)
     (index > size(arc.states, 1)) && throw(BoundsError(arc.states, index))
     deleteat!(arc.states, index)
     deleteat!(arc.times, index)
+end
+
+"""
+    getMassRatio(arc)
+
+Return CR3BP system mass ratio
+
+# Arguments
+- `arc::CR3BPArc`: CR3BP arc object
+"""
+function getMassRatio(arc::CR3BPArc)
+    return getMassRatio(arc.dynamicsModel.systemData)
 end
 
 """
