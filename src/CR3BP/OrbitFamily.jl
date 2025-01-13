@@ -3,13 +3,13 @@ CR3BP orbit family wrapper
 
 Author: Jonathan Richmond
 C: 1/17/23
-U: 9/10/23
+U: 1/12/25
 """
 
-import Combinatorics, CSV, DataFrames, LinearAlgebra
+import Combinatorics, CSV, DataFrames, LinearAlgebra, StaticArrays
 import MBD: CR3BPOrbitFamily
 
-export eigenSort!, exportData
+export eigenSort!, exportData, getAlternateIndices, getNumMembers
 
 """
     eigenSort!(orbitFamily)
@@ -143,4 +143,37 @@ function exportData(orbitFamily::CR3BPOrbitFamily, filename::String)
     end
     familyData::DataFrames.DataFrame = DataFrames.DataFrame("x" => x, "y" => y, "z" => z, "xdot" => xdot, "ydot" => ydot, "zdot" => zdot, "JC" => JC, "Period" => p, "Stability Index" => nu, "Time Constant" => tau, "Broucke Stability Parameter 1" => alpha, "Broucke Stability Parameter 2" => beta, "Eigenvalue 1" => lambda1, "Eigenvalue 2" => lambda2, "Eigenvalue 3" => lambda3, "Eigenvalue 4" => lambda4, "Eigenvalue 5" => lambda5, "Eigenvalue 6" => lambda6, "Stability Index 1" => stabilityIndex1, "Stability Index 2" => stabilityIndex2, "Stability Index 3" => stabilityIndex3, "Alternate Stability Index 1" => alternateStabilityIndex1, "Alternate Stability Index 2" => alternateStabilityIndex2, "Alternate Stability Index 3" => alternateStabilityIndex3)
     CSV.write(filename, familyData)
+end
+
+"""
+    getAlternateIndices(orbitFamily)
+
+Return alternate stability indices for the orbit family
+
+# Arguments
+- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+"""
+function getAlternateIndices(orbitFamily::CR3BPOrbitFamily)
+    (eigenvalues::Vector{SVector{Complex{Float64}}}, eigenvectors::Vector{SMatrix{Complex{Float64}}}) = eigenSort!(orbitFamily)
+    numMembers::Int16 = getNumMembers(orbitFamily)
+    standardStabilityIndices::Vector{SVector{Float64}} = [zeros(SVector{3, Float64}) for _ in 1:numMembers]
+    alternateStabilityIndices::Vector{SVector{Complex{Float64}}} = [zeros(SVector{3, Complex{Float64}}) for _ in 1:numMembers]
+    for i::Int16 in 1:numMembers
+        standardStabilityIndices[i] = SVector{3, Float64}(0.5*[LinearAlgebra.norm(orbitFamily.eigenvalues[i][1])+1/LinearAlgebra.norm(orbitFamily.eigenvalues[i][1]), LinearAlgebra.norm(orbitFamily.eigenvalues[i][3])+1/LinearAlgebra.norm(orbitFamily.eigenvalues[i][3]), LinearAlgebra.norm(orbitFamily.eigenvalues[i][5])+1/LinearAlgebra.norm(orbitFamily.eigenvalues[i][5])])
+        alternateStabilityIndices[i] = SVector{3, Complex{Float64}}(0.5*[orbitFamily.eigenvalues[i][1]+1/orbitFamily.eigenvalues[i][1], orbitFamily.eigenvalues[i][2]+1/orbitFamily.eigenvalues[i][2], orbitFamily.eigenvalues[i][3]+1/orbitFamily.eigenvalues[i][3]])
+    end
+
+    return (standardStabilityIndices, alternateStabilityIndices)
+end
+
+"""
+    getNumMembers(orbitFamily)
+
+Return number of family members
+
+# Arguments
+- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+"""
+function getNumMembers(orbitFamily::CR3BPOrbitFamily)
+    return Int16(length(orbitFamily.periods))
 end

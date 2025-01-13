@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/11/25
+U: 1/13/25
 """
 module MBD
 
@@ -65,9 +65,7 @@ struct BodyName
     name::String                                                        # Name
 
     function BodyName(name::String)
-        this = new()
-
-        this.name = name
+        this = new(name)
 
         return this
     end
@@ -81,7 +79,7 @@ Body data object
 # Arguments
 - `name::String`: Name of body
 """
-struct BodyData
+mutable struct BodyData
     bodyRadius::Float64                                                 # Body mean radius [km]
     gravParam::Float64                                                  # Gravitational parameter [kg^3/s^2]
     inc::Float64                                                        # Orbit inclination relative to Ecliptic J2000 frame [rad]
@@ -95,7 +93,7 @@ struct BodyData
     function BodyData(name::String)
         this = new()
 
-        dataFile::String = joinpath(@__DIR__,"body_data.xml")
+        dataFile::String = joinpath(@__DIR__, "body_data.xml")
         bodyName = BodyName(name)
         id::Int16 = getIDCode(bodyName)
         try
@@ -139,23 +137,23 @@ CR3BP system data object
 - `p1::String`: Name of first primary
 - `p2::String`: Name of second primary
 """
-struct CR3BPSystemData
+mutable struct CR3BPSystemData
     primaryData::StaticArrays.SVector{2, BodyData}                      # Primary data objects
     primaryNames::StaticArrays.SVector{2, String}                       # Primary names
-    primaryspiceIDs::StaticArrays.SVector{2, Int16}                     # Primary SPICE IDs
+    primarySpiceIDs::StaticArrays.SVector{2, Int16}                     # Primary SPICE IDs
 
     function CR3BPSystemData(p1::String, p2::String)
         this = new()
-
-        this.primaryNames = SVector(p1, p2)
-        this.primaryData = SVector(BodyData(p1), BodyData(p2))
-        this.primaryspiceIDs = SVector(this.primaryData[1].spiceID, this.primaryData[2].spiceID)
+        
+        this.primaryData = StaticArrays.SVector(BodyData(p1), BodyData(p2))
+        this.primaryNames = StaticArrays.SVector(p1, p2)
+        this.primarySpiceIDs = StaticArrays.SVector(this.primaryData[1].spiceID, this.primaryData[2].spiceID)
         (this.primaryData[2].parentSpiceID == this.primarySpiceIDs[1]) || throw(ArgumentError("First primary must be parent of second primary"))
 
         return this
     end
 end
-Base.:(==)(systemData1::CR3BPSystemData, systemData2::CR3BPSystemData) = (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs)
+Base.:(==)(systemData1::CR3BPSystemData, systemData2::CR3BPSystemData) = ((systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryNames == systemData2.primaryNames) && (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs))
 
 """
     CR3BPDynamicsModel(systemData)
@@ -169,9 +167,7 @@ struct CR3BPDynamicsModel
     systemData::CR3BPSystemData                                         # CR3BP system data object
 
     function CR3BPDynamicsModel(systemData::CR3BPSystemData)
-        this = new()
-
-        this.systemData = systemData
+        this = new(systemData)
 
         return this
     end
@@ -192,10 +188,7 @@ struct CR3BPEquationsOfMotion
     equationType::EquationType                                          # EOM type
     
     function CR3BPEquationsOfMotion(equationType::EquationType, dynamicsModel::CR3BPDynamicsModel)
-        this = new()
-
-        this.equationType = equationType
-        this.dynamicsModel = dynamicsModel
+        this = new(dynamicsModel, equationType)
 
         return this
     end
@@ -210,7 +203,7 @@ Integrator factory object
 # Arguments
 - `integratorSolver::IntegratorType`: Integrator type
 """
-struct IntegratorFactory
+mutable struct IntegratorFactory
     integrator                                                          # Integrator object
     integratorType::IntegratorType                                      # Integrator type
     
@@ -551,9 +544,7 @@ struct ConstraintVectorL2NormConvergenceCheck
     maxVectorNorm::Float64                                              # Maximum allowable vector norm
 
     function ConstraintVectorL2NormConvergenceCheck(tol::Float64 = 1E-10)
-        this = new()
-
-        this.maxVectorNorm = tol
+        this = new(tol)
 
         return this
     end
@@ -727,9 +718,7 @@ struct NumberStepsContinuationEndCheck <: AbstractContinuationEndCheck
     maxSteps::Int16                                                     # Maximum continuation steps
 
     function NumberStepsContinuationEndCheck(maxSteps::Int64)
-        this = new()
-
-        this.maxSteps = Int16(maxSteps)
+        this = new(Int16(maxSteps))
 
         return this
     end
@@ -898,18 +887,13 @@ CR3BP periodic orbit object
 - `monodromy::Matrix{Float64}`: Monodromy matrix [ndim]
 """
 struct CR3BPPeriodicOrbit
-    dynamicsModel::CR3BPDynamicsModel                       # CR3BP dynamics model object
-    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
-    monodromy::Matrix{Float64}                              # Monodromy matrix [ndim]
-    period::Float64                                         # Period [ndim]
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    initialCondition::StaticArrays.SVector{Float64}                     # Initial conditions [ndim]
+    monodromy::StaticArrays.SMatrix{Float64}                            # Monodromy matrix [ndim]
+    period::Float64                                                     # Period [ndim]
 
     function CR3BPPeriodicOrbit(multipleShooterProblem::CR3BPMultipleShooterProblem, period::Float64, monodromy::Matrix{Float64})
-        this = new()
-
-        this.dynamicsModel = multipleShooterProblem.nodes[1].dynamicsModel
-        this.initialCondition = multipleShooterProblem.nodes[1].state.data
-        this.monodromy = monodromy
-        this.period = period
+        this = new(multipleShooterProblem.nodes[1].dynamicsModel, SVector{6, Float64}(multipleShooterProblem.nodes[1].state.data), SMatrix{6, 6, Float64}(monodromy), period)
 
         return this
     end
@@ -917,45 +901,60 @@ end
 Base.:(==)(periodicOrbit1::CR3BPPeriodicOrbit, periodicOrbit2::CR3BPPeriodicOrbit) = ((periodicOrbit1.dynamicsModel == periodicOrbit2.dynamicsModel) && (periodicOrbit1.initialCondition == periodicOrbit2.initialCondition) && (periodicOrbit1.monodromy == periodicOrbit2.monodromy) && (periodicOrbit1.period == periodicOrbit2.period))
 
 """
-    CR3BPOrbitFamily(familyMembers)
+    CR3BPOrbitFamily(dynamicsModel)
 
 CR3BP orbit family object
 
 # Arguments
-- `familyMembers::Vector{CR3BPPeriodicOrbit}`: Family members
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-mutable struct CR3BPOrbitFamily <: AbstractStructureFamily
-    alternateIndices::Vector{Vector{Complex{Float64}}}      # Alternate stability indices
-    bifurcations::Vector{Bifurcation}                       # Bifurcations
-    eigenvalues::Vector{Vector{Complex{Float64}}}           # Sorted family eigenvalues
-    eigenvectors::Vector{Matrix{Complex{Float64}}}          # Sorted family eigenvectors
-    familyMembers::Vector{CR3BPPeriodicOrbit}               # Family members
-    stabilityIndices::Vector{Vector{Float64}}               # Stability indices
+mutable struct CR3BPOrbitFamily
+    # bifurcations::Vector{Bifurcation}                                   # Bifurcations
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    initialConditions::Vector{StaticArrays.SVector{Float64}}            # Initial conditions [ndim]
+    monodromies::Vector{StaticArrays.SMatrix{Float64}}                  # Monodromy matrices [ndim]
+    periods::Vector{Float64}                                            # Periods [ndim]
 
-    function CR3BPOrbitFamily(familyMembers::Vector{CR3BPPeriodicOrbit})
-        return new(Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), [], Vector{Vector{Complex{Float64}}}(undef, length(familyMembers)), Vector{Matrix{Complex{Float64}}}(undef, length(familyMembers)), familyMembers, Vector{Vector{Float64}}(undef, length(familyMembers)))
+    function CR3BPOrbitFamily(dynamicsModel::CR3BPDynamicsModel)
+        this = new()
+
+        this.dynamicsModel = dynamicsModel
+        this.initialConditions = [[]]
+        this.periods = []
+        this.monodromies = [[]]
+        # this.bifurcations = []
+
+        return this
     end
 end
+Base.:(==)(orbitFamily1::CR3BPOrbitFamily, orbitFamily2::CR3BPOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
 
 """
-    CR3BPManifoldArc(initialCondition, periodicOrbit, orbitTime)
+    CR3BPManifoldArc(periodicOrbit, orbitTime, initialCondition; TOF)
 
 CR3BP manifold arc object
 
 # Arguments
-- `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
 - `orbitTime::Float64`: Time along orbit from initial condition [ndim]
+- `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
+- `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
 """
-mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
-    initialCondition::Vector{Float64}                       # Initial conditions [ndim]
-    JacobiConstant::Float64                                 # Jacobi constant
-    orbitTime::Float64                                      # Normalized time along orbit from initial condition
-    periodicOrbit::CR3BPPeriodicOrbit                       # Underlying periodic orbit
-    TOF::Float64                                            # Time of flight [ndim]
+mutable struct CR3BPManifoldArc
+    initialCondition::StaticArrays.SVector{Complex{Float64}}            # Initial conditions [ndim]
+    orbitTime::Float64                                                  # Normalized time along orbit from initial condition
+    periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying periodic orbit
+    TOF::Float64                                                        # Time of flight [ndim]
 
-    function CR3BPManifoldArc(initialCondition::Vector{Complex{Float64}}, periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64)
-        return new(real.(initialCondition), getJacobiConstant(periodicOrbit.targeter.dynamicsModel, real.(initialCondition)), orbitTime, periodicOrbit, 0.0)
+    function CR3BPManifoldArc(periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64, initialCondition::Vector{Complex{Float64}}, TOF::Float64 = 0.0)
+        this = new()
+
+        this.periodicOrbit = periodicOrbit
+        this.orbitTime = orbitTime
+        this.initialCondition = SVector{6, Complex{Float64}}(initialCondition)
+        this.TOF = TOF
+
+        return this
     end
 end
 
@@ -1059,37 +1058,37 @@ end
 # Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
 # include("bifurcation/Bifurcation.jl")
-include("continuation/AdaptiveStepSizeByElementGenerator.jl")
-include("continuation/BoundingBoxContinuationEndCheck.jl")
-include("continuation/BoundingBoxJumpCheck.jl")
-include("continuation/JacobiConstantContinuationEngine.jl")
-include("continuation/NaturalParameterContinuationEngine.jl")
-include("continuation/NumberStepsContinuationEndCheck.jl")
-include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
-include("corrections/ContinuityConstraint.jl")
-include("corrections/LeastSquaresUpdateGenerator.jl")
-include("corrections/MinimumNormUpdateGenerator.jl")
-include("corrections/MultipleShooter.jl")
-include("corrections/MultipleShooterProblem.jl")
-include("corrections/Node.jl")
-include("corrections/Segment.jl")
-include("corrections/StateConstraint.jl")
-include("corrections/StateMatchConstraint.jl")
-include("corrections/Variable.jl")
-include("CR3BP/DynamicsModel.jl")
-include("CR3BP/EquationsOfMotion.jl")
-include("CR3BP/JacobiConstraint.jl")
-include("CR3BP/OrbitFamily.jl")
-include("CR3BP/PeriodicOrbit.jl")
-include("CR3BP/SystemData.jl")
-include("propagation/Arc.jl")
-include("propagation/EventFunctions.jl")
-include("propagation/Propagator.jl")
+# include("continuation/AdaptiveStepSizeByElementGenerator.jl")
+# include("continuation/BoundingBoxContinuationEndCheck.jl")
+# include("continuation/BoundingBoxJumpCheck.jl")
+# include("continuation/JacobiConstantContinuationEngine.jl")
+# include("continuation/NaturalParameterContinuationEngine.jl")
+# include("continuation/NumberStepsContinuationEndCheck.jl")
+# include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
+# include("corrections/ContinuityConstraint.jl")
+# include("corrections/LeastSquaresUpdateGenerator.jl")
+# include("corrections/MinimumNormUpdateGenerator.jl")
+# include("corrections/MultipleShooter.jl")
+# include("corrections/MultipleShooterProblem.jl")
+# include("corrections/Node.jl")
+# include("corrections/Segment.jl")
+# include("corrections/StateConstraint.jl")
+# include("corrections/StateMatchConstraint.jl")
+# include("corrections/Variable.jl")
+# include("CR3BP/DynamicsModel.jl")
+# include("CR3BP/EquationsOfMotion.jl")
+# include("CR3BP/JacobiConstraint.jl")
+# include("CR3BP/OrbitFamily.jl")
+# include("CR3BP/PeriodicOrbit.jl")
+# include("CR3BP/SystemData.jl")
+# include("propagation/Arc.jl")
+# include("propagation/EventFunctions.jl")
+# include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
-include("spice/SpiceFunctions.jl")
+# include("spice/SpiceFunctions.jl")
 # include("TBP/DynamicsModel.jl")
 # include("TBP/EquationsOfMotion.jl")
 # include("TBP/Trajectory.jl")
-include("utilities/UtilityFunctions.jl")
+# include("utilities/UtilityFunctions.jl")
 
 end # module MBD
