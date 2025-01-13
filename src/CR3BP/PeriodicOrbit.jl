@@ -3,18 +3,53 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 1/10/25
+U: 1/11/25
 """
 
-import DifferentialEquations, LinearAlgebra
+import DifferentialEquations, LinearAlgebra, StaticArrays
 import MBD: CR3BPPeriodicOrbit
 
-export getBrouckeStability, getManifoldArcByTime, getManifoldByArclength, getManifoldByStepOff
-export getManifoldByTime, getStability!
+export getBrouckeStability, getEigen, getJacobiConstant, getManifoldArcByTime
+export getManifoldByArclength, getManifoldByStepOff, getManifoldByTime, getStabilityIndex
+export getStability!, getTimeConstant
 
 """
-    getBrouckeStability()
+    getBrouckeStability(periodicOrbit)
+
+Return Broucke stability parameters
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
 """
+function getBrouckeStability(periodicOrbit::CR3BPPeriodicOrbit)  
+    return SVector(2-LinearAlgebra.tr(periodicOrbit.monodromy), 0.5*((alpha^2)+2-LinearAlgebra.tr(periodicOrbit.monodromy^2)))
+end
+
+"""
+    getEigen(periodicOrbit)
+
+Return eigenvalues and -vectors
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+"""
+function getEigen(periodicOrbit::CR3BPPeriodicOrbit)
+    E::LinearAlgebra.Eigen = LinearAlgebra.eigen(periodicOrbit.monodromy)
+
+    return (SVector{6}(E.values), SMatrix{6, 6}(E.vectors))
+end
+
+"""
+    getJacobiConstant(periodicOrbit)
+
+Return Jacobi constant
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+"""
+function getJacobiConstant(periodicOrbit::CR3BPPeriodicOrbit)
+    return getJacobiConstant(periodicOrbit.dynamicsModel, periodicOrbit.initialState)
+end
 
 """
     getManifoldArcByTime(periodicOrbit, dynamicsModel, stabilitity, d, orbitTime, direction)
@@ -157,6 +192,18 @@ function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::MBD
 end
 
 """
+    getStabilityIndex(periodicOrbit)
+
+Return stability index
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+"""
+function getStabilityIndex(periodicOrbit::CR3BPPeriodicOrbit)
+    return LinearAlgebra.norm(getEigen(periodicOrbit)[1], Inf)
+end
+
+"""
     getStability!(periodicOrbit)
 
 Return periodic orbit object with updated stability properties
@@ -195,4 +242,16 @@ function shallowClone(periodicOrbit::CR3BPPeriodicOrbit)
     object.tau = periodicOrbit.tau
 
     return object
+end
+
+"""
+    getTimeConstant(periodicOrbit)
+
+Return time constant [ndim]
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+"""
+function getTimeConstant(periodicOrbit::CR3BPPeriodicOrbit)
+    return periodicOrbit.period/log(getStabilityIndex(periodicOrbit))
 end

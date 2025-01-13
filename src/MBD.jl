@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/10/25
+U: 1/11/25
 """
 module MBD
 
@@ -888,32 +888,33 @@ Base.:(==)(jacobiConstantContinuationEngine1::JacobiConstantContinuationEngine, 
 # end
 
 """
-    CR3BPPeriodicOrbit(multipleShooterProblem, targeter)
+    CR3BPPeriodicOrbit(multipleShooterProblem, period, monodromy)
 
 CR3BP periodic orbit object
 
 # Arguments
 - `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
-- `targeter::AbstractTargeter`: Targeter object
+- `period::Float64`: Period [ndim]
+- `monodromy::Matrix{Float64}`: Monodromy matrix [ndim]
 """
 struct CR3BPPeriodicOrbit
-    BrouckeStability::Vector{Float64}                       # Broucke stability parameters
-    eigenvalues::Vector{Complex{Float64}}                   # Monodromy matrix eigenvalues [ndim]
-    eigenvectors::Matrix{Complex{Float64}}                  # Monodromy matrix eigenvectors [ndim]
+    dynamicsModel::CR3BPDynamicsModel                       # CR3BP dynamics model object
     initialCondition::Vector{Float64}                       # Initial conditions [ndim]
-    JacobiConstant::Float64                                 # Jacobi constant
     monodromy::Matrix{Float64}                              # Monodromy matrix [ndim]
-    nu::Float64                                             # Maximum stability index [ndim]
     period::Float64                                         # Period [ndim]
-    problem::MultipleShooterProblem                         # Solved multiple shooter problem
-    targeter::AbstractTargeter                              # Targeter
-    tau::Float64                                            # Time constant [ndim]
 
-    function CR3BPPeriodicOrbit(multipleShooterProblem::MultipleShooterProblem, targeter::AbstractTargeter)
-        return new(zeros(Float64, 2), Vector{Complex{Float64}}(undef, 6), Matrix{Complex{Float64}}(undef, 6, 6), Vector{Float64}(undef, 6), 0.0, Matrix{Float64}(undef, 6, 6), 0.0, 0.0, multipleShooterProblem, targeter, 0.0)
+    function CR3BPPeriodicOrbit(multipleShooterProblem::CR3BPMultipleShooterProblem, period::Float64, monodromy::Matrix{Float64})
+        this = new()
+
+        this.dynamicsModel = multipleShooterProblem.nodes[1].dynamicsModel
+        this.initialCondition = multipleShooterProblem.nodes[1].state.data
+        this.monodromy = monodromy
+        this.period = period
+
+        return this
     end
 end
-Base.:(==)(orbit1::CR3BPPeriodicOrbit, orbit2::CR3BPPeriodicOrbit) = ((orbit1.BrouckeStability == orbit2.BrouckeStability) && (orbit1.initialCondition == orbit2.initialCondition) && (orbit1.nu == orbit2.nu) && (orbit1.period == orbit2.period) && (orbit1.tau == orbit2.tau))
+Base.:(==)(periodicOrbit1::CR3BPPeriodicOrbit, periodicOrbit2::CR3BPPeriodicOrbit) = ((periodicOrbit1.dynamicsModel == periodicOrbit2.dynamicsModel) && (periodicOrbit1.initialCondition == periodicOrbit2.initialCondition) && (periodicOrbit1.monodromy == periodicOrbit2.monodromy) && (periodicOrbit1.period == periodicOrbit2.period))
 
 """
     CR3BPOrbitFamily(familyMembers)
@@ -958,106 +959,106 @@ mutable struct CR3BPManifoldArc <: AbstractTrajectoryStructure
     end
 end
 
-"""
-    TBPSystemData(p)
+# """
+#     TBPSystemData(p)
 
-TBP system object
+# TBP system object
 
-# Arguments
-- `p::String`: Name of primary
-"""
-mutable struct TBPSystemData <: AbstractSystemData
-    charLength::Float64                                     # Characteristic length [km]
-    charTime::Float64                                       # Characteristic time [s]
-    gravParam::Float64                                      # Gravitational parameter [km^3/s^2]
-    numPrimaries::Int64                                     # Number of primaries that must exist in this system
-    primaryName::String                                     # Primary name
-    primarySpiceID::Int64                                   # Primary SPICE ID
+# # Arguments
+# - `p::String`: Name of primary
+# """
+# mutable struct TBPSystemData <: AbstractSystemData
+#     charLength::Float64                                     # Characteristic length [km]
+#     charTime::Float64                                       # Characteristic time [s]
+#     gravParam::Float64                                      # Gravitational parameter [km^3/s^2]
+#     numPrimaries::Int64                                     # Number of primaries that must exist in this system
+#     primaryName::String                                     # Primary name
+#     primarySpiceID::Int64                                   # Primary SPICE ID
 
-    function TBPSystemData(p::String)
-        this = new()
+#     function TBPSystemData(p::String)
+#         this = new()
 
-        pData = BodyData(p)
-        this.numPrimaries = 1
-        this.primaryName = pData.name
-        this.primarySpiceID = pData.spiceID
-        this.gravParam = pData.gravParam
-        this.charLength = pData.orbitRadius
-        this.charTime = sqrt(this.charLength^3/this.gravParam)
+#         pData = BodyData(p)
+#         this.numPrimaries = 1
+#         this.primaryName = pData.name
+#         this.primarySpiceID = pData.spiceID
+#         this.gravParam = pData.gravParam
+#         this.charLength = pData.orbitRadius
+#         this.charTime = sqrt(this.charLength^3/this.gravParam)
         
-        return this
-    end
-end
-Base.:(==)(systemData1::TBPSystemData, systemData2::TBPSystemData) = (systemData1.primarySpiceID == systemData2.primarySpiceID)
+#         return this
+#     end
+# end
+# Base.:(==)(systemData1::TBPSystemData, systemData2::TBPSystemData) = (systemData1.primarySpiceID == systemData2.primarySpiceID)
 
-"""
-    TBPDynamicsModel(systemData)
+# """
+#     TBPDynamicsModel(systemData)
 
-TBP dynamics model object
+# TBP dynamics model object
 
-# Arguments
-- `systemData::TBPSystemData`: TBP system object
-"""
-struct TBPDynamicsModel <: AbstractDynamicsModel
-    systemData::TBPSystemData                               # CR3BP system object
+# # Arguments
+# - `systemData::TBPSystemData`: TBP system object
+# """
+# struct TBPDynamicsModel <: AbstractDynamicsModel
+#     systemData::TBPSystemData                               # CR3BP system object
 
-    function TBPDynamicsModel(systemData::TBPSystemData)
-        return new(systemData)
-    end
-end
-Base.:(==)(dynamicsModel1::TBPDynamicsModel, dynamicsModel2::TBPDynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
+#     function TBPDynamicsModel(systemData::TBPSystemData)
+#         return new(systemData)
+#     end
+# end
+# Base.:(==)(dynamicsModel1::TBPDynamicsModel, dynamicsModel2::TBPDynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
 
-"""
-    TBPEquationsOfMotion(equationType, dynamicsModel)
+# """
+#     TBPEquationsOfMotion(equationType, dynamicsModel)
 
-TBP EOM object
+# TBP EOM object
 
-# Arguments
-- `equationType::EquationType`: EOM type
-- `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
-"""
-struct TBPEquationsOfMotion <: AbstractEquationsOfMotion
-    dim::Int64                                              # State vector dimension
-    equationType::EquationType                              # EOM type
-    mu::Float64                                             # TBP gravitational parameter
+# # Arguments
+# - `equationType::EquationType`: EOM type
+# - `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
+# """
+# struct TBPEquationsOfMotion <: AbstractEquationsOfMotion
+#     dim::Int64                                              # State vector dimension
+#     equationType::EquationType                              # EOM type
+#     mu::Float64                                             # TBP gravitational parameter
 
-    function TBPEquationsOfMotion(equationType::EquationType, dynamicsModel::TBPDynamicsModel)
-        return new(getStateSize(dynamicsModel, equationType), equationType, dynamicsModel.systemData.gravParam)
-    end
-end
-Base.:(==)(EOMs1::TBPEquationsOfMotion, EOMs2::TBPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
+#     function TBPEquationsOfMotion(equationType::EquationType, dynamicsModel::TBPDynamicsModel)
+#         return new(getStateSize(dynamicsModel, equationType), equationType, dynamicsModel.systemData.gravParam)
+#     end
+# end
+# Base.:(==)(EOMs1::TBPEquationsOfMotion, EOMs2::TBPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
 
-"""
-    TBPTrajectory(initialCondition, dynamicsModel)
+# """
+#     TBPTrajectory(initialCondition, dynamicsModel)
 
-TBP trajectory object
+# TBP trajectory object
 
-# Arguments
-- `initialCondition::Vector{Float64}`: Initial conditions
-- `dynamicsModel::TBPDynamicsModel`: Dynamics model object
-"""
-mutable struct TBPTrajectory <: AbstractTrajectoryStructure
-    a::Float64                                              # Semimajor axis [km]
-    dynamicsModel::TBPDynamicsModel                         # TBP Dynamics model object
-    E::Float64                                              # Energy [km^2/s^2]
-    e::Float64                                              # Eccentricity
-    h::Float64                                              # Angular momentum [km^2/s]
-    i::Float64                                              # Inclination [rad]
-    initialCondition::Vector{Float64}                       # Initial conditions
-    Omega::Float64                                          # Longitude of ascending node [rad]
-    omega::Float64                                          # Argument of periapsis [rad]
-    r_a::Float64                                            # Radius of apoapse [km]
-    r_p::Float64                                            # Radius of periapse [km]
-    theta::Float64                                          # True anomaly [rad]
-    TOF::Float64                                            # Time of flight
+# # Arguments
+# - `initialCondition::Vector{Float64}`: Initial conditions
+# - `dynamicsModel::TBPDynamicsModel`: Dynamics model object
+# """
+# mutable struct TBPTrajectory <: AbstractTrajectoryStructure
+#     a::Float64                                              # Semimajor axis [km]
+#     dynamicsModel::TBPDynamicsModel                         # TBP Dynamics model object
+#     E::Float64                                              # Energy [km^2/s^2]
+#     e::Float64                                              # Eccentricity
+#     h::Float64                                              # Angular momentum [km^2/s]
+#     i::Float64                                              # Inclination [rad]
+#     initialCondition::Vector{Float64}                       # Initial conditions
+#     Omega::Float64                                          # Longitude of ascending node [rad]
+#     omega::Float64                                          # Argument of periapsis [rad]
+#     r_a::Float64                                            # Radius of apoapse [km]
+#     r_p::Float64                                            # Radius of periapse [km]
+#     theta::Float64                                          # True anomaly [rad]
+#     TOF::Float64                                            # Time of flight
 
-    function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
-        return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-    end
-end
-Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
+#     function TBPTrajectory(initialCondition::Vector{Float64}, dynamicsModel::TBPDynamicsModel)
+#         return new(0.0, dynamicsModel, 0.0, 0.0, 0.0, 0.0, initialCondition, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+#     end
+# end
+# Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
-include("bifurcation/Bifurcation.jl")
+# include("bifurcation/Bifurcation.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
@@ -1086,9 +1087,9 @@ include("propagation/EventFunctions.jl")
 include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
 include("spice/SpiceFunctions.jl")
-include("TBP/DynamicsModel.jl")
-include("TBP/EquationsOfMotion.jl")
-include("TBP/Trajectory.jl")
+# include("TBP/DynamicsModel.jl")
+# include("TBP/EquationsOfMotion.jl")
+# include("TBP/Trajectory.jl")
 include("utilities/UtilityFunctions.jl")
 
 end # module MBD
