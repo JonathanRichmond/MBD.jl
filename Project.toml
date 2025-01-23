@@ -1,7 +1,7 @@
 name = "MBD"
 uuid = "994ce0ec-d6e5-428b-b4b3-7b10f5a0848a"
 authors = ["jrich "]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"

@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/13/25
+U: 1/22/25
 """
 module MBD
 
@@ -394,8 +394,8 @@ mutable struct CR3BPMultipleShooterProblem
     freeVariableVector::Vector{Float64}                                 # Free variables
     hasBeenBuilt::Bool                                                  # Has been built?
     jacobian::Vector{Vector{Float64}}                                   # Jacobian matrix
-    nodes::Vector{CR3BPNode}                                            # CR3BP nodes
-    segments::Vector{CR3BPSegment}                                      # CR3BP segments
+    nodes::Vector{CR3BPNode}                                            # CR3BP node objects
+    segments::Vector{CR3BPSegment}                                      # CR3BP segment objects
 
     function CR3BPMultipleShooterProblem()
         this = new()
@@ -430,7 +430,7 @@ mutable struct CR3BPContinuityConstraint <: AbstractConstraint
         this = new()
 
         this.segment = segment
-        this.constrainedIndices = Int16(1:length(segment.originNode.state.data))
+        this.constrainedIndices = Int16(1):Int16(length(segment.originNode.state.data))
 
         return this
     end
@@ -458,7 +458,7 @@ mutable struct CR3BPStateConstraint <: AbstractConstraint
         (length(indices) == length(values)) || throw(ArgumentError("Number of indices, $(length(indices)), must match number of values, $(length(values))"))
         this.variable = node.state
         checkIndices(indices, length(this.variable.data))
-        this.constrainedIndices = Int16(indices)
+        this.constrainedIndices = convert(Vector{Int16}, indices)
         this.values = copy(values)
         freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
         for index::Int64 in this.constrainedIndices
@@ -491,8 +491,8 @@ mutable struct StateMatchConstraint <: AbstractConstraint
         (length(state1.data) == length(state2.data)) || throw(ArgumentError("First state length, $(length(state1.data)), must match second state length, $(length(state2.data))"))
         this.variable1 = state1
         this.variable2 = state2
-        checkIndices(this.indices, length(state1.data))
-        this.constrainedIndices = Int16(indices)
+        checkIndices(indices, length(state1.data))
+        this.constrainedIndices = convert(Vector{Int16}, indices)
         mask1::Vector{Bool} = getFreeVariableMask(this.variable1)
         mask2::Vector{Bool} = getFreeVariableMask(this.variable2)
         for i::Int64 in eachindex(this.constrainedIndices)
@@ -522,9 +522,9 @@ mutable struct JacobiConstraint <: AbstractConstraint
     function JacobiConstraint(node::CR3BPNode, value::Float64)
         this = new()
 
+        (typeof(node.dynamicsModel) == CR3BPDynamicsModel) ? (this.dynamicsModel = node.dynamicsModel) : throw(ArgumentError("Expecting CR3BP dynamics model object"))
         this.epoch = node.epoch
         this.state = node.state
-        (typeof(node.dynamicsModel) == CR3BPDynamicsModel) ? (this.dynamicsModel = node.dynamicsModel) : throw(ArgumentError("Expecting CR3BP dynamics model object"))
         this.value = value
 
         return this
@@ -599,40 +599,49 @@ mutable struct CR3BPMultipleShooter
         this.recentIterationCount = Int16(0)
         this.solutionInProgress = CR3BPMultipleShooterProblem()
         this.convergenceCheck = ConstraintVectorL2NormConvergenceCheck(tol)
-        this.updateGenerators = SVector(MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator())
+        this.updateGenerators = StaticArrays.SVector(MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator())
         this.maxIterations = Int16(25)
         this.printProgress = false
 
 
-        return new(ConstraintVectorL2NormConvergenceCheck(tol), 25, false, 0, MultipleShooterProblem(), [MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator()])
+        return this
     end
 end
 Base.:(==)(multipleShooter1::CR3BPMultipleShooter, multipleShooter2::CR3BPMultipleShooter) = ((multipleShooter1.convergenceCheck == multipleShooter2.convergenceCheck) && (multipleShooter1.maxIterations == multipleShooter2.maxIterations) && (multipleShooter1.recentIterationCount == multipleShooter2.recentIterationCount) && (multipleShooter1.solutionInProgress == multipleShooter2.solutionInProgress))
 
 """
-    CR3BPContinuationFamily()
+    CR3BPContinuationFamily(dynamicsModel)
 
 CR3BP continuation family object
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
 mutable struct CR3BPContinuationFamily
-    nodes::Vector{Vector{CR3BPNode}}                                    # CR3BP nodes
-    segments::Vector{Vector{CR3BPSegment}}                              # CR3BP segments
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    nodes::Vector{Vector{CR3BPNode}}                                    # CR3BP node objects
+    segments::Vector{Vector{CR3BPSegment}}                              # CR3BP segment objects
 
-    function CR3BPContinuationFamily()
+    function CR3BPContinuationFamily(dynamicsModel::CR3BPDynamicsModel)
         this = new()
 
+        this.dynamicsModel = dynamicsModel
         this.nodes = []
         this.segments = []
 
         return this
     end
 end
-Base.:(==)(continuationFamily1::CR3BPContinuationFamily, continuationFamily2::CR3BPContinuationFamily) = ((continuationFamily1.nodes == continuationFamily2.nodes) && (continuationFamily1.segments == continuationFamily2.segments))
+Base.:(==)(continuationFamily1::CR3BPContinuationFamily, continuationFamily2::CR3BPContinuationFamily) = ((continuationFamily1.dynamicsModel == continuationFamily2.dynamicsModel) && (continuationFamily1.nodes == continuationFamily2.nodes) && (continuationFamily1.segments == continuationFamily2.segments))
 
 """
-    CR3BPContinuationData()
+    CR3BPContinuationData(solution1, solution2)
 
 CR3BP continuation data object
+
+# Arguments
+- `solution1::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
+- `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 """
 mutable struct CR3BPContinuationData
     converging::Bool                                                    # Converging?
@@ -646,11 +655,11 @@ mutable struct CR3BPContinuationData
     previousSolution::CR3BPMultipleShooterProblem                       # Most recently converged family member
     twoPreviousSolution::CR3BPMultipleShooterProblem                    # Second previously converged family member
 
-    function CR3BPContinuationData()
+    function CR3BPContinuationData(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem)
         this = new()
 
-        this.previousSolution = CR3BPMultipleShooterProblem()
-        this.twoPreviousSolution = CR3BPMultipleShooterProblem()
+        this.previousSolution = solution1
+        this.twoPreviousSolution = solution2
         this.numIterations = Int16(0)
         this.initialGuess = CR3BPMultipleShooterProblem()
         this.converging = true
@@ -691,6 +700,7 @@ mutable struct AdaptiveStepSizeByElementGenerator
         this = new()
 
         (elementIndex < 1) && throw(ArgumentError("Element index must be positive"))
+        (sign(initialStepSize) == sign(maxElementStepSize)) || throw(ArgumentError("Step sizes must have same sign"))
         this.elementName = elementName
         this.elementIndex = Int16(elementIndex)
         this.initialStepSize = initialStepSize
@@ -749,7 +759,7 @@ mutable struct BoundingBoxContinuationEndCheck <: AbstractContinuationEndCheck
         return this
     end
 end
-Base.:(==)(boundingBoxContinuationEndCheck1::BoundingBoxContinuationEndCheck, boundingBoxContinuationEndCheck2::BoundingBoxContinuationEndCheck) = ((boundingBoxContinuationEndCheck1.paramBounds == boundingBoxContinuationEndCheck2.paramBounds) && (boundingBoxContinuationEndCheck1.paramName == boundingBoxContinuationEndCheck2.paramName) && (boundingBoxContinuationEndCheck1.variableBounds == boundingBoxContinuationEndCheck2.variableBounds))
+Base.:(==)(boundingBoxContinuationEndCheck1::BoundingBoxContinuationEndCheck, boundingBoxContinuationEndCheck2::BoundingBoxContinuationEndCheck) = (isequal(boundingBoxContinuationEndCheck1.paramBounds, boundingBoxContinuationEndCheck2.paramBounds) && (boundingBoxContinuationEndCheck1.paramName == boundingBoxContinuationEndCheck2.paramName) && (boundingBoxContinuationEndCheck1.variableBounds == boundingBoxContinuationEndCheck2.variableBounds))
 
 """
     BundingBoxJumpCheck(paramName, paramBounds)
@@ -775,14 +785,16 @@ mutable struct BoundingBoxJumpCheck <: AbstractContinuationJumpCheck
         return this
     end
 end
-Base.:(==)(boundingBoxJumpCheck1::BoundingBoxJumpCheck, boundingBoxJumpCheck2::BoundingBoxJumpCheck) = ((boundingBoxJumpCheck1.paramBounds == boundingBoxJumpCheck2.paramBounds) && (boundingBoxJumpCheck1.paramName == boundingBoxJumpCheck2.paramName) && (boundingBoxJumpCheck1.variableBounds == boundingBoxJumpCheck2.variableBounds))
+Base.:(==)(boundingBoxJumpCheck1::BoundingBoxJumpCheck, boundingBoxJumpCheck2::BoundingBoxJumpCheck) = (isequal(boundingBoxJumpCheck1.paramBounds, boundingBoxJumpCheck2.paramBounds) && (boundingBoxJumpCheck1.paramName == boundingBoxJumpCheck2.paramName) && (boundingBoxJumpCheck1.variableBounds == boundingBoxJumpCheck2.variableBounds))
 
 """
-    CR3BPNaturalParameterContinuationEngine(paramName, paramIndex, initialParamStepSize, maxParamStepSize; tol)
+    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramIndex, initialParamStepSize, maxParamStepSize; tol)
 
 CR3BP natural parameter continuation engine object
 
 # Arguments
+- `solution1::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
+- `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `paramName::String`: Natural parameter name
 - `paramIndex::Int64`: Natural parameter index to step in
 - `initialParamStepSize::Float64`: Initial step size
@@ -798,11 +810,11 @@ mutable struct CR3BPNaturalParameterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPNaturalParameterContinuationEngine(paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
-        this.dataInProgress = CR3BPContinuationData()
+        this.dataInProgress = CR3BPContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
         this.jumpChecks = []
         this.endChecks = []
@@ -815,11 +827,13 @@ end
 Base.:(==)(naturalParameterContinuationEngine1::CR3BPNaturalParameterContinuationEngine, naturalParameterContinuationEngine2::CR3BPNaturalParameterContinuationEngine) = ((naturalParameterContinuationEngine1.corrector == naturalParameterContinuationEngine2.corrector) && (naturalParameterContinuationEngine1.dataInProgress == naturalParameterContinuationEngine2.dataInProgress) && (naturalParameterContinuationEngine1.endChecks == naturalParameterContinuationEngine2.endChecks) && (naturalParameterContinuationEngine1.jumpChecks == naturalParameterContinuationEngine2.jumpChecks) && (naturalParameterContinuationEngine1.stepSizeGenerator == naturalParameterContinuationEngine2.stepSizeGenerator))
 
 """
-    JacobiConstantContinuationEngine(initialParamStepSize, maxParamStepSize; tol)
+    JacobiConstantContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol)
 
 Jacobi constant continuation engine object
 
 # Arguments
+- `solution1::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
+- `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-10)
@@ -833,11 +847,11 @@ mutable struct JacobiConstantContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function JacobiConstantContinuationEngine(initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
-        this.dataInProgress = CR3BPContinuationData()
+        this.dataInProgress = CR3BPContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator("Jacobi Constant", 1, initialParamStepSize, maxParamStepSize)
         this.jumpChecks = []
         this.endChecks = []
@@ -888,12 +902,12 @@ CR3BP periodic orbit object
 """
 struct CR3BPPeriodicOrbit
     dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
-    initialCondition::StaticArrays.SVector{Float64}                     # Initial conditions [ndim]
-    monodromy::StaticArrays.SMatrix{Float64}                            # Monodromy matrix [ndim]
+    initialCondition::Vector{Float64}                                   # Initial conditions [ndim]
+    monodromy::StaticArrays.SMatrix{6, 6, Float64}                      # Monodromy matrix [ndim]
     period::Float64                                                     # Period [ndim]
 
     function CR3BPPeriodicOrbit(multipleShooterProblem::CR3BPMultipleShooterProblem, period::Float64, monodromy::Matrix{Float64})
-        this = new(multipleShooterProblem.nodes[1].dynamicsModel, SVector{6, Float64}(multipleShooterProblem.nodes[1].state.data), SMatrix{6, 6, Float64}(monodromy), period)
+        this = new(multipleShooterProblem.nodes[1].dynamicsModel, multipleShooterProblem.nodes[1].state.data[1:6], StaticArrays.SMatrix{6, 6, Float64}(monodromy), period)
 
         return this
     end
@@ -911,17 +925,17 @@ CR3BP orbit family object
 mutable struct CR3BPOrbitFamily
     # bifurcations::Vector{Bifurcation}                                   # Bifurcations
     dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
-    initialConditions::Vector{StaticArrays.SVector{Float64}}            # Initial conditions [ndim]
-    monodromies::Vector{StaticArrays.SMatrix{Float64}}                  # Monodromy matrices [ndim]
+    initialConditions::Vector{Vector{Float64}}                          # Initial conditions [ndim]
+    monodromies::Vector{StaticArrays.SMatrix{6, 6, Float64}}            # Monodromy matrices [ndim]
     periods::Vector{Float64}                                            # Periods [ndim]
 
     function CR3BPOrbitFamily(dynamicsModel::CR3BPDynamicsModel)
         this = new()
 
         this.dynamicsModel = dynamicsModel
-        this.initialConditions = [[]]
+        this.initialConditions = []
         this.periods = []
-        this.monodromies = [[]]
+        this.monodromies = []
         # this.bifurcations = []
 
         return this
@@ -930,28 +944,66 @@ end
 Base.:(==)(orbitFamily1::CR3BPOrbitFamily, orbitFamily2::CR3BPOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
 
 """
-    CR3BPManifoldArc(periodicOrbit, orbitTime, initialCondition; TOF)
+    CR3BPManifoldArc(periodicOrbit, orbitTime, d, initialCondition; TOF)
 
 CR3BP manifold arc object
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
 - `orbitTime::Float64`: Time along orbit from initial condition [ndim]
+- `d::Float64`: Step-off distance [ndim]
 - `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
 - `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
 """
 mutable struct CR3BPManifoldArc
-    initialCondition::StaticArrays.SVector{Complex{Float64}}            # Initial conditions [ndim]
+    d::Float64                                                          # Step-off distance [ndim]
+    initialCondition::Vector{Complex{Float64}}                          # Initial conditions [ndim]
     orbitTime::Float64                                                  # Normalized time along orbit from initial condition
     periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying periodic orbit
-    TOF::Float64                                                        # Time of flight [ndim]
+    TOF::Float64                                                        # Time-of-flight [ndim]
 
-    function CR3BPManifoldArc(periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64, initialCondition::Vector{Complex{Float64}}, TOF::Float64 = 0.0)
+    function CR3BPManifoldArc(periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64, d::Float64, initialCondition::Vector{Complex{Float64}}, TOF::Float64 = 0.0)
         this = new()
 
         this.periodicOrbit = periodicOrbit
         this.orbitTime = orbitTime
-        this.initialCondition = SVector{6, Complex{Float64}}(initialCondition)
+        this.d = d
+        this.initialCondition = initialCondition
+        this.TOF = TOF
+
+        return this
+    end
+end
+
+"""
+    CR3BPManifold(periodicOrbit, stability, direction; TOF)
+
+CR3BP manifold object
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
+- `stability::String`: Stability
+- `direction::String`: Step-off direction
+- `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
+"""
+mutable struct CR3BPManifold
+    direction::String                                                   # Step-off direction
+    ds::Vector{Float64}                                                 # Step-off distances [ndim]
+    initialConditions::Vector{Vector{Complex{Float64}}}                 # Initial conditions [ndim]
+    orbitTimes::Vector{Float64}                                         # Normalized times along orbit from initial condition
+    periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying periodic orbit
+    stability::String                                                   # Stability
+    TOF::Float64                                                        # Time-of-flight [ndim]
+
+    function CR3BPManifold(periodicOrbit::CR3BPPeriodicOrbit, stability::String, direction::String, TOF::Float64 = 0.0)
+        this = new()
+
+        this.periodicOrbit = periodicOrbit
+        this.orbitTimes = []
+        this.ds = []
+        this.stability = stability
+        this.direction = direction
+        this.initialConditions = []
         this.TOF = TOF
 
         return this
@@ -1061,34 +1113,36 @@ end
 # include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 # include("continuation/BoundingBoxContinuationEndCheck.jl")
 # include("continuation/BoundingBoxJumpCheck.jl")
-# include("continuation/JacobiConstantContinuationEngine.jl")
 # include("continuation/NaturalParameterContinuationEngine.jl")
 # include("continuation/NumberStepsContinuationEndCheck.jl")
-# include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
-# include("corrections/ContinuityConstraint.jl")
-# include("corrections/LeastSquaresUpdateGenerator.jl")
-# include("corrections/MinimumNormUpdateGenerator.jl")
-# include("corrections/MultipleShooter.jl")
-# include("corrections/MultipleShooterProblem.jl")
-# include("corrections/Node.jl")
-# include("corrections/Segment.jl")
-# include("corrections/StateConstraint.jl")
-# include("corrections/StateMatchConstraint.jl")
-# include("corrections/Variable.jl")
-# include("CR3BP/DynamicsModel.jl")
-# include("CR3BP/EquationsOfMotion.jl")
-# include("CR3BP/JacobiConstraint.jl")
+include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
+include("corrections/LeastSquaresUpdateGenerator.jl")
+include("corrections/MinimumNormUpdateGenerator.jl")
+include("corrections/StateMatchConstraint.jl")
+include("corrections/Variable.jl")
+include("CR3BP/Arc.jl")
+include("CR3BP/ContinuationData.jl")
+include("CR3BP/ContinuationFamily.jl")
+include("CR3BP/ContinuityConstraint.jl")
+include("CR3BP/DynamicsModel.jl")
+include("CR3BP/EquationsOfMotion.jl")
+# include("CR3BP/JacobiConstantContinuationEngine.jl")
+include("CR3BP/JacobiConstraint.jl")
+include("CR3BP/MultipleShooter.jl")
+include("CR3BP/MultipleShooterProblem.jl")
+include("CR3BP/Node.jl")
 # include("CR3BP/OrbitFamily.jl")
-# include("CR3BP/PeriodicOrbit.jl")
-# include("CR3BP/SystemData.jl")
-# include("propagation/Arc.jl")
-# include("propagation/EventFunctions.jl")
-# include("propagation/Propagator.jl")
+include("CR3BP/PeriodicOrbit.jl")
+include("CR3BP/Segment.jl")
+include("CR3BP/StateConstraint.jl")
+include("CR3BP/SystemData.jl")
+include("propagation/EventFunctions.jl")
+include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
-# include("spice/SpiceFunctions.jl")
+include("spice/SpiceFunctions.jl")
 # include("TBP/DynamicsModel.jl")
 # include("TBP/EquationsOfMotion.jl")
 # include("TBP/Trajectory.jl")
-# include("utilities/UtilityFunctions.jl")
+include("utilities/UtilityFunctions.jl")
 
 end # module MBD

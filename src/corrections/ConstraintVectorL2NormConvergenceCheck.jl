@@ -3,7 +3,7 @@ Constraint vector L2 norm convergence check wrapper
 
 Author: Jonathan Richmond
 C: 9/9/22
-U: 8/30/23
+U: 1/16/25
 """
 
 import LinearAlgebra
@@ -18,8 +18,8 @@ Return true if problem is converged
 
 # Arguments
 - `constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck`: Constraint vector L2 norm convergence check object
-- `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
+- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 """
-function isConverged(constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck, multipleShooterProblem::MBD.MultipleShooterProblem)
+function isConverged(constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck, multipleShooterProblem::MBD.CR3BPMultipleShooterProblem)
     return LinearAlgebra.norm(getConstraintVector!(multipleShooterProblem)) <= constraintVectorL2NormConvergenceCheck.maxVectorNorm
 end
