@@ -3,7 +3,7 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 1/22/25
+U: 1/23/25
 """
 
 import DifferentialEquations, LinearAlgebra, StaticArrays
@@ -11,7 +11,7 @@ import MBD: CR3BPPeriodicOrbit
 
 export getBrouckeStability, getEigenData, getJacobiConstant, getManifoldArcByTime
 export getManifoldByArclength, getManifoldByStepOff, getManifoldByTime, getStabilityIndex
-export getStability!, getTimeConstant
+export getTimeConstant
 
 """
     getBrouckeStability(periodicOrbit)
@@ -146,7 +146,7 @@ function getManifoldByStepOff(periodicOrbit::CR3BPPeriodicOrbit, stability::Stri
     propagator.equationType = MBD.STM
     lambda::Float64 = eigenvalues[index]
     manifold = MBD.CR3BPManifold(periodicOrbit, stability, direction)
-    for a::Int16 in 1:nArcs
+    for a::Int16 in Int16(1):Int16(nArcs)
         beta::Float64 = (direction == "Negative") ? (pi-acos(lambda^((a-1)/(nArcs-1)-1))) : acos(lambda^((a-1)/(nArcs-1)-1))
         d::Float64 = d_max*cos(beta)
         push!(manifold.initialConditions, periodicOrbit.initialCondition+d.*normEigenvector)
@@ -158,39 +158,40 @@ function getManifoldByStepOff(periodicOrbit::CR3BPPeriodicOrbit, stability::Stri
 end
 
 """
-    getManifoldByTime(periodicOrbit, dynamicsModel, stabilitity, d, nArcs)
+    getManifoldByTime(periodicOrbit, stabilitity, direction, d, nArcs)
 
 Return stable or unstable manifold tubes spaced by time
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model
 - `stability::String`: Desired manifold stability
+- `direction::String`: Step-off direction
 - `d::Float64`: Step-off distance [ndim]
 - `nArcs::Int64`: Number of manifold arcs
 """
-function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::MBD.CR3BPDynamicsModel, stability::String, d::Float64, nArcs::Int64)
-    index::Int64 = (stability == "Stable") ? argmin(abs.(periodicOrbit.eigenvalues)) : argmax(abs.(periodicOrbit.eigenvalues))
-    eigenvector::Vector{Complex{Float64}} = periodicOrbit.eigenvectors[:,index]
+function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, stability::String, direction::String, d::Float64, nArcs::Int64)
+    (eigenvalues::Vector{Complex{Float64}}, eigenvectors::Matrix{Complex{Float64}}) = getEigenData(periodicOrbit)
+    index::Int16 = (stability == "Stable") ? Int16(argmin(abs.(eigenvalues))) : Int16(argmax(abs.(eigenvalues)))
+    eigenvector::StaticArrays.SVector{6, Complex{Float64}} = StaticArrays.SVector{6, Complex{Float64}}(eigenvectors[:,index])
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
     time::Vector{Float64} = collect(range(0, periodicOrbit.period, nArcs+1))
-    posManifold::Vector{MBD.CR3BPManifoldArc} = []
-    negManifold::Vector{MBD.CR3BPManifoldArc} = []
-    for a::Int64 in 2:nArcs+1
-        arc::MBD.Arc = propagate(propagator, appendExtraInitialConditions(dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, time[a]], dynamicsModel)
-        q::Vector{Float64} = getStateByIndex(arc, -1)
+    manifold = MBD.CR3BPManifold(periodicOrbit, stability, direction)
+    stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
+    for a::Int16 in Int16(2):Int16(nArcs+1)
+        arc::MBD.CR3BPArc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, time[a]], periodicOrbit.dynamicsModel)
+        q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(arc, -1))
         state::Vector{Float64} = q[1:6]
-        Phi::Matrix{Float64} = [q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]]
-        arcEigenvector::Vector{Complex{Float64}} = Phi*eigenvector
+        Phi::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]])
+        arcEigenvector::StaticArrays.SVector{6, Complex{Float64}} = StaticArrays.SVector{6, Complex{Float64}}(Phi*eigenvector)
         normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
-        posManifoldArc = MBD.CR3BPManifoldArc(state+d.*normEigenvector, periodicOrbit, time[a]/periodicOrbit.period)
-        negManifoldArc = MBD.CR3BPManifoldArc(state-d.*normEigenvector, periodicOrbit, time[a]/periodicOrbit.period)
-        push!(posManifold, posManifoldArc)
-        push!(negManifold, negManifoldArc)
+        step::Int16 = (direction == "Negative") ? Int16(-1) : Int16(1)
+        push!(manifold.initialConditions, state+step*d.*normEigenvector)
+        push!(manifold.orbitTimes, time[a]/periodicOrbit.period)
+        push!(manifold.ds, d)
     end
 
-    return (posManifold, negManifold)
+    return manifold
 end
 
 """
@@ -202,48 +203,7 @@ Return stability index
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
 """
 function getStabilityIndex(periodicOrbit::CR3BPPeriodicOrbit)
-    return LinearAlgebra.norm(getEigen(periodicOrbit)[1], Inf)
-end
-
-"""
-    getStability!(periodicOrbit)
-
-Return periodic orbit object with updated stability properties
-
-# Arguments
-- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
-"""
-function getStability!(periodicOrbit::CR3BPPeriodicOrbit)
-    E::LinearAlgebra.Eigen = LinearAlgebra.eigen(periodicOrbit.monodromy)
-    periodicOrbit.eigenvalues = E.values
-    periodicOrbit.eigenvectors = E.vectors
-    alpha::Float64 = 2-LinearAlgebra.tr(periodicOrbit.monodromy)
-    beta::Float64 = 0.5*((alpha^2)+2-LinearAlgebra.tr(periodicOrbit.monodromy^2))
-    periodicOrbit.BrouckeStability = [alpha, beta]
-    periodicOrbit.nu = LinearAlgebra.norm(periodicOrbit.eigenvalues, Inf)
-    periodicOrbit.tau = periodicOrbit.period/log(periodicOrbit.nu)
-end
-
-"""
-    shallowClone(periodicOrbit)
-
-Return copy of periodic orbit object
-
-# Arguments
-- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
-"""
-function shallowClone(periodicOrbit::CR3BPPeriodicOrbit)
-    object = CR3BPPeriodicOrbit(deepClone(periodicOrbit.problem), periodicOrbit.targeter)
-    object.BrouckeStability = copy(periodicOrbit.BrouckeStability)
-    object.eigenvalues = copy(periodicOrbit.eigenvalues)
-    object.eigenvectors = copy(periodicOrbit.eigenvectors)
-    object.initialCondition = copy(periodicOrbit.initialCondition)
-    object.JacobiConstant = periodicOrbit.JacobiConstant
-    object.monodromy = copy(periodicOrbit.monodromy)
-    object.nu = periodicOrbit.nu
-    object.tau = periodicOrbit.tau
-
-    return object
+    return LinearAlgebra.norm(getEigenData(periodicOrbit)[1], Inf)
 end
 
 """

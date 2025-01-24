@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/22/25
+U: 1/23/25
 """
 module MBD
 
@@ -891,23 +891,24 @@ Base.:(==)(jacobiConstantContinuationEngine1::JacobiConstantContinuationEngine, 
 # end
 
 """
-    CR3BPPeriodicOrbit(multipleShooterProblem, period, monodromy)
+    CR3BPPeriodicOrbit(dynamicsModel, initialCondition, period, monodromy)
 
 CR3BP periodic orbit object
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `initialCondition::Vector{Float64}`: Initial condition [ndim]
 - `period::Float64`: Period [ndim]
 - `monodromy::Matrix{Float64}`: Monodromy matrix [ndim]
 """
 struct CR3BPPeriodicOrbit
     dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
-    initialCondition::Vector{Float64}                                   # Initial conditions [ndim]
+    initialCondition::Vector{Float64}                                   # Initial condition [ndim]
     monodromy::StaticArrays.SMatrix{6, 6, Float64}                      # Monodromy matrix [ndim]
     period::Float64                                                     # Period [ndim]
 
-    function CR3BPPeriodicOrbit(multipleShooterProblem::CR3BPMultipleShooterProblem, period::Float64, monodromy::Matrix{Float64})
-        this = new(multipleShooterProblem.nodes[1].dynamicsModel, multipleShooterProblem.nodes[1].state.data[1:6], StaticArrays.SMatrix{6, 6, Float64}(monodromy), period)
+    function CR3BPPeriodicOrbit(dynamicsModel::CR3BPDynamicsModel, initialCondition::Vector{Float64}, period::Float64, monodromy::Matrix{Float64})
+        this = new(dynamicsModel, copy(initialCondition), StaticArrays.SMatrix{6, 6, Float64}(monodromy), copy(period))
 
         return this
     end
@@ -1128,6 +1129,8 @@ include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
 # include("CR3BP/JacobiConstantContinuationEngine.jl")
 include("CR3BP/JacobiConstraint.jl")
+include("CR3BP/Manifold.jl")
+include("CR3BP/ManifoldArc.jl")
 include("CR3BP/MultipleShooter.jl")
 include("CR3BP/MultipleShooterProblem.jl")
 include("CR3BP/Node.jl")

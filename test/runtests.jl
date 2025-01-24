@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/22/25
+U: 1/23/25
 """
 
 using MBD, DifferentialEquations, LinearAlgebra, SPICE, StaticArrays
@@ -217,9 +217,6 @@ end
     @test MBD.shallowClone(stateMatchConstraint) == stateMatchConstraint
     jacobiConstraint = MBD.JacobiConstraint(originNode, 3.0)
     @test MBD.shallowClone(jacobiConstraint) == jacobiConstraint
-#     targeter = LyapunovJCTargeter(dynamicsModel)
-#     periodicOrbit = MBD.CR3BPPeriodicOrbit(problem, targeter)
-#     @test shallowClone(periodicOrbit) == periodicOrbit
 #     systemDataTBP = MBD.TBPSystemData("Earth")
 #     dynamicsModelTBP = MBD.TBPDynamicsModel(systemDataTBP)
 #     trajectory = MBD.TBPTrajectory(originNode.state.data, dynamicsModelTBP)
@@ -735,8 +732,8 @@ end
     A::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([zeros(Float64, (3,3)) [-1.0 0 0; 0 -1.0 0; 0 0 -1.0]; [1.0 0 0; 0 1.0 0; 0 0 1.0] -2*Omega])
     B::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([-2*Omega [1.0 0 0; 0 1.0 0; 0 0 1.0]; [-1.0 0 0; 0 -1.0 0; 0 0 -1.0] zeros(Float64, (3,3))])
     monodromy::Matrix{Float64} = G*A*(halfPeriodSTM')*B*G*halfPeriodSTM
-    periodicOrbit = MBD.CR3BPPeriodicOrbit(solution, period, monodromy)
-    periodicOrbit2 = MBD.CR3BPPeriodicOrbit(solution, period, monodromy)
+    periodicOrbit = MBD.CR3BPPeriodicOrbit(solution.nodes[1].dynamicsModel, solution.nodes[1].state.data[1:6], period, monodromy)
+    periodicOrbit2 = MBD.CR3BPPeriodicOrbit(solution.nodes[1].dynamicsModel, solution.nodes[1].state.data[1:6], period, monodromy)
     @test periodicOrbit == periodicOrbit2
     @test isApproxSigFigs(getBrouckeStability(periodicOrbit), [-5.569781483265836e6, 1.11422045234375E7], 8)
     @test isapprox(real.(getEigenData(periodicOrbit)[1]), [1.7994172955675235E-7, 0.9784501434972475, 0.9999942784866074, 1.0000057216849134, 1.0220244809057595, 5.569779482791029E6])
@@ -744,10 +741,16 @@ end
     d::Float64 = 25/getCharLength(systemData)
     manifoldArc::MBD.CR3BPManifoldArc = getManifoldArcByTime(periodicOrbit, "Unstable", "Positive", d, 0.5)
     @test isapprox(real.(manifoldArc.initialCondition), [0.8234305489801728, -2.015402439111196E-5, 0, 0.00016950088194608143, 0.12648714319946022, 0])
+    @test getJacobiConstant(manifoldArc) == getJacobiConstant(periodicOrbit)
     UPManifold::MBD.CR3BPManifold = getManifoldByArclength(periodicOrbit, "Unstable", "Positive", d, 10)
-    println(UPManifold.initialConditions[2])
     @test isapprox(real.(UPManifold.initialConditions[2]), [0.8541164517830968, 0.024428003606702244, 0, 0.008747748408137988, -0.1195384951544451, 0])
+    @test getJacobiConstant(UPManifold) == getJacobiConstant(periodicOrbit)
     UNManifold::MBD.CR3BPManifold = getManifoldByStepOff(periodicOrbit, "Unstable", "Negative", 2*d, 10)
+    @test isapprox(real.(UNManifold.initialConditions[2]), [0.8233687758541708, 4.0652881196013047E-11, 0, -3.4190188468627025E-10, 0.12655673501955023, 0])
+    SPManifold::MBD.CR3BPManifold = getManifoldByTime(periodicOrbit, "Stable", "Positive", d, 10)
+    @test isapprox(real.(SPManifold.initialConditions[2]), [0.8530753931180122, 0.03396238898823798, 0, 0.013688866088412027, -0.10459166633216246, 0])
+    @test isApproxSigFigs([getStabilityIndex(periodicOrbit)], [5.569779482796515E6], 8)
+    @test isApproxSigFigs([getTimeConstant(periodicOrbit)], [0.35321154312125946], 8)
 end
 
 # @testset "CR3BPOrbitFamily" begin
