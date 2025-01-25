@@ -3,7 +3,7 @@ Utility functions
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 5/15/24
+U: 1/25/25
 """
 
 export Cartesian2Cylindrical, checkIndices, isApproxSigFigs, maskData, updatePointer
@@ -18,11 +18,7 @@ Return position relative to point in cylindrical coordinates
 - `c::Vector{Float64}`: Center of cylinder
 """
 function Cartesian2Cylindrical(pos::Vector{Float64}, c::Vector{Float64})
-    r::Float64 = sqrt((pos[1]-c[1])^2+(pos[2]-c[2])^2)
-    theta::Float64 = atan(pos[2]-c[2], pos[1]-c[1])
-    z::Float64 = pos[3]-c[3]
-
-    return [r, theta, z]
+    return [sqrt((pos[1]-c[1])^2+(pos[2]-c[2])^2), atan(pos[2]-c[2], pos[1]-c[1]), pos[3]-c[3]]
 end
 
 """
@@ -35,10 +31,10 @@ Throw error if indices are invalid
 - `stateSize::Int64`: Number of state get_elements_by_tagname
 """
 function checkIndices(stateIndices::Vector{Int64}, stateSize::Int64)
-    state::Vector{Float64} = zeros(Float64, stateSize)
-    for i::Int64 in 1:length(stateIndices)
+    state::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(zeros(Float64, stateSize))
+    for i::Int16 in Int16(1):Int16(length(stateIndices))
         ((stateIndices[i] < 1) || (stateIndices[i] > stateSize)) && throw(BoundsError(state, stateIndices[i]))
-        for j in 1:length(stateIndices)
+        for j::Int16 in Int16(1):Int16(length(stateIndices))
             ((i != j) && (stateIndices[i] == stateIndices[j])) && throw(ArgumentError("Index $(stateIndices[i]) is included more than once"))
         end
     end
@@ -54,7 +50,7 @@ end
 """
 function isApproxSigFigs(a::Vector{Float64}, b::Vector{Float64}, sigFigs::Int64)
     (length(a) == length(b)) || throw(ArgumentError("Length of a, $(length(a)), must match lenght of b, $(length(b))"))
-    for i::Int64 = 1:length(a)
+    for i::Int16 = Int16(1):Int16(length(a))
         (round(a[i], RoundNearestTiesUp, sigdigits = sigFigs) == round(b[i], RoundNearestTiesUp, sigdigits = sigFigs)) || (return false)
     end
 
@@ -72,16 +68,16 @@ Return masked data
 """
 function maskData(mask::Vector{Bool}, data::Matrix{Float64})
     (isempty(mask) || (size(data, 2) == 0)) && (return zeros(Float64, (1, 0)))
-    n_col::Int64 = length(filter(x -> x == true, mask))
+    n_col::Int16 = Int16(length(filter(x -> x == true, mask)))
     (size(data, 2) == length(mask)) || throw(ArgumentError("Mask length, $(length(mask)), must match data row length, $(size(data, 2))"))
-    if n_col == length(mask)
+    if n_col == Int16(length(mask))
         return data
-    elseif n_col == 0
+    elseif n_col == Int16(0)
         return zeros(Float64, (1, 0))
     else
-        count::Int64 = 1
-        maskedData::Matrix{Float64} = zeros(Float64, (size(data, 1), n_col))
-        for c::Int64 in 1:length(mask)
+        count::Int16 = 1
+        maskedData::Matrix{Float64} = zeros(Float64, (size(data, 1),n_col))
+        for c::Int16 in Int16(1):Int16(length(mask))
             if mask[c]
                 [(maskedData[r,count] = data[r,c]) for r in 1:size(data, 1)]
                 count += 1

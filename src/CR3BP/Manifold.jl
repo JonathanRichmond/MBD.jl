@@ -2,10 +2,8 @@
 CR3BP manifold wrapper
 
 Author: Jonathan Richmond
-C: 1/23/25
+C: 1/25/25
 """
-
-import MBD: CR3BPPManifold
 
 export getJacobiConstant
 

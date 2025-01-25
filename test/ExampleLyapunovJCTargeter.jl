@@ -3,14 +3,13 @@ Jacobi constant perpendicular crossing targeter for CR3BP Lyapunov orbits
 
 Author: Jonathan Richmond
 C: 1/11/23
-U: 5/16/24
+U: 1/25/25
 """
 
-using MBD, CSV, DataFrames, LinearAlgebra
+using MBD, CSV, DataFrames, LinearAlgebra, StaticArrays
 
 export LyapunovJCTargeter
-export correct, getMonodromy!, getOrbit, getProperties!
-export getTangentBifurcationOrbit, propagateState
+export correct, getMonodromy, getOrbit, getPeriod, propagateState
 
 """
     LyapunovJCTargeter(dynamicsModel)
@@ -20,11 +19,13 @@ CR3BP Lyapunov Jacobi constant targeter object
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-mutable struct LyapunovJCTargeter <: MBD.AbstractTargeter
-    dynamicsModel::MBD.CR3BPDynamicsModel                   # CR3BP dynamics model
+struct LyapunovJCTargeter <: MBD.AbstractTargeter
+    dynamicsModel::MBD.CR3BPDynamicsModel                               # CR3BP dynamics model
 
     function LyapunovJCTargeter(dynamicsModel::MBD.CR3BPDynamicsModel)
-        return new(dynamicsModel)
+        this = new(dynamicsModel)
+
+        return this
     end
 end
 
@@ -40,26 +41,26 @@ Return corrected multiple shooter problem
 - `targetJC::Float64`: Target Jacobi constant
 - `tol::Float64`: Convergence tolerance (optional)
 """
-function correct(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vector{Float64}, targetJC::Float64, tol::Float64 = 1E-10)
+function correct(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vector{Float64}, targetJC::Float64, tol::Float64 = 1E-11)
     halfPeriod::Float64 = (tSpan[2]-tSpan[1])/2
     qf::Vector{Float64} = propagateState(targeter, q0, [0, halfPeriod])
-    originNode = MBD.Node(tSpan[1], q0, targeter.dynamicsModel)
+    originNode = MBD.CR3BPNode(tSpan[1], q0, targeter.dynamicsModel)
     originNode.state.name = "Initial State"
-    terminalNode = MBD.Node(halfPeriod, qf, targeter.dynamicsModel)
+    terminalNode = MBD.CR3BPNode(halfPeriod, qf, targeter.dynamicsModel)
     terminalNode.state.name = "Target State"
-    segment = MBD.Segment(halfPeriod, originNode, terminalNode)
+    segment = MBD.CR3BPSegment(halfPeriod, originNode, terminalNode)
     setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
-    problem = MBD.MultipleShooterProblem()
+    problem = MBD.CR3BPMultipleShooterProblem()
     addSegment!(problem, segment)
-    continuityConstraint = MBD.ContinuityConstraint(segment)
+    continuityConstraint = MBD.CR3BPContinuityConstraint(segment)
     JCConstraint = MBD.JacobiConstraint(originNode, targetJC)
-    qfConstraint = MBD.StateConstraint(terminalNode, [2, 4], [0.0, 0.0])
+    qfConstraint = MBD.CR3BPStateConstraint(terminalNode, [2, 4], [0.0, 0.0])
     addConstraint!(problem, JCConstraint)
     addConstraint!(problem, qfConstraint)
     addConstraint!(problem, continuityConstraint)
-    shooter = MBD.MultipleShooter(tol)
-    #shooter.printProgress = true
-    solved::MBD.MultipleShooterProblem = MBD.solve!(shooter, problem)
+    shooter = MBD.CR3BPMultipleShooter(tol)
+    # shooter.printProgress = true
+    solved::MBD.CR3BPMultipleShooterProblem = MBD.solve!(shooter, problem)
     convergenceCheck::MBD.ConstraintVectorL2NormConvergenceCheck = shooter.convergenceCheck
     for constraint::MBD.AbstractConstraint in getConstraints(solved)
         (LinearAlgebra.norm(evaluateConstraint(constraint, getFreeVariableIndexMap!(solved), getFreeVariableVector!(solved))) > convergenceCheck.maxVectorNorm) && println("ERROR: Multiple shooter failed to converge for $(typeof(constraint))")
@@ -69,26 +70,28 @@ function correct(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vecto
 end
 
 """
-    getMonodromy!(targeter, orbit)
+    getMonodromy(targeter, problem)
 
-Return periodic orbit object with updated monodromy matrix
+Return orbit monodromy matrix
 
 # Arguments
 - `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
-- `orbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `problem::CR3BPMultipleShooterProblem`: Solved CR3BP multiple shooter problem object
 """
-function getMonodromy!(targeter::LyapunovJCTargeter, orbit::MBD.CR3BPPeriodicOrbit)
+function getMonodromy(targeter::LyapunovJCTargeter, problem::MBD.CR3BPMultipleShooterProblem)
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
-    initialGuess::Vector{Float64} = appendExtraInitialConditions(targeter.dynamicsModel, orbit.problem.nodes[1].state.data, MBD.STM)
-    arc::MBD.Arc = propagate(propagator, initialGuess, [0, orbit.problem.segments[1].TOF.data[1]], targeter.dynamicsModel)
-    halfPeriodState::Vector{Float64} = getStateByIndex(arc, -1)
-    halfPeriodSTM::Matrix{Float64} = [halfPeriodState[7:12] halfPeriodState[13:18] halfPeriodState[19:24] halfPeriodState[25:30] halfPeriodState[31:36] halfPeriodState[37:42]]
-    G::Matrix{Float64} = [1.0 0 0 0 0 0; 0 -1.0 0 0 0 0; 0 0 1.0 0 0 0; 0 0 0 -1.0 0 0; 0 0 0 0 1.0 0; 0 0 0 0 0 -1.0]
-    Omega::Matrix{Float64} = [0 1.0 0; -1.0 0 0; 0 0 0]
-    A::Matrix{Float64} = [zeros(Float64, (3, 3)) [-1.0 0 0; 0 -1.0 0; 0 0 -1.0]; [1.0 0 0; 0 1.0 0; 0 0 1.0] -2*Omega]
-    B::Matrix{Float64} = [-2*Omega [1.0 0 0; 0 1.0 0; 0 0 1.0]; [-1.0 0 0; 0 -1.0 0; 0 0 -1.0] zeros(Float64, (3, 3))]
-    orbit.monodromy = G*A*(halfPeriodSTM')*B*G*halfPeriodSTM
+    nStates::Int64 = getStateSize(targeter.dynamicsModel, MBD.STM)
+    initialGuess::Vector{Float64} = appendExtraInitialConditions(targeter.dynamicsModel, problem.nodes[1].state.data, MBD.STM)
+    arc::MBD.CR3BPArc = propagate(propagator, initialGuess, [0, problem.segments[1].TOF.data[1]], targeter.dynamicsModel)
+    halfPeriodState::StaticArrays.SVector{nStates, Float64} = StaticArrays.SVector{nStates, Float64}(getStateByIndex(arc, -1))
+    halfPeriodSTM::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([halfPeriodState[7:12] halfPeriodState[13:18] halfPeriodState[19:24] halfPeriodState[25:30] halfPeriodState[31:36] halfPeriodState[37:42]])
+    G::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([1.0 0 0 0 0 0; 0 -1.0 0 0 0 0; 0 0 1.0 0 0 0; 0 0 0 -1.0 0 0; 0 0 0 0 1.0 0; 0 0 0 0 0 -1.0])
+    Omega::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([0 1.0 0; -1.0 0 0; 0 0 0])
+    A::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([zeros(Float64, (3,3)) [-1.0 0 0; 0 -1.0 0; 0 0 -1.0]; [1.0 0 0; 0 1.0 0; 0 0 1.0] -2*Omega])
+    B::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([-2*Omega [1.0 0 0; 0 1.0 0; 0 0 1.0]; [-1.0 0 0; 0 -1.0 0; 0 0 -1.0] zeros(Float64, (3,3))])
+    
+    return G*A*(halfPeriodSTM')*B*G*halfPeriodSTM
 end
 
 """
@@ -181,69 +184,63 @@ function getOrbit(targeter::LyapunovJCTargeter, filename::String, paramName::Str
 end
 
 """
-    getProperties!(targeter, orbit)
+    getPeriod(targeter, problem)
 
-Return periodic orbit object with updated properties
+Return orbit period
 
 # Arguments
 - `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
-- `orbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `problem::CR3BPMultipleShooterProblem`: Solved CR3BP multiple shooter problem object
 """
-function getProperties!(targeter::LyapunovJCTargeter, orbit::MBD.CR3BPPeriodicOrbit)
-    initialState::Vector{Float64} = orbit.problem.nodes[1].state.data
-    period::Float64 = 2*orbit.problem.segments[1].TOF.data[1]
-    finalState::Vector{Float64} = propagateState(targeter, initialState, [0.0, period])
-    (LinearAlgebra.norm(finalState-initialState) > 1E-6) && throw(ErrorException("Trajectory not periodic (error norm = $(LinearAlgebra.norm(finalState-initialState)))"))
-    orbit.initialCondition = initialState
-    orbit.period = period
-    orbit.JacobiConstant = getJacobiConstant(targeter.dynamicsModel, initialState)
+function getPeriod(targeter::LyapunovJCTargeter, problem::MBD.CR3BPMultipleShooterProblem)
+    return 2*problem.segments[1].TOF.data[1]
 end
 
-"""
-    getTangentBifurcationOrbit(targeter, orbitFamily, l, h)
+# """
+#     getTangentBifurcationOrbit(targeter, orbitFamily, l, h)
 
-Return tangent bifurcation orbit
+# Return tangent bifurcation orbit
 
-# Arguments
-- `targeter::LyapunovJCTargeter`: CR3BP Laypunov Jacobi constant targeter object
-- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
-- `l::Int64`: Low orbit identifier
-- `h::Int64`: High orbit identifier
-"""
-function getTangentBifurcationOrbit(targeter::LyapunovJCTargeter, orbitFamily::MBD.CR3BPOrbitFamily, l::Int64, h::Int64)
-    orbitl::MBD.CR3BPPeriodicOrbit = orbitFamily.familyMembers[l]
-    orbith::MBD.CR3BPPeriodicOrbit = orbitFamily.familyMembers[h]
-    newInitialCondition::Vector{Float64} = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
-    newPeriod::Float64 = orbitl.period+0.5*(orbith.period-orbitl.period)
-    newJC::Float64 = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
-    solutionBisect::MBD.MultipleShooterProblem = correct(targeter, newInitialCondition, [0, newPeriod], newJC, 1E-9)
-    orbitBisect = MBD.CR3BPPeriodicOrbit(solutionBisect, targeter)
-    getProperties!(targeter, orbitBisect)
-    getMonodromy!(targeter, orbitBisect)
-    getStability!(orbitBisect)
-    paramValuel::Float64 = 2*orbitl.BrouckeStability[1]+orbitl.BrouckeStability[2]+2
-    paramValueBisect::Float64 = 2*orbitBisect.BrouckeStability[1]+orbitBisect.BrouckeStability[2]+2
-    currentError = abs(paramValueBisect)
-    println("Current parameter value = $paramValueBisect")
-    counter::Int64 = 1
-    while (currentError > 1E-8) && (counter < 50)
-        (sign(paramValueBisect) == sign(paramValuel)) ? (orbitl = orbitBisect) : (orbith = orbitBisect)
-        newInitialCondition = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
-        newPeriod = orbitl.period+0.5*(orbith.period-orbitl.period)
-        newJC = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
-        solutionBisect = correct(targeter, newInitialCondition, [0, newPeriod], newJC, 1E-9)
-        orbitBisect = MBD.CR3BPPeriodicOrbit(solutionBisect, targeter)
-        getProperties!(targeter, orbitBisect)
-        getMonodromy!(targeter, orbitBisect)
-        getStability!(orbitBisect)
-        paramValuel = 2*orbitl.BrouckeStability[1]+orbitl.BrouckeStability[2]+2
-        paramValueBisect = 2*orbitBisect.BrouckeStability[1]+orbitBisect.BrouckeStability[2]+2
-        currentError = abs(paramValueBisect)
-        println("Current parameter value = $paramValueBisect")
-        counter += 1
-    end
-    (currentError > 1E-8) ? println("Bisection failed to converge after 50 iterations") : (return orbitBisect)
-end
+# # Arguments
+# - `targeter::LyapunovJCTargeter`: CR3BP Laypunov Jacobi constant targeter object
+# - `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+# - `l::Int64`: Low orbit identifier
+# - `h::Int64`: High orbit identifier
+# """
+# function getTangentBifurcationOrbit(targeter::LyapunovJCTargeter, orbitFamily::MBD.CR3BPOrbitFamily, l::Int64, h::Int64)
+#     orbitl::MBD.CR3BPPeriodicOrbit = orbitFamily.familyMembers[l]
+#     orbith::MBD.CR3BPPeriodicOrbit = orbitFamily.familyMembers[h]
+#     newInitialCondition::Vector{Float64} = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
+#     newPeriod::Float64 = orbitl.period+0.5*(orbith.period-orbitl.period)
+#     newJC::Float64 = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
+#     solutionBisect::MBD.MultipleShooterProblem = correct(targeter, newInitialCondition, [0, newPeriod], newJC, 1E-9)
+#     orbitBisect = MBD.CR3BPPeriodicOrbit(solutionBisect, targeter)
+#     getProperties!(targeter, orbitBisect)
+#     getMonodromy!(targeter, orbitBisect)
+#     getStability!(orbitBisect)
+#     paramValuel::Float64 = 2*orbitl.BrouckeStability[1]+orbitl.BrouckeStability[2]+2
+#     paramValueBisect::Float64 = 2*orbitBisect.BrouckeStability[1]+orbitBisect.BrouckeStability[2]+2
+#     currentError = abs(paramValueBisect)
+#     println("Current parameter value = $paramValueBisect")
+#     counter::Int64 = 1
+#     while (currentError > 1E-8) && (counter < 50)
+#         (sign(paramValueBisect) == sign(paramValuel)) ? (orbitl = orbitBisect) : (orbith = orbitBisect)
+#         newInitialCondition = orbitl.initialCondition+0.5*(orbith.initialCondition-orbitl.initialCondition)
+#         newPeriod = orbitl.period+0.5*(orbith.period-orbitl.period)
+#         newJC = orbitl.JacobiConstant+0.5*(orbith.JacobiConstant-orbitl.JacobiConstant)
+#         solutionBisect = correct(targeter, newInitialCondition, [0, newPeriod], newJC, 1E-9)
+#         orbitBisect = MBD.CR3BPPeriodicOrbit(solutionBisect, targeter)
+#         getProperties!(targeter, orbitBisect)
+#         getMonodromy!(targeter, orbitBisect)
+#         getStability!(orbitBisect)
+#         paramValuel = 2*orbitl.BrouckeStability[1]+orbitl.BrouckeStability[2]+2
+#         paramValueBisect = 2*orbitBisect.BrouckeStability[1]+orbitBisect.BrouckeStability[2]+2
+#         currentError = abs(paramValueBisect)
+#         println("Current parameter value = $paramValueBisect")
+#         counter += 1
+#     end
+#     (currentError > 1E-8) ? println("Bisection failed to converge after 50 iterations") : (return orbitBisect)
+# end
 
 """
     propagateState(targeter, q0, tSpan)
@@ -257,7 +254,7 @@ Return propagated state
 """
 function propagateState(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vector{Float64})
     propagator = MBD.Propagator()
-    arc::MBD.Arc = propagate(propagator, q0, tSpan, targeter.dynamicsModel)
+    arc::MBD.CR3BPArc = propagate(propagator, q0, tSpan, targeter.dynamicsModel)
 
-    return copy(getStateByIndex(arc, getStateCount(arc)))
+    return getStateByIndex(arc, getStateCount(arc))
 end

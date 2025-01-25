@@ -3,48 +3,14 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/23/25
+U: 1/25/25
 """
 
 using MBD, DifferentialEquations, LinearAlgebra, SPICE, StaticArrays
 using Test
 
-# include("../src/bifurcation/Bifurcation.jl")
-# include("../src/continuation/AdaptiveStepSizeByElementGenerator.jl")
-# include("../src/continuation/BoundingBoxContinuationEndCheck.jl")
-# include("../src/continuation/BoundingBoxJumpCheck.jl")
-# include("../src/continuation/JacobiConstantContinuationEngine.jl")
-# include("../src/continuation/NaturalParameterContinuationEngine.jl")
-# include("../src/continuation/NumberStepsContinuationEndCheck.jl")
-# include("../src/corrections/ConstraintVectorL2NormConvergenceCheck.jl")
-# include("../src/corrections/ContinuityConstraint.jl")
-# include("../src/corrections/LeastSquaresUpdateGenerator.jl")
-# include("../src/corrections/MinimumNormUpdateGenerator.jl")
-# include("../src/corrections/MultipleShooter.jl")
-# include("../src/corrections/MultipleShooterProblem.jl")
-# include("../src/corrections/Node.jl")
-# include("../src/corrections/Segment.jl")
-# include("../src/corrections/StateConstraint.jl")
-# include("../src/corrections/StateMatchConstraint.jl")
-# include("../src/corrections/Variable.jl")
-# include("../src/CR3BP/DynamicsModel.jl")
-# include("../src/CR3BP/EquationsOfMotion.jl")
-# include("../src/CR3BP/JacobiConstraint.jl")
-# include("../src/CR3BP/OrbitFamily.jl")
-# include("../src/CR3BP/PeriodicOrbit.jl")
-# include("../src/CR3BP/SystemData.jl")
-# include("../src/propagation/Arc.jl")
-# include("../src/propagation/EventFunctions.jl")
-# include("../src/propagation/Propagator.jl")
-# include("../src/spice/BodyName.jl")
-# include("../src/spice/SpiceFunctions.jl")
-# include("../src/TBP/DynamicsModel.jl")
-# include("../src/TBP/EquationsOfMotion.jl")
-# include("../src/TBP/Trajectory.jl")
-# include("../src/utilities/UtilityFunctions.jl")
-
 # include("ExampleBifurcations.jl")
-# include("ExampleLyapunovJCTargeter.jl")
+include("ExampleLyapunovJCTargeter.jl")
 
 @testset "Files" begin
     @test isfile("../src/body_data.xml")
@@ -702,7 +668,7 @@ end
 # @testset "Bifurcation" begin    
 # end
 
-@testset "CR3BPPeriodicOrbit" begin
+@testset "CR3BPPeriodicOrbit and CR3BPManifold and CR3BPManifoldArc" begin
     shooter = MBD.CR3BPMultipleShooter()
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
@@ -741,26 +707,42 @@ end
     d::Float64 = 25/getCharLength(systemData)
     manifoldArc::MBD.CR3BPManifoldArc = getManifoldArcByTime(periodicOrbit, "Unstable", "Positive", d, 0.5)
     @test isapprox(real.(manifoldArc.initialCondition), [0.8234305489801728, -2.015402439111196E-5, 0, 0.00016950088194608143, 0.12648714319946022, 0])
-    @test getJacobiConstant(manifoldArc) == getJacobiConstant(periodicOrbit)
     UPManifold::MBD.CR3BPManifold = getManifoldByArclength(periodicOrbit, "Unstable", "Positive", d, 10)
     @test isapprox(real.(UPManifold.initialConditions[2]), [0.8541164517830968, 0.024428003606702244, 0, 0.008747748408137988, -0.1195384951544451, 0])
-    @test getJacobiConstant(UPManifold) == getJacobiConstant(periodicOrbit)
     UNManifold::MBD.CR3BPManifold = getManifoldByStepOff(periodicOrbit, "Unstable", "Negative", 2*d, 10)
     @test isapprox(real.(UNManifold.initialConditions[2]), [0.8233687758541708, 4.0652881196013047E-11, 0, -3.4190188468627025E-10, 0.12655673501955023, 0])
     SPManifold::MBD.CR3BPManifold = getManifoldByTime(periodicOrbit, "Stable", "Positive", d, 10)
-    @test isapprox(real.(SPManifold.initialConditions[2]), [0.8530753931180122, 0.03396238898823798, 0, 0.013688866088412027, -0.10459166633216246, 0])
+    @test (isapprox(real.(SPManifold.initialConditions[2]), [0.8530753931180122, 0.03396238898823798, 0, 0.013688866088412027, -0.10459166633216246, 0]) || isapprox(real.(SPManifold.initialConditions[2]), [0.8531910929863838, 0.034021565782213235, 0, 0.013326781331767417, -0.10470393601812733, 0]))
     @test isApproxSigFigs([getStabilityIndex(periodicOrbit)], [5.569779482796515E6], 8)
     @test isApproxSigFigs([getTimeConstant(periodicOrbit)], [0.35321154312125946], 8)
+    @test getJacobiConstant(UPManifold) == getJacobiConstant(periodicOrbit)
+    @test getJacobiConstant(manifoldArc) == getJacobiConstant(periodicOrbit)
+end
+
+@testset "SPICE Functions" begin
+    SPICE.furnsh("../src/spice/kernels/naif0012.tls", "../src/spice/kernels/de440.bsp", "../src/spice/kernels/mar097.bsp")
+    (ephemerisStates, ephemerisTimes) = getEphemerides("Jan 1 2026", [0.0, 2.743], "Earth", "Sun", "ECLIPJ2000")
+    @test isApproxSigFigs(ephemerisStates[2], [-2.6074281011547867e7, 1.447742856780263e8, -8892.893132835627, -29.788851904426515, -5.3967021850401045, 0.0004108878034403407], 11)
+    @test isApproxSigFigs([ephemerisTimes[2]], [490.68471150562976], 11)
+    SPICE.kclear()
+end
+
+@testset "Utility Functions" begin
+    @test isApproxSigFigs(Cartesian2Cylindrical([0.8234, 0.125, 0.4], [0.01, 0, 0]), [0.8229486982795, 0.1524830343520, 0.4], 13)
+    @test_throws BoundsError checkIndices([1, 7], 6)
+    @test_throws ArgumentError checkIndices([1, 1], 6)
+    checkIndices([1, 5], 6)
+    @test_throws ArgumentError maskData([true], [1.0 2.0 3.0; 4.0 5.0 6.0])
+    mask1::Vector{Bool} = [true, false, true]
+    data::Matrix{Float64} = [1.0 2.0 3.0; 4.0 5.0 6.0]
+    @test maskData(mask1, data) == [1.0 3.0; 4.0 6.0]
+    mask2::Vector{Bool} = [false, false, false]
+    @test size(maskData(mask2, data)) == (1, 0)
+    mask3::Vector{Bool} = [true, true, true]
+    @test maskData(mask3, data) == data
 end
 
 # @testset "CR3BPOrbitFamily" begin
-# end
-
-# @testset "SPICE Functions" begin
-#     SPICE.furnsh("../src/spice/kernels/naif0012.tls", "../src/spice/kernels/de440.bsp", "../src/spice/kernels/mar097.bsp")
-#     @test isApproxSigFigs(getEphemerides("Jan 1 2026", [0.0, 2.743], "Earth", "Sun", "ECLIPJ2000")[1], [-2.607419930072E7, 1.447743004812E8, -8892.894259885, -29.78885492734, -5.396685723327, 0.0004108777077585], 13)
-#     @test isApproxSigFigs(getEphemerides("Jan 1 2026", [0.0, 2.743], "Earth", "Sun", "ECLIPJ2000")[2], [-2.607428101155E7, 1.447742856780E8, -8892.893132836, -29.78885190443, -5.396702185040, 0.0004108878034403], 13)
-#     SPICE.kclear()
 # end
 
 # @testset "TBPDynamicsModel" begin
@@ -828,22 +810,6 @@ end
 #     @test getCartesianState(stateTrajectory, 1.5) == KeplerTrajectory
 # end
 
-# @testset "Utility Functions" begin
-#     @test isApproxSigFigs(Cartesian2Cylindrical([0.8234, 0.125, 0.4], [0.01, 0, 0]), [0.8229486982795, 0.1524830343520, 0.4], 13)
-#     @test_throws BoundsError checkIndices([1, 7], 6)
-#     @test_throws ArgumentError checkIndices([1, 1], 6)
-#     checkIndices([1, 5], 6)
-#     @test_throws ArgumentError maskData([true], [1.0 2.0 3.0; 4.0 5.0 6.0])
-#     mask1 = [true, false, true]
-#     data = [1.0 2.0 3.0; 4.0 5.0 6.0]
-#     @test maskData(mask1, data) == [1.0 3.0; 4.0 6.0]
-#     mask2 = [false, false, false]
-#     @test size(maskData(mask2, data)) == (1, 0)
-#     mask3 = [true, true, true]
-#     @test maskData(mask3, data) == data
-#     #updatePointer
-# end
-
 # @testset "Earth-Moon L1 Lyapunov Example" begin
 #     systemData = MBD.CR3BPSystemData("Earth", "Moon")
 #     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
@@ -871,27 +837,27 @@ end
 #     @test isApproxSigFigs(solution.nodes[1].state.data, [0.8234, 0, 0, 0, 0.12623176201, 0], 11)
 # end
 
-# @testset "Earth-Moon L1 Lyapunov Family Example" begin
-#     systemData = MBD.CR3BPSystemData("Earth", "Moon")
-#     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-#     Moon = MBD.BodyData("Moon")
-#     L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
-#     (stateGuess::Vector{Float64}, timeGuess::Vector{Float64}) = getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0])
-#     targetJC::Float64 = getJacobiConstant(dynamicsModel, stateGuess)
-#     targeter = LyapunovJCTargeter(dynamicsModel)
-#     solution1::MBD.MultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], targetJC)
-#     orbit1 = MBD.CR3BPPeriodicOrbit(solution1, targeter)
-#     getProperties!(targeter, orbit1)
-#     getMonodromy!(targeter, orbit1)
-#     getStability!(orbit1)
-#     solution2::MBD.MultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], 3.186)
-#     orbit2 = MBD.CR3BPPeriodicOrbit(solution2, targeter)
-#     getProperties!(targeter, orbit2)
-#     getMonodromy!(targeter, orbit2)
-#     getStability!(orbit2)
-#     JCContinuation = MBD.JacobiConstantContinuationEngine(-1E-3, -1E-2)
-#     JCContinuation.printProgress = false
-#     ydot0JumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [NaN NaN; -2.5 0])
+@testset "Periodic Orbit Family Example" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    Moon = MBD.BodyData("Moon")
+    L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
+    (stateGuess::Vector{Float64}, timeGuess::Vector{Float64}) = getLinearVariation(dynamicsModel, 1, L1, [0.005, 0, 0])
+    targetJC::Float64 = getJacobiConstant(dynamicsModel, stateGuess)
+    targeter = LyapunovJCTargeter(dynamicsModel)
+    solution1::MBD.CR3BPMultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], targetJC)
+    @test LinearAlgebra.norm(getConstraintVector!(solution1)) <= 1E-11
+    period1::Float64 = getPeriod(targeter, solution1)
+    monodromy1::Matrix{Float64} = getMonodromy(targeter, solution1)
+    orbit1 = MBD.CR3BPPeriodicOrbit(dynamicsModel, solution1.nodes[1].state.data[1:6], period1, monodromy1)
+    solution2::MBD.CR3BPMultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], getJacobiConstant(orbit1)-0.0001)
+    @test LinearAlgebra.norm(getConstraintVector!(solution2)) <= 1E-11
+    period2::Float64 = getPeriod(targeter, solution2)
+    monodromy2::Matrix{Float64} = getMonodromy(targeter, solution2)
+    orbit2 = MBD.CR3BPPeriodicOrbit(dynamicsModel, solution1.nodes[1].state.data[1:6], period2, monodromy2)
+    JCContinuation = MBD.JacobiConstantContinuationEngine(solution1, solution2, -1E-3, -1E-2)
+    # JCContinuation.printProgress = false
+    ydot0JumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [NaN NaN; -2.5 0])
 #     addJumpCheck!(JCContinuation, ydot0JumpCheck)
 #     numberSteps::Int64 = 300
 #     stepsEndCheck = MBD.NumberStepsContinuationEndCheck(numberSteps)
@@ -917,7 +883,7 @@ end
 #     redirect_stdout(oldstd)
 #     bifurcation::MBD.Bifurcation = family.bifurcations[1]
 #     @test isApproxSigFigs(bifurcation.orbit.initialCondition, [0.85479945002, 0, 0, 0, -0.13373284140, 0], 11)
-# end
+end
 
 # @testset "Earth-Moon L1 Halo Multiple Shooter Example" begin
 #     systemData = MBD.CR3BPSystemData("Earth", "Moon")

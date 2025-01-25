@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/23/25
+U: 1/25/25
 """
 module MBD
 
@@ -666,7 +666,7 @@ mutable struct CR3BPContinuationData
         this.fullStep = []
         this.currentStepSize = 1.0
         this.nextGuess = CR3BPMultipleShooterProblem()
-        this.family = CR3BPContinuationFamily()
+        this.family = CR3BPContinuationFamily(solution1.nodes[1].dynamicsModel)
         this.forceEndContinuation = false
 
         return this
