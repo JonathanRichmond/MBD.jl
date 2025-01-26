@@ -1,28 +1,15 @@
 """
-Multiple shooter wrapper
+CR3BP multiple shooter wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
-U: 5/15/24
+U: 1/22/25
 """
 
-import LinearAlgebra
-import MBD: MultipleShooter
+import LinearAlgebra, StaticArrays
+import MBD: CR3BPMultipleShooter
 
-export setPrintProgress!, solveUpdateEquation
-
-"""
-    setPrintProgress!(multipleShooter, print)
-
-Return multiple shooter object with updated print progress
-
-# Arguments
-- `multipleShooter::MultipleShooter`: Multiple shooter object
-- `print::Bool`: Print corrections progress?
-"""
-function setPrintProgress!(multipleShooter::MultipleShooter, print::Bool)
-    multipleShooter.printProgress = print
-end
+export solveUpdateEquation
 
 """
     solve!(multipleShooter, initialGuess)
@@ -30,16 +17,17 @@ end
 Return converged solution
 
 # Arguments
-- `multipleShooter::MultipleShooter`: Multiple shooter object
-- `initialGuess::MultipleShooterProblem`: Unsolved multiple shooter problem
+- `multipleShooter::CR3BPMultipleShooter`: CR3BP multiple shooter object
+- `initialGuess::CR3BPMultipleShooterProblem`: CR3BP unsolved multiple shooter problem
 """
-function solve!(multipleShooter::MultipleShooter, initialGuess::MBD.MultipleShooterProblem)
+function solve!(multipleShooter::CR3BPMultipleShooter, initialGuess::MBD.CR3BPMultipleShooterProblem)
     buildProblem!(initialGuess)
-    solutionInProgress::MBD.MultipleShooterProblem = deepClone(initialGuess)
-    ((getNumberFreeVariables(solutionInProgress) == 0) || (getNumberConstraints(solutionInProgress) == 0)) ? (return solutionInProgress) : multipleShooter.recentIterationCount = 0
+    solutionInProgress::MBD.CR3BPMultipleShooterProblem = deepClone(initialGuess)
+    numFreeVariables::Int16 = Int16(getNumFreeVariables!(solutionInProgress))
+    ((numFreeVariables == Int16(0)) || (getNumConstraints(solutionInProgress) == 0)) ? (return solutionInProgress) : multipleShooter.recentIterationCount = 0
     while !isConverged(multipleShooter.convergenceCheck, solutionInProgress) && (multipleShooter.recentIterationCount < multipleShooter.maxIterations)
         if multipleShooter.recentIterationCount > 0
-            freeVariableStep::Vector{Float64} = solveUpdateEquation(multipleShooter, solutionInProgress)
+            freeVariableStep::StaticArrays.SVector{Int64(numFreeVariables), Float64} = solveUpdateEquation(multipleShooter, solutionInProgress)
             freeVariableVector::Vector{Float64} = getFreeVariableVector!(solutionInProgress)+freeVariableStep
             setFreeVariableVector!(solutionInProgress, freeVariableVector)
         end
@@ -56,10 +44,10 @@ end
 Return free variable vector update
 
 # Arguments
-- `multipleShooter::MultipleShooter`: Multiple shooter object
-- `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
+- `multipleShooter::CR3BPMultipleShooter`: CR3BP multiple shooter object
+- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 """
-function solveUpdateEquation(multipleShooter::MultipleShooter, multipleShooterProblem::MBD.MultipleShooterProblem)
+function solveUpdateEquation(multipleShooter::CR3BPMultipleShooter, multipleShooterProblem::MBD.CR3BPMultipleShooterProblem)
     for generator::MBD.AbstractUpdateGenerator in multipleShooter.updateGenerators
         canGenerateUpdate(generator, multipleShooterProblem) && (return getFullUpdate(generator, multipleShooterProblem))
     end

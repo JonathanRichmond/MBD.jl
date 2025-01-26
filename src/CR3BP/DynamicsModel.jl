@@ -3,19 +3,18 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 7/8/24
+U: 1/15/25
 """
 
-import LinearAlgebra, SPICE
+import LinearAlgebra, SPICE, StaticArrays
 import MBD: CR3BPDynamicsModel
 
-export appendExtraInitialConditions, evaluateEquations, get2BApproximation
-export getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint
-export getExcursion, getJacobiConstant, getLinearVariation
-export getParameterDependencies, getPrimaryPosition, getPseudopotentialJacobian
-export getStateSize, getStateTransitionMatrix, getTidalAcceleration
-export isEpochIndependent, primaryInertial2Rotating, rotating2PrimaryEclipJ2000
-export rotating2PrimaryInertial, rotating2SunEclipJ2000
+export appendExtraInitialConditions, evaluateEquations, get2BApproximation, getCharLength
+export getCharTime, getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint, getExcursion
+export getJacobiConstant, getLinearVariation, getMassRatio, getParameterDependencies
+export getPrimaryPosition, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
+export getTidalAcceleration, isEpochIndependent, primaryInertial2Rotating
+export rotating2PrimaryEclipJ2000, rotating2PrimaryInertial, rotating2SunEclipJ2000
 export secondaryEclipJ20002Rotating
 
 """
@@ -29,11 +28,11 @@ Return state vector with extra initial conditions
 - `outputEquationType::EquationType`: Output state EOM type
 """
 function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::MBD.EquationType)
-    n_in::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
-    (length(q0_simple) == n_in) || throw(ArgumentError("State vector length is $(length(q0_simple)), but should be $n_in"))
-    n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
-    n_STM::Int64 = getStateSize(dynamicsModel, MBD.STM)
-    n_out::Int64 = getStateSize(dynamicsModel, outputEquationType)
+    n_in::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    (Int16(length(q0_simple)) == n_in) || throw(ArgumentError("State vector length is $(length(q0_simple)), but should be $n_in"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    n_STM::Int16 = getStateSize(dynamicsModel, MBD.STM)
+    n_out::Int16 = getStateSize(dynamicsModel, outputEquationType)
     q0_out::Vector{Float64} = zeros(Float64, n_out)
     if n_in >= n_out
         q0_out = q0_simple[1:n_out]
@@ -46,7 +45,7 @@ function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simp
 end
 
 """
-    evaluateEquations(dynamicsModel, equationType, t, q, params)
+    evaluateEquations(dynamicsModel, equationType, t, q)
 
 Return time derivative of state vector
 
@@ -55,11 +54,10 @@ Return time derivative of state vector
 - `equationType::EquationType`: EOM type
 - `t::Float64`: Time [ndim]
 - `q::Vector{Float64}`: State vector [ndim]
-- `params::Vector{Float64}`: System parameters
 """
-function evaluateEquations(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType, t::Float64, q::Vector{Float64}, params::Vector{Float64})
+function evaluateEquations(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType, t::Float64, q::Vector{Float64})
     qdot::Vector{Float64} = Vector{Float64}(undef, getStateSize(dynamicsModel, equationType))
-    EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType, params)
+    EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType)
     computeDerivatives!(qdot, q, (EOMs,), t)
 
     return qdot
@@ -77,25 +75,50 @@ Return states of 2BP approximation about primary
 - `radius::Float64`: Circular radius [ndim]
 """
 function get2BApproximation(dynamicsModel::CR3BPDynamicsModel, bodyData::MBD.BodyData, primary::Int64, radius::Float64)
-    radius_dim::Float64 = radius*dynamicsModel.systemData.charLength
+    lstar::Float64 = getCharLength(dynamicsModel)
+    tstar::Float64 = getCharTime(dynamicsModel)
+    radius_dim::Float64 = radius*lstar
     circularVelocity_dim::Float64 = sqrt(bodyData.gravParam/radius_dim)
-    v::Float64 = circularVelocity_dim*dynamicsModel.systemData.charTime/dynamicsModel.systemData.charLength
+    v::Float64 = circularVelocity_dim*tstar/lstar
     q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
 
     return primaryInertial2Rotating(dynamicsModel, primary, [q_primaryInertial], [0.0])[1]
 end
 
 """
-    getEquationsOfMotion(dynamicsModel, equationType; params)
+    getCharLength(dynamicsModel)
+
+Return CR3BP characteristic length
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+"""
+function getCharLength(dynamicsModel::CR3BPDynamicsModel)
+    return getCharLength(dynamicsModel.systemData)
+end
+
+"""
+    getCharTime(dynamicsModel)
+
+Return CR3BP characteristic time
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+"""
+function getCharTime(dynamicsModel::CR3BPDynamicsModel)
+    return getCharTime(dynamicsModel.systemData)
+end
+
+"""
+    getEquationsOfMotion(dynamicsModel, equationType)
 
 Return EOMs
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 - `equationType::EquationType`: EOM type
-- `params`: System parameters (optional)
 """
-function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType, params = nothing)
+function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
     return MBD.CR3BPEquationsOfMotion(equationType, dynamicsModel)
 end
 
@@ -109,9 +132,9 @@ Return derivative of state with respect to epoch
 - `q_full::Vector{Float64}`: Full state vector [ndim]
 """
 function getEpochDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
-    n_full::Int64 = getStateSize(dynamicsModel, MBD.FULL)
-    (length(q_full) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
-    n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
+    (Int64(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
 end
@@ -128,12 +151,12 @@ Return location of CR3BP equilibirum point in rotating frame
 function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)
     tol::Float64 = 1E-14
     (1 <= point <= 5) || throw(ArgumentError("Invalid equilibrium point $point"))
-    mu::Float64 = getMassRatio(dynamicsModel.systemData)
-    pos::Vector{Float64} = zeros(Float64, 3)
+    mu::Float64 = getMassRatio(dynamicsModel)
+    pos::StaticArrays.MVector{3, Float64} = StaticArrays.MVector{3}(zeros(Float64, 3))
     gamma::Float64 = 0.0
-    gamma_prev::Float64 = -999
-    count::Int64 = 0
-    maxCount::Int64 = 20
+    gamma_prev::Float64 = -999.0
+    count::Int16 = 0
+    maxCount::Int16 = 20
     if point == 1
         gamma = (mu/(3*(1-mu)))^(1/3)
         while (abs(gamma-gamma_prev) > tol) && (count < maxCount)
@@ -177,9 +200,10 @@ Return distance from primary
 - `q::Vector{Float64}`: State vector [ndim]
 """
 function getExcursion(dynamicsModel::CR3BPDynamicsModel, primary::Int64, q::Vector{Float64})
+    lstar::Float64 = getCharLength(dynamicsModel)
     primaryPos::Vector{Float64} = getPrimaryPosition(dynamicsModel, primary)
 
-    return LinearAlgebra.norm(q[1:3]-primaryPos)*dynamicsModel.systemData.charLength
+    return LinearAlgebra.norm(q[1:3]-primaryPos)*lstar
 end
 
 """
@@ -192,7 +216,7 @@ Return CR3BP Jacobi constant
 - `q::Vector{Float64}`: State vector [ndim]
 """
 function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
-    mu::Float64 = getMassRatio(dynamicsModel.systemData)
+    mu::Float64 = getMassRatio(dynamicsModel)
     v_2::Float64 = q[4]^2+q[5]^2+q[6]^2
     r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
     r_23::Float64 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
@@ -211,10 +235,10 @@ Return linear variation about equilibrium point
 - `equilibriumPoint::Int64`: Equilibrium point identifier
 - `equilibriumPos::Vector{Float64}`: Equilibrium point position [ndim]
 - `variation::Vector{Float64}`: Variation from equilibrium point [ndim]
-- `period::String`: Equilateral equilibrium point linearization period (optional)
+- `period::String`: Equilateral equilibrium point linearization period (default = "Short")
 """
 function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPoint::Int64, equilibriumPos::Vector{Float64}, variation::Vector{Float64}, period::String = "Short")
-    mu::Float64 = getMassRatio(dynamicsModel.systemData)
+    mu::Float64 = getMassRatio(dynamicsModel)
     Uddot::Vector{Float64} = getPseudopotentialJacobian(dynamicsModel, equilibriumPos)
     if (1 <= equilibriumPoint <= 3)
         beta_1::Float64 = 2-(Uddot[1]+Uddot[2])/2
@@ -245,6 +269,18 @@ function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, equilibriumPoint:
 end
 
 """
+    getMassRatio(dynamicsModel)
+
+Return CR3BP system mass ratio
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+"""
+function getMassRatio(dynamicsModel::CR3BPDynamicsModel)
+    return getMassRatio(dynamicsModel.systemData)
+end
+
+"""
     getParameterDependencies(dynamicsModel, q_full)
 
 Return derivative of state with respect to parameters
@@ -254,16 +290,16 @@ Return derivative of state with respect to parameters
 - `q_full::Vector{Float64}`: Full state vector [ndim]
 """
 function getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
-    n_full::Int64 = getStateSize(dynamicsModel, MBD.FULL)
-    (length(q_full) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
-    n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
-    i0::Int64 = n_simple*(n_simple+1+(isEpochIndependent(dynamicsModel) ? 0 : 1))
-    n::Int64 = n_full-i0
-    (n == 0) && (return zeros(Float64, (n_simple, 0)))
-    n_params::Int64 = n/n_simple
-    dqdp::Matrix{Float64} = zeros(Float64, (n_simple, n_params))
-    for r::Int64 in 1:n_simple
-        for c::Int64 in 1:n_params
+    n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
+    (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    i0::Int16 = n_simple*(n_simple+1+(isEpochIndependent(dynamicsModel) ? 0 : 1))
+    n::Int16 = n_full-i0
+    (n == Int16(0)) && (return zeros(Float64, (n_simple,0)))
+    n_params::Int16 = n/n_simple
+    dqdp::Matrix{Float64} = zeros(Float64, (n_simple,n_params))
+    for r::Int16 in Int16(1):n_simple
+        for c::Int16 in Int16(1):n_params
             dqdp[r,c] = q_full[i0+n_simple*(c-1)+r]
         end
     end
@@ -282,7 +318,7 @@ Return location of primary in rotating frame
 """
 function getPrimaryPosition(dynamicsModel::CR3BPDynamicsModel, primary::Int64)
     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
-    mu::Float64 = getMassRatio(dynamicsModel.systemData)
+    mu::Float64 = getMassRatio(dynamicsModel)
     pos::Vector{Float64} = zeros(Float64, 3)
     pos[1] = (primary == 1 ? -mu : (1-mu))
 
@@ -299,7 +335,7 @@ Return second derivative of pseudopotential function at given location
 - `r::Vector{Float64}`: Position vector [ndim]
 """
 function getPseudopotentialJacobian(dynamicsModel::CR3BPDynamicsModel, r::Vector{Float64})
-    mu::Float64 = getMassRatio(dynamicsModel.systemData)
+    mu::Float64 = getMassRatio(dynamicsModel)
     r_13::Float64 = sqrt((r[1]+mu)^2+r[2]^2+r[3]^2)
     r_23::Float64 = sqrt((r[1]-1+mu)^2+r[2]^2+r[3]^2)
     r_13_3::Float64 = r_13^3
@@ -327,7 +363,7 @@ Return number of state variables
 - `equationType::EquationType`: EOM type
 """
 function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-    type = Dict(MBD.SIMPLE => 6, MBD.STM => 42, MBD.FULL => 42, MBD.ARCLENGTH => 43, MBD.MOMENTUM => 43)
+    type = Dict(MBD.SIMPLE => Int16(6), MBD.STM => Int16(42), MBD.FULL => Int16(42), MBD.ARCLENGTH => Int16(43), MBD.MOMENTUM => Int16(43))
 
     return type[equationType]
 end
@@ -342,12 +378,12 @@ Return STM
 - `q0::Vector{Float64}`: Initial state vector with STM in column-major order [ndim]
 """
 function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64})
-    n_STM::Int64 = getStateSize(dynamicsModel, MBD.STM)
-    (length(q0) < n_STM) && throw(ArgumentError("State vector length is $(length(q0)), but should be at least $n_STM"))
-    n_simple::Int64 = getStateSize(dynamicsModel, MBD.SIMPLE)
-    STM::Matrix{Float64} = zeros(Float64, (n_simple, n_simple))
-    for r::Int64 in 1:n_simple
-        for c::Int64 in 1:n_simple
+    n_STM::Int16 = getStateSize(dynamicsModel, MBD.STM)
+    (Int16(length(q0)) < n_STM) && throw(ArgumentError("State vector length is $(length(q0)), but should be at least $n_STM"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    STM::Matrix{Float64} = zeros(Float64, (n_simple,n_simple))
+    for r::Int16 in Int16(1):n_simple
+        for c::Int16 in Int16(1):n_simple
             STM[r,c] = q0[n_simple+n_simple*(c-1)+r]
         end
     end
@@ -367,7 +403,7 @@ Return tidal acceleration due to primary at given location
 """
 function getTidalAcceleration(dynamicsModel::CR3BPDynamicsModel, primary::Int64, r::Vector{Float64})
     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
-    mu::Float64 = getMassRatio(dynamicsModel.systemData)
+    mu::Float64 = getMassRatio(dynamicsModel)
     r_13::Float64 = sqrt((r[1]+mu)^2+r[2]^2+r[3]^2)
     r_23::Float64 = sqrt((r[1]-1+mu)^2+r[2]^2+r[3]^2)
     aMultiplier::Float64 = (primary == 1) ? -(1-mu)/r_13^3 : -mu/r_23^3
@@ -404,10 +440,10 @@ function primaryInertial2Rotating(dynamicsModel::CR3BPDynamicsModel, primary::In
     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
-        C::Matrix{Float64} = [cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1]
-        Cdot::Matrix{Float64} = [-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        state_primary::Vector{Float64} = N\states_primaryInertial[i]
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6}([C zeros(Float64, (3,3)); Cdot C])
+        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6}(N\states_primaryInertial[i])
         states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
     end
 
@@ -426,28 +462,31 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotating2PrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    lstar::Float64 = getCharLength(dynamicsModel)
+    tstar::Float64 = getCharTime(dynamicsModel)
+    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1]
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam)
+    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
-    timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
-    thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
-    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
-    for i in 1:length(times)
-        stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
-        state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
-        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
-        xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
-        zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
-        yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
-        C::Matrix{Float64} = [xhat yhat zhat]
-        Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
-        states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
+    timesDim::Vector{Float64} = times.*tstar
+    thetadotDim::Float64 = 1/tstar
+    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for i in Int16(1):numTimes
+        stateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states[i][1:3].*lstar, states[i][4:6].*lstar./tstar))
+        state_primaryDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*lstar, 0, 0, 0))
+        bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements, initialEpochTime+timesDim[i]))
+        xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
+        zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
+        yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat))
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([xhat yhat zhat])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        state_primaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*state_primaryDim)
+        states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./lstar, state_primaryInertialDim[4:6].*tstar./lstar)
     end
 
     return states_primaryInertial
@@ -465,14 +504,15 @@ Return primary-centered arbitrary inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotating2PrimaryInertial(dynamicsModel::CR3BPDynamicsModel, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
-    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
-    for i in 1:length(times)
-        state_primary::Vector{Float64} = states[i]-push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
-        C::Matrix{Float64} = [cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1]
-        Cdot::Matrix{Float64} = [-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
+    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for i in Int16(1):numTimes
+        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[i]-push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0))
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
         states_primaryInertial[i] = N*state_primary
     end
 
@@ -491,28 +531,31 @@ Return Sun-centered Ecliptic J2000 inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotating2SunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    (length(states) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    lstar::Float64 = getCharLength(dynamicsModel)
+    tstar::Float64 = getCharTime(dynamicsModel)
+    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1]
     Sun = MBD.BodyData("Sun")
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam)
+    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
-    timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
-    thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
+    timesDim::Vector{Float64} = times.*tstar
+    thetadotDim::Float64 = 1/tstar
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
-    for i in 1:length(times)
-        stateDim::Vector{Float64} = append!(states[i][1:3].*dynamicsModel.systemData.charLength, states[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
-        state_primaryDim::Vector{Float64} = stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*dynamicsModel.systemData.charLength, 0, 0, 0)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
-        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
-        xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
-        zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
-        yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
-        C::Matrix{Float64} = [xhat yhat zhat]
-        Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        state_primaryInertialDim::Vector{Float64} = N*state_primaryDim
-        states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./dynamicsModel.systemData.charLength, state_primaryInertialDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
+    for i in Int16(1):numTimes
+        stateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states[i][1:3].*lstar, states[i][4:6].*lstar./tstar))
+        state_primaryDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(stateDim-push!(getPrimaryPosition(dynamicsModel, 1).*lstar, 0, 0, 0))
+        bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements, initialEpochTime+timesDim[i]))
+        xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
+        zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
+        yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat))
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([xhat yhat zhat])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        state_primaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*state_primaryDim)
+        states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./lstar, state_primaryInertialDim[4:6].*tstar./lstar)
     end
 
     return states_primaryInertial
@@ -530,28 +573,31 @@ Return rotating frame states
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function secondaryEclipJ20002Rotating(dynamicsModel::CR3BPDynamicsModel, initialEpoch::String, states_secondaryInertial::Vector{Vector{Float64}}, times::Vector{Float64})
-    (length(states_secondaryInertial) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states_secondaryInertial)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
+    lstar::Float64 = getCharLength(dynamicsModel)
+    tstar::Float64 = getCharTime(dynamicsModel)
+    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1]
     primary = MBD.BodyData(dynamicsModel.systemData.primaryNames[1])
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::Vector{Float64} = SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam)
+    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
-    timesDim::Vector{Float64} = times.*dynamicsModel.systemData.charTime
-    thetadotDim::Float64 = 1/dynamicsModel.systemData.charTime
+    timesDim::Vector{Float64} = times.*tstar
+    thetadotDim::Float64 = 1/tstar
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
-    for i in 1:length(times)
-        state_secondaryInertialDim::Vector{Float64} = append!(states_secondaryInertial[i][1:3].*dynamicsModel.systemData.charLength, states_secondaryInertial[i][4:6].*dynamicsModel.systemData.charLength./dynamicsModel.systemData.charTime)
-        bodyElements::Vector{Float64} = append!([dynamicsModel.systemData.charLength, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/dynamicsModel.systemData.charTime, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
-        bodyStateDim::Vector{Float64} = SPICE.conics(bodyElements, initialEpochTime+timesDim[i])
-        state_primaryInertialDim::Vector{Float64} = bodyStateDim+state_secondaryInertialDim
-        xhat::Vector{Float64} = bodyStateDim[1:3]./dynamicsModel.systemData.charLength
-        zhat::Vector{Float64} = LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6]))
-        yhat::Vector{Float64} = LinearAlgebra.cross(zhat, xhat)
-        C::Matrix{Float64} = [xhat yhat zhat]
-        Cdot::Matrix{Float64} = [thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)]
-        N::Matrix{Float64} = [C zeros(Float64, (3,3)); Cdot C]
-        state_primaryDim::Vector{Float64} = N\state_primaryInertialDim
-        state_primary::Vector{Float64} = append!(state_primaryDim[1:3]./dynamicsModel.systemData.charLength, state_primaryDim[4:6].*dynamicsModel.systemData.charTime./dynamicsModel.systemData.charLength)
+    for i in Int16(1):numTimes
+        state_secondaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states_secondaryInertial[i][1:3].*lstar, states_secondaryInertial[i][4:6].*lstar./tstar))
+        bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements, initialEpochTime+timesDim[i]))
+        state_primaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(bodyStateDim+state_secondaryInertialDim)
+        xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
+        zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
+        yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat))
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([xhat yhat zhat])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        state_primaryDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N\state_primaryInertialDim)
+        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_primaryDim[1:3]./lstar, state_primaryDim[4:6].*tstar./lstar))
         states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, 1), 0, 0, 0)
     end
 

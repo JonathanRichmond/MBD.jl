@@ -3,13 +3,12 @@ CR3BP arc wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 1/10/25
+U: 1/15/25
 """
 
 import MBD: CR3BPArc
 
 export deleteStateAndTime!, getMassRatio, getStateByIndex, getStateCount, getTimeByIndex
-export setParameters!
 
 """
     deleteStateAndTime!(arc, index)
@@ -17,11 +16,11 @@ export setParameters!
 Return arc object with data corresponding to specified index removed
 
 # Arguments
-- `arc::Arc`: Arc object
+- `arc::CR3BPArc`: CR3BP arc object
 - `index::Int64`: Element index
 """
-function deleteStateAndTime!(arc::Arc, index::Int64)
-    (index > size(arc.states, 1)) && throw(BoundsError(arc.states, index))
+function deleteStateAndTime!(arc::CR3BPArc, index::Int64)
+    (index > length(arc.states)) && throw(BoundsError(arc.states, index))
     deleteat!(arc.states, index)
     deleteat!(arc.times, index)
 end
@@ -35,7 +34,7 @@ Return CR3BP system mass ratio
 - `arc::CR3BPArc`: CR3BP arc object
 """
 function getMassRatio(arc::CR3BPArc)
-    return getMassRatio(arc.dynamicsModel.systemData)
+    return getMassRatio(arc.dynamicsModel)
 end
 
 """
@@ -44,11 +43,11 @@ end
 Return state at specified index
 
 # Arguments
-- `arc::Arc`: Arc object
+- `arc::CR3BPArc`: CR3BP arc object
 - `index::Int64`: Element index
 """
-function getStateByIndex(arc::Arc, index::Int64)
-    (index > size(arc.states, 1)) && throw(BoundsError(arc.states, index))
+function getStateByIndex(arc::CR3BPArc, index::Int64)
+    (index > length(arc.states)) && throw(BoundsError(arc.states, index))
 
     (index < 0) ? (return copy(arc.states[end+1+index])) : (return copy(arc.states[index]))
 end
@@ -59,10 +58,10 @@ end
 Return number of elements in arc object
 
 # Arguments
-- `arc::Arc`: Arc object
+- `arc::CR3BPArc`: CR3BP arc object
 """
-function getStateCount(arc::Arc)
-    return size(arc.states, 1)
+function getStateCount(arc::CR3BPArc)
+    return length(arc.states)
 end
 
 """
@@ -71,24 +70,11 @@ end
 Return time at specified index
 
 # Arguments
-- `arc::Arc`: Arc object
+- `arc::CR3BPArc`: CR3BP arc object
 - `index::Int64`: Element index
 """
-function getTimeByIndex(arc::Arc, index::Int64)
-    (index > size(arc.times, 1)) && throw(BoundsError(arc.times, index))
+function getTimeByIndex(arc::CR3BPArc, index::Int64)
+    (index > length(arc.times)) && throw(BoundsError(arc.times, index))
 
     (index < 0) ? (return arc.times[end+1+index]) : (return arc.times[index])
-end
-
-"""
-    setParameters!(arc, params)
-
-Return arc object with propagation parameters
-
-# Arguments
-- `arc::Arc`: Arc object
-- `params`: System parameters
-"""
-function setParameters!(arc::Arc, params)
-    arc.params = copy(params)
 end

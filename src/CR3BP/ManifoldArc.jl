@@ -2,10 +2,8 @@
 CR3BP manifold arc wrapper
 
 Author: Jonathan Richmond
-C: 1/12/25
+C: 1/25/25
 """
-
-import MBD: CR3BPPManifoldArc
 
 export getJacobiConstant
 

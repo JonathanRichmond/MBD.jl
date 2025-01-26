@@ -3,7 +3,7 @@ CR3BP system data wrapper
 
 Author: Jonathan Richmond
 C: 9/9/22
-U: 1/9/25
+U: 1/13/25
 """
 
 import MBD: CR3BPSystemData, GRAVITY
@@ -74,5 +74,5 @@ Return number of primaries
 - `systemData::CR3BPSystemData`: CR3BP system data object
 """
 function getNumPrimaries(systemData::CR3BPSystemData)
-    return length(systemData.primaryData)
+    return Int16(length(systemData.primaryData))
 end

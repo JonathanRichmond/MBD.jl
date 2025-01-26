@@ -3,7 +3,7 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 7/16/24
+U: 1/15/25
 """
 
 import DifferentialEquations
@@ -37,7 +37,7 @@ Return event condition for specified momentum integral difference
 - `integrator`: Integrator object with params: [propagator, dynamicsModel, q0, momentumDifference]
 """
 function momentumDifferenceCondition(state::Vector{Float64}, time::Float64, integrator)
-    orbitArc::MBD.Arc = propagate(integrator.p[2], appendExtraInitialConditions(integrator.p[3], integrator.p[4], MBD.MOMENTUM), [0, time], integrator.p[3])
+    orbitArc::MBD.CR3BPArc = propagate(integrator.p[2], appendExtraInitialConditions(integrator.p[3], integrator.p[4], MBD.MOMENTUM), [0, time], integrator.p[3])
     abs(state[43]-getStateByIndex(orbitArc, -1)[43])-integrator.p[5]
 end
 
@@ -52,7 +52,7 @@ Return event condition for specified distance from P1
 - `integrator`: Integrator object with params: [p1Distance]
 """
 function p1DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
-    mu::Float64 = integrator.p[1].mu
+    mu::Float64 = getMassRatio(integrator.p[1])
     sqrt((state[1]+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
 end
 
@@ -67,7 +67,7 @@ Return event condition for specified distance from P2
 - `integrator`: Integrator object with params: [p2Distance]
 """
 function p2DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
-    mu::Float64 = integrator.p[1].mu
+    mu::Float64 = getMassRatio(integrator.p[1])
     sqrt((state[1]-1+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
 end
 

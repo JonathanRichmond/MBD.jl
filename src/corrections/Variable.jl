@@ -3,14 +3,13 @@ Variable wrapper
 
 Author: Jonathan Richmond
 C: 9/5/22
-U: 8/5/23
+U: 1/15/25
 """
 
 import MBD: Variable
 
-export getData, getFreeVariableData, getFreeVariableMask
-export getNumberFreeVariables, maskData, setFreeVariableData!
-export setFreeVariableMask!
+export getData, getFreeVariableData, getFreeVariableMask, getNumFreeVariables, maskData
+export setFreeVariableData!, setFreeVariableMask!
 
 """
     deepClone(variable)
@@ -64,14 +63,14 @@ function getFreeVariableMask(variable::Variable)
 end
 
 """
-    getNumberFreeVariables(variable)
+    getNumFreeVariables(variable)
 
 Return number of free variables
 
 # Arguments
 - `variable::Variable`: Variable object
 """
-function getNumberFreeVariables(variable::Variable)
+function getNumFreeVariables(variable::Variable)
     return length(filter(x -> x == true, variable.freeVariableMask))
 end
 
@@ -85,10 +84,10 @@ Return variable object with new free variable data
 - `freeVariables::Vector{Float64}`: Free variable data
 """
 function setFreeVariableData!(variable::Variable, freeVariables::Vector{Float64})
-    n_freeVar::Int64 = getNumberFreeVariables(variable)
-    (length(freeVariables) > n_freeVar) && throw(ArgumentError("Free variable data has $(length(freeVariables)) elements, but should have $n_freeVar"))
-    dataIndex::Int64 = 1
-    for maskIndex::Int64 = 1:length(variable.freeVariableMask)
+    numFreeVar::Int16 = Int16(getNumFreeVariables(variable))
+    (Int16(length(freeVariables)) > numFreeVar) && throw(ArgumentError("Free variable data has $(length(freeVariables)) elements, but should have $numFreeVar"))
+    dataIndex::Int16 = Int16(1)
+    for maskIndex::Int16 = Int16(1):Int16(length(variable.freeVariableMask))
         if variable.freeVariableMask[maskIndex]
             variable.data[maskIndex] = freeVariables[dataIndex]
             dataIndex += 1
@@ -107,5 +106,5 @@ Return variable object with new free variable mask
 """
 function setFreeVariableMask!(variable::Variable, mask::Vector{Bool})
     (length(mask) == length(variable.freeVariableMask)) || throw(ArgumentError("Free variable mask has $(length(mask)) elements, but should have $(length(variable.freeVariableMask))"))
-    variable.freeVariableMask = copy(mask)
+    variable.freeVariableMask = mask
 end
