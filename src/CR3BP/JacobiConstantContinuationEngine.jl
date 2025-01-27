@@ -3,14 +3,13 @@ Jacobi constant continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/11/23
-U: 5/16/24
+U: 1/26/25
 """
 
 import MBD: JacobiConstantContinuationEngine
 
-export addEndCheck!, addJumpCheck!, computeFullStep, constrainNextGuess!
-export convergeInitialSolution, doContinuation!, endContinuation, resetEngine!
-export tryConverging!
+export addEndCheck!, addJumpCheck!, computeFullStep, constrainNextGuess!, convergeInitialSolution
+export doContinuation!, endContinuation, resetEngine!, tryConverging!
 
 """
     addEndCheck!(jacobiConstantContinuationEngine, endCheck)
@@ -45,12 +44,12 @@ Return update step for free variable vector
 
 # Arguments
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-- `data::ContinuationData`: Continuation data object
+- `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function computeFullStep(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.ContinuationData)
-    fullStep::Vector{Float64} = zeros(Float64, getNumberFreeVariables(data.previousSolution))
-    for (index1::MBD.Variable, value1::Int64) in data.twoPreviousSolution.freeVariableIndexMap
-        for (index2::MBD.Variable, value2::Int64) in data.previousSolution.freeVariableIndexMap
+function computeFullStep(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.CR3BPContinuationData)
+    fullStep::Vector{Float64} = zeros(Float64, getNumFreeVariables!(data.previousSolution))
+    for (index1::MBD.Variable, value1::Int16) in data.twoPreviousSolution.freeVariableIndexMap
+        for (index2::MBD.Variable, value2::Int16) in data.previousSolution.freeVariableIndexMap
             if index2.name == index1.name
                 data1::Vector{Float64} = getFreeVariableData(index1)
                 data2::Vector{Float64} = getFreeVariableData(index2)
@@ -69,9 +68,9 @@ Return Jacobi constant continuation engine object with updated constraints
 
 # Arguments
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-- `data::ContinuationData`: Continuation data object
+- `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function constrainNextGuess!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.ContinuationData)
+function constrainNextGuess!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.CR3BPContinuationData)
     for constraint::MBD.AbstractConstraint in keys(data.nextGuess.constraintIndexMap)
         if typeof(constraint) == MBD.JacobiConstraint
             constraint.value += data.currentStepSize
@@ -86,9 +85,9 @@ Return converged initial solution
 
 # Arguments
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-- `initialGuess::MultipleShooterProblem`: Initial family member
+- `initialGuess::CR3BPMultipleShooterProblem`: Initial family member
 """
-function convergeInitialSolution(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, initialGuess::MBD.MultipleShooterProblem)
+function convergeInitialSolution(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, initialGuess::MBD.CR3BPMultipleShooterProblem)
     return solve!(jacobiConstantContinuationEngine.corrector, initialGuess)
 end
 
@@ -99,40 +98,44 @@ Return family of solutions
 
 # Arguments
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-- `initialGuess1::MultipleShooterProblem`: First member of family
-- `initialGuess2::MultipleShooterProblem`: Second member of family
+- `initialGuess1::CR3BPMultipleShooterProblem`: First member of family
+- `initialGuess2::CR3BPMultipleShooterProblem`: Second member of family
 """
-function doContinuation!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, initialGuess1::MBD.MultipleShooterProblem, initialGuess2::MBD.MultipleShooterProblem)
+function doContinuation!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, initialGuess1::MBD.CR3BPMultipleShooterProblem, initialGuess2::MBD.CR3BPMultipleShooterProblem)
     isempty(jacobiConstantContinuationEngine.endChecks) && throw(ErrorException("Cannot do continuation without at least one end check"))
-    resetEngine!(jacobiConstantContinuationEngine)
-    setPrintProgress!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.printProgress)
+    resetEngine!(jacobiConstantContinuationEngine, initialGuess1, initialGuess2)
+    jacobiConstantContinuationEngine.corrector.printProgress = jacobiConstantContinuationEngine.printProgress
     jacobiConstantContinuationEngine.printProgress && println("Converging initial guesses...")
     jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = convergeInitialSolution(jacobiConstantContinuationEngine, initialGuess1)
     jacobiConstantContinuationEngine.dataInProgress.previousSolution = convergeInitialSolution(jacobiConstantContinuationEngine, initialGuess2)
     jacobiConstantContinuationEngine.dataInProgress.numIterations = jacobiConstantContinuationEngine.corrector.recentIterationCount
-    push!(jacobiConstantContinuationEngine.dataInProgress.familyMembers, deepClone(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution), deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution))
+    push!(jacobiConstantContinuationEngine.dataInProgress.family.nodes, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution.nodes[n]) for n = 1:length(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution.nodes)], [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes[n]) for n = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes)])
+    push!(jacobiConstantContinuationEngine.dataInProgress.family.segments, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution.segments[s]) for s = 1:length(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution.segments)], [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments)])
     jacobiConstantContinuationEngine.dataInProgress.initialGuess = initialGuess2
-    jacobiConstantContinuationEngine.dataInProgress.stepCount = 2
     jacobiConstantContinuationEngine.dataInProgress.converging = true
     jacobiConstantContinuationEngine.dataInProgress.forceEndContinuation = false
     jacobiConstantContinuationEngine.dataInProgress.currentStepSize = jacobiConstantContinuationEngine.stepSizeGenerator.initialStepSize
     while (!endContinuation(jacobiConstantContinuationEngine, jacobiConstantContinuationEngine.dataInProgress) && !jacobiConstantContinuationEngine.dataInProgress.forceEndContinuation)
-        jacobiConstantContinuationEngine.printProgress && println("\nConverging family member $(jacobiConstantContinuationEngine.dataInProgress.stepCount+1)...")
+        jacobiConstantContinuationEngine.printProgress && println("\nConverging family member $(getNumSteps(jacobiConstantContinuationEngine.dataInProgress)+1)...")
         jacobiConstantContinuationEngine.dataInProgress.fullStep = computeFullStep(jacobiConstantContinuationEngine, jacobiConstantContinuationEngine.dataInProgress)
         tryConverging!(jacobiConstantContinuationEngine)
         while (!jacobiConstantContinuationEngine.dataInProgress.converging && !jacobiConstantContinuationEngine.dataInProgress.forceEndContinuation)
             tryConverging!(jacobiConstantContinuationEngine)
         end
-        (jacobiConstantContinuationEngine.storeIntermediateMembers && jacobiConstantContinuationEngine.dataInProgress.converging) && push!(jacobiConstantContinuationEngine.dataInProgress.familyMembers, deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution))
+        if (jacobiConstantContinuationEngine.storeIntermediateMembers && jacobiConstantContinuationEngine.dataInProgress.converging)
+            push!(jacobiConstantContinuationEngine.dataInProgress.family.nodes, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes[n]) for n = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes)])
+            push!(jacobiConstantContinuationEngine.dataInProgress.family.segments, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments)])
+        end
     end
-    if (!jacobiConstantContinuationEngine.dataInProgress.converging && (jacobiConstantContinuationEngine.dataInProgress.stepCount == 2))
+    if (!jacobiConstantContinuationEngine.dataInProgress.converging && (getNumSteps(jacobiConstantContinuationEngine.dataInProgress) == 2))
         throw(ErrorException("Could not converge any solutions beyond initial guess"))
     end
-    if (!jacobiConstantContinuationEngine.storeIntermediateMembers && (jacobiConstantContinuationEngine.dataInProgress.stepCount > 2))
-        push!(jacobiConstantContinuationEngine.dataInProgress.familyMembers, deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution))
+    if (!jacobiConstantContinuationEngine.storeIntermediateMembers && (getNumSteps(jacobiConstantContinuationEngine.dataInProgress) > 2))
+        push!(jacobiConstantContinuationEngine.dataInProgress.family.nodes, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes[n]) for n = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes)])
+            push!(jacobiConstantContinuationEngine.dataInProgress.family.segments, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments)])
     end
 
-    return jacobiConstantContinuationEngine.dataInProgress.familyMembers
+    return jacobiConstantContinuationEngine.dataInProgress.family
 end
 
 """
@@ -142,9 +145,9 @@ Return true if continuation should end
 
 # Arguments
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-- `data::ContinuationData`: Continuation data object
+- `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function endContinuation(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.ContinuationData)
+function endContinuation(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.CR3BPContinuationData)
     for endCheck::MBD.AbstractContinuationEndCheck in jacobiConstantContinuationEngine.endChecks
         isContinuationDone(endCheck, data) && (return true)
     end
@@ -153,15 +156,17 @@ function endContinuation(jacobiConstantContinuationEngine::JacobiConstantContinu
 end
 
 """
-    resetEngine!(jacobiConstantContinuationEngine)
+    resetEngine!(jacobiConstantContinuationEngine, solution1, solution2)
 
 Return Jacobi constant continuation engine with reset data
 
 # Arguments
 - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
+- `solution1::CR3BPMultipleShooterProblem`: First member of family
+- `solution2::CR3BPMultipleShooterProblem`: Second member of family
 """
-function resetEngine!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine)
-    jacobiConstantContinuationEngine.dataInProgress = MBD.ContinuationData()
+function resetEngine!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, solution1::MBD.CR3BPMultipleShooterProblem, solution2::MBD.CR3BPMultipleShooterProblem)
+    jacobiConstantContinuationEngine.dataInProgress = MBD.CR3BPContinuationData(solution1, solution2)
 end
 
 """
@@ -179,14 +184,14 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
     setFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.nextGuess, getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution)+jacobiConstantContinuationEngine.dataInProgress.fullStep.*jacobiConstantContinuationEngine.dataInProgress.currentStepSize)
     constrainNextGuess!(jacobiConstantContinuationEngine, jacobiConstantContinuationEngine.dataInProgress)
     try
-        twoPreviousConvergedSolution::MBD.MultipleShooterProblem = jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution
-        previousConvergedSolution::MBD.MultipleShooterProblem = jacobiConstantContinuationEngine.dataInProgress.previousSolution
+        twoPreviousConvergedSolution::MBD.CR3BPMultipleShooterProblem = jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution
+        previousConvergedSolution::MBD.CR3BPMultipleShooterProblem = jacobiConstantContinuationEngine.dataInProgress.previousSolution
         jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution)
         jacobiConstantContinuationEngine.dataInProgress.previousSolution = solve!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.dataInProgress.nextGuess)
         jacobiConstantContinuationEngine.dataInProgress.converging = true
         for jumpCheck::MBD.AbstractContinuationJumpCheck in jacobiConstantContinuationEngine.jumpChecks
             if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
-                for (index::MBD.Variable, value::Int64) in jacobiConstantContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
+                for (index::MBD.Variable, value::Int16) in jacobiConstantContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
                     if index.name == jumpCheck.paramName
                         addBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
                         jacobiConstantContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, jacobiConstantContinuationEngine.dataInProgress)
@@ -198,7 +203,6 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         end
         if jacobiConstantContinuationEngine.dataInProgress.converging
             jacobiConstantContinuationEngine.dataInProgress.numIterations = jacobiConstantContinuationEngine.corrector.recentIterationCount
-            jacobiConstantContinuationEngine.dataInProgress.stepCount += 1
         else
             jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = twoPreviousConvergedSolution
             jacobiConstantContinuationEngine.dataInProgress.previousSolution = previousConvergedSolution

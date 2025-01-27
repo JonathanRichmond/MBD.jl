@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/25/25
+U: 1/26/25
 """
 
 using MBD, DifferentialEquations, LinearAlgebra, SPICE, StaticArrays
@@ -810,33 +810,6 @@ end
 #     @test getCartesianState(stateTrajectory, 1.5) == KeplerTrajectory
 # end
 
-# @testset "Earth-Moon L1 Lyapunov Example" begin
-#     systemData = MBD.CR3BPSystemData("Earth", "Moon")
-#     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-#     q0::Vector{Float64} = [0.8234, 0, 0, 0, 0.1263, 0]
-#     tSpan::Vector{Float64} = [0, 2.743]
-#     halfPeriod::Float64 = (tSpan[2]-tSpan[1])/2
-#     propagator = MBD.Propagator()
-#     arc::MBD.Arc = propagate(propagator, q0, tSpan, dynamicsModel)
-#     originNode = MBD.Node(tSpan[1], q0, dynamicsModel)
-#     originNode.state.name = "Initial State"
-#     terminalNode = MBD.Node(halfPeriod, getStateByIndex(arc, -1), dynamicsModel)
-#     terminalNode.state.name = "Target State"
-#     segment = MBD.Segment(halfPeriod, originNode, terminalNode)
-#     setFreeVariableMask!(originNode.state, [true, false, false, false, true, false])
-#     problem = MBD.MultipleShooterProblem()
-#     addSegment!(problem, segment)
-#     continuityConstraint = MBD.ContinuityConstraint(segment)
-#     x0Constraint = MBD.StateConstraint(originNode, [1], [q0[1]])
-#     qfConstraint = MBD.StateConstraint(terminalNode, [2, 4], [0.0, 0.0])
-#     addConstraint!(problem, continuityConstraint)
-#     addConstraint!(problem, x0Constraint)
-#     addConstraint!(problem, qfConstraint)
-#     multipleShooter = MBD.MultipleShooter()
-#     solution::MBD.MultipleShooterProblem = solve!(multipleShooter, problem)
-#     @test isApproxSigFigs(solution.nodes[1].state.data, [0.8234, 0, 0, 0, 0.12623176201, 0], 11)
-# end
-
 @testset "Periodic Orbit Family Example" begin
     systemData = MBD.CR3BPSystemData("Earth", "Moon")
     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
@@ -850,24 +823,26 @@ end
     period1::Float64 = getPeriod(targeter, solution1)
     monodromy1::Matrix{Float64} = getMonodromy(targeter, solution1)
     orbit1 = MBD.CR3BPPeriodicOrbit(dynamicsModel, solution1.nodes[1].state.data[1:6], period1, monodromy1)
-    solution2::MBD.CR3BPMultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], getJacobiConstant(orbit1)-0.0001)
+    solution2::MBD.CR3BPMultipleShooterProblem = correct(targeter, stateGuess, [timeGuess[1], timeGuess[2]], targetJC-0.0001)
     @test LinearAlgebra.norm(getConstraintVector!(solution2)) <= 1E-11
     period2::Float64 = getPeriod(targeter, solution2)
     monodromy2::Matrix{Float64} = getMonodromy(targeter, solution2)
     orbit2 = MBD.CR3BPPeriodicOrbit(dynamicsModel, solution1.nodes[1].state.data[1:6], period2, monodromy2)
     JCContinuation = MBD.JacobiConstantContinuationEngine(solution1, solution2, -1E-3, -1E-2)
-    # JCContinuation.printProgress = false
+    JCContinuation.printProgress = false
     ydot0JumpCheck = MBD.BoundingBoxJumpCheck("Initial State", [NaN NaN; -2.5 0])
-#     addJumpCheck!(JCContinuation, ydot0JumpCheck)
-#     numberSteps::Int64 = 300
-#     stepsEndCheck = MBD.NumberStepsContinuationEndCheck(numberSteps)
-#     MoonEndCheck = MBD.BoundingBoxContinuationEndCheck("Initial State", [L1[1] getPrimaryPosition(dynamicsModel, 2)[1]-Moon.bodyRadius/systemData.charLength; NaN NaN])
-#     addEndCheck!(JCContinuation, stepsEndCheck)
-#     addEndCheck!(JCContinuation, MoonEndCheck)
-#     oldstd = stdout
-#     redirect_stdout(devnull)
-#     solutions::Vector{MBD.MultipleShooterProblem} = doContinuation!(JCContinuation, solution1, solution2)
-#     familyMembers::Vector{MBD.CR3BPPeriodicOrbit} = Vector{MBD.CR3BPPeriodicOrbit}(undef, length(solutions))
+    addJumpCheck!(JCContinuation, ydot0JumpCheck)
+    stepsEndCheck = MBD.NumberStepsContinuationEndCheck(100)
+    MoonEndCheck = MBD.BoundingBoxContinuationEndCheck("Initial State", [L1[1] getPrimaryPosition(dynamicsModel, 2)[1]-Moon.bodyRadius/getCharLength(systemData); NaN NaN])
+    addEndCheck!(JCContinuation, stepsEndCheck)
+    addEndCheck!(JCContinuation, MoonEndCheck)
+    oldstd = stdout
+    redirect_stdout(devnull)
+    solutions::MBD.CR3BPContinuationFamily = doContinuation!(JCContinuation, solution1, solution2)
+    redirect_stdout(stdout)
+    @test getNumMembers(solutions) == 100
+    orbit100 = getPeriodicOrbit(targeter, solutions, 100)
+    @test isApproxSigFigs([getJacobiConstant(orbit100)], [2.9907766923863504], 8)
 #     for s::Int64 in 1:length(solutions)
 #         solution::MBD.MultipleShooterProblem = solutions[s]
 #         orbit = MBD.CR3BPPeriodicOrbit(solution, targeter)
@@ -880,7 +855,6 @@ end
 #     eigenSort!(family)
 #     @test length(family.familyMembers) == numberSteps
 #     detectBifurcations!(targeter, family)
-#     redirect_stdout(oldstd)
 #     bifurcation::MBD.Bifurcation = family.bifurcations[1]
 #     @test isApproxSigFigs(bifurcation.orbit.initialCondition, [0.85479945002, 0, 0, 0, -0.13373284140, 0], 11)
 end

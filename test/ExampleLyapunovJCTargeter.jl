@@ -9,7 +9,7 @@ U: 1/25/25
 using MBD, CSV, DataFrames, LinearAlgebra, StaticArrays
 
 export LyapunovJCTargeter
-export correct, getMonodromy, getOrbit, getPeriod, propagateState
+export correct, getMonodromy, getOrbit, getPeriod, getPeriodicOrbit, propagateState
 
 """
     LyapunovJCTargeter(dynamicsModel)
@@ -194,6 +194,34 @@ Return orbit period
 """
 function getPeriod(targeter::LyapunovJCTargeter, problem::MBD.CR3BPMultipleShooterProblem)
     return 2*problem.segments[1].TOF.data[1]
+end
+
+"""
+    getPeriodicOrbit(targeter, family, orbit)
+
+Return periodic orbit object
+
+# Arguments
+- `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
+- `family::CR3BPContinuationFamily`: CR3BP continuation family object
+- `orbit::Int64`: Orbit identifier
+"""
+function getPeriodicOrbit(targeter::LyapunovJCTargeter, family::MBD.CR3BPContinuationFamily, orbit::Int64)
+    period::Float64 = 2*family.segments[orbit][1].TOF.data[1]
+    propagator = MBD.Propagator()
+    propagator.equationType = MBD.STM
+    nStates::Int64 = getStateSize(targeter.dynamicsModel, MBD.STM)
+    initialGuess::Vector{Float64} = appendExtraInitialConditions(targeter.dynamicsModel, family.nodes[orbit][1].state.data, MBD.STM)
+    arc::MBD.CR3BPArc = propagate(propagator, initialGuess, [0, family.segments[orbit][1].TOF.data[1]], targeter.dynamicsModel)
+    halfPeriodState::StaticArrays.SVector{nStates, Float64} = StaticArrays.SVector{nStates, Float64}(getStateByIndex(arc, -1))
+    halfPeriodSTM::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([halfPeriodState[7:12] halfPeriodState[13:18] halfPeriodState[19:24] halfPeriodState[25:30] halfPeriodState[31:36] halfPeriodState[37:42]])
+    G::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([1.0 0 0 0 0 0; 0 -1.0 0 0 0 0; 0 0 1.0 0 0 0; 0 0 0 -1.0 0 0; 0 0 0 0 1.0 0; 0 0 0 0 0 -1.0])
+    Omega::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([0 1.0 0; -1.0 0 0; 0 0 0])
+    A::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([zeros(Float64, (3,3)) [-1.0 0 0; 0 -1.0 0; 0 0 -1.0]; [1.0 0 0; 0 1.0 0; 0 0 1.0] -2*Omega])
+    B::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([-2*Omega [1.0 0 0; 0 1.0 0; 0 0 1.0]; [-1.0 0 0; 0 -1.0 0; 0 0 -1.0] zeros(Float64, (3,3))])
+    monodromy::Matrix{Float64} = G*A*(halfPeriodSTM')*B*G*halfPeriodSTM
+
+    return MBD.CR3BPPeriodicOrbit(targeter.dynamicsModel, initialGuess[1:6], period, monodromy)
 end
 
 # """

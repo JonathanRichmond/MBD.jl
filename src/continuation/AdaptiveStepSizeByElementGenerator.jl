@@ -3,7 +3,7 @@ Adaptive step size by element generator wrapper
 
 Author: Jonathan Richmond
 C: 1/5/23
-U: 9/6/23
+U: 1/26/25
 """
 
 import MBD: AdaptiveStepSizeByElementGenerator
@@ -17,9 +17,9 @@ Return continuation data with updated step size
 
 # Arguments
 - `adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator`: Adaptive step size by element generator object
-- `data::ContinuationData`: Continuation data object
+- `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function updateStepSize!(adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator, data::MBD.ContinuationData)
+function updateStepSize!(adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator, data::MBD.CR3BPContinuationData)
     signFactor = (data.currentStepSize < 0) ? -1 : 1
     if data.converging
         if data.numIterations < adaptiveStepSizeByElementGenerator.maxIterations

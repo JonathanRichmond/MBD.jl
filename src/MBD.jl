@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/25/25
+U: 1/26/25
 """
 module MBD
 
@@ -1111,11 +1111,11 @@ end
 # Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
 # include("bifurcation/Bifurcation.jl")
-# include("continuation/AdaptiveStepSizeByElementGenerator.jl")
-# include("continuation/BoundingBoxContinuationEndCheck.jl")
-# include("continuation/BoundingBoxJumpCheck.jl")
+include("continuation/AdaptiveStepSizeByElementGenerator.jl")
+include("continuation/BoundingBoxContinuationEndCheck.jl")
+include("continuation/BoundingBoxJumpCheck.jl")
 # include("continuation/NaturalParameterContinuationEngine.jl")
-# include("continuation/NumberStepsContinuationEndCheck.jl")
+include("continuation/NumberStepsContinuationEndCheck.jl")
 include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
 include("corrections/MinimumNormUpdateGenerator.jl")
@@ -1127,7 +1127,7 @@ include("CR3BP/ContinuationFamily.jl")
 include("CR3BP/ContinuityConstraint.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
-# include("CR3BP/JacobiConstantContinuationEngine.jl")
+include("CR3BP/JacobiConstantContinuationEngine.jl")
 include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/Manifold.jl")
 include("CR3BP/ManifoldArc.jl")
