@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/26/25
+U: 1/27/25
 """
 module MBD
 
@@ -815,7 +815,7 @@ mutable struct CR3BPNaturalParameterContinuationEngine
 
         this.corrector = CR3BPMultipleShooter(tol)
         this.dataInProgress = CR3BPContinuationData(solution1, solution2)
-        this.stepSizeGenerator = AdaptiveStepSizeGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
+        this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
@@ -926,8 +926,11 @@ CR3BP orbit family object
 mutable struct CR3BPOrbitFamily
     # bifurcations::Vector{Bifurcation}                                   # Bifurcations
     dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    eigenvalues::Vector{Vector{Complex{Float64}}}                       # Eigenvalues [ndim]
+    eigenvectors::Vector{Matrix{Complex{Float64}}}                      # Eigenvectors [ndim]
+    hasBeenSorted::Bool                                                 # Eigendata has been sorted?
     initialConditions::Vector{Vector{Float64}}                          # Initial conditions [ndim]
-    monodromies::Vector{StaticArrays.SMatrix{6, 6, Float64}}            # Monodromy matrices [ndim]
+    monodromies::Vector{Matrix{Float64}}                                # Monodromy matrices [ndim]
     periods::Vector{Float64}                                            # Periods [ndim]
 
     function CR3BPOrbitFamily(dynamicsModel::CR3BPDynamicsModel)
@@ -937,6 +940,9 @@ mutable struct CR3BPOrbitFamily
         this.initialConditions = []
         this.periods = []
         this.monodromies = []
+        this.eigenvalues = []
+        this.eigenvectors = []
+        this.hasBeenSorted = false
         # this.bifurcations = []
 
         return this
@@ -1114,7 +1120,6 @@ end
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
-# include("continuation/NaturalParameterContinuationEngine.jl")
 include("continuation/NumberStepsContinuationEndCheck.jl")
 include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
@@ -1133,8 +1138,9 @@ include("CR3BP/Manifold.jl")
 include("CR3BP/ManifoldArc.jl")
 include("CR3BP/MultipleShooter.jl")
 include("CR3BP/MultipleShooterProblem.jl")
+include("CR3BP/NaturalParameterContinuationEngine.jl")
 include("CR3BP/Node.jl")
-# include("CR3BP/OrbitFamily.jl")
+include("CR3BP/OrbitFamily.jl")
 include("CR3BP/PeriodicOrbit.jl")
 include("CR3BP/Segment.jl")
 include("CR3BP/StateConstraint.jl")

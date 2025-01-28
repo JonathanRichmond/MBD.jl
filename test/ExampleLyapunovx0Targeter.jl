@@ -1,9 +1,8 @@
 """
-Jacobi constant perpendicular crossing targeter for CR3BP Lyapunov orbits
+Initial x-state perpendicular crossing targeter for CR3BP Lyapunov orbits
 
 Author: Jonathan Richmond
-C: 1/11/23
-U: 1/27/25
+C: 1/27/25
 """
 
 using MBD, LinearAlgebra, StaticArrays
@@ -12,17 +11,17 @@ export LyapunovJCTargeter
 export correct, getMonodromy, getPeriod, getPeriodicOrbit, propagateState
 
 """
-    LyapunovJCTargeter(dynamicsModel)
+    Lyapunovx0Targeter(dynamicsModel)
 
-CR3BP Lyapunov Jacobi constant targeter object
+CR3BP Lyapunov initial x-state targeter object
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-struct LyapunovJCTargeter <: MBD.AbstractTargeter
+struct Lyapunovx0Targeter <: MBD.AbstractTargeter
     dynamicsModel::MBD.CR3BPDynamicsModel                               # CR3BP dynamics model
 
-    function LyapunovJCTargeter(dynamicsModel::MBD.CR3BPDynamicsModel)
+    function Lyapunovx0Targeter(dynamicsModel::MBD.CR3BPDynamicsModel)
         this = new(dynamicsModel)
 
         return this
@@ -30,18 +29,18 @@ struct LyapunovJCTargeter <: MBD.AbstractTargeter
 end
 
 """
-    correct(targeter, q0, tSpan, targetJC; tol)
+    correct(targeter, q0, tSpan, targetx0; tol)
 
 Return corrected multiple shooter problem
 
 # Arguments
-- `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
+- `targeter::Lyapunovx0Targeter`: CR3BP Lyapunov initial x-state targeter object
 - `q0::Vector{Float64}`: Initial conditions [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
-- `targetJC::Float64`: Target Jacobi constant
+- `targetx0::Float64`: Target initial x-state [ndim]
 - `tol::Float64`: Convergence tolerance (optional)
 """
-function correct(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vector{Float64}, targetJC::Float64, tol::Float64 = 1E-11)
+function correct(targeter::Lyapunovx0Targeter, q0::Vector{Float64}, tSpan::Vector{Float64}, targetx0::Float64, tol::Float64 = 1E-11)
     halfPeriod::Float64 = (tSpan[2]-tSpan[1])/2
     qf::Vector{Float64} = propagateState(targeter, q0, [0, halfPeriod])
     originNode = MBD.CR3BPNode(tSpan[1], q0, targeter.dynamicsModel)
@@ -53,9 +52,9 @@ function correct(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vecto
     problem = MBD.CR3BPMultipleShooterProblem()
     addSegment!(problem, segment)
     continuityConstraint = MBD.CR3BPContinuityConstraint(segment)
-    JCConstraint = MBD.JacobiConstraint(originNode, targetJC)
+    x0Constraint = MBD.CR3BPStateConstraint(originNode, [1], [targetx0])
     qfConstraint = MBD.CR3BPStateConstraint(terminalNode, [2, 4], [0.0, 0.0])
-    addConstraint!(problem, JCConstraint)
+    addConstraint!(problem, x0Constraint)
     addConstraint!(problem, qfConstraint)
     addConstraint!(problem, continuityConstraint)
     shooter = MBD.CR3BPMultipleShooter(tol)
@@ -75,10 +74,10 @@ end
 Return orbit monodromy matrix
 
 # Arguments
-- `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
+- `targeter::Lyapunovx0Targeter`: CR3BP Lyapunov initial x-state targeter object
 - `problem::CR3BPMultipleShooterProblem`: Solved CR3BP multiple shooter problem object
 """
-function getMonodromy(targeter::LyapunovJCTargeter, problem::MBD.CR3BPMultipleShooterProblem)
+function getMonodromy(targeter::Lyapunovx0Targeter, problem::MBD.CR3BPMultipleShooterProblem)
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
     nStates::Int64 = getStateSize(targeter.dynamicsModel, MBD.STM)
@@ -100,10 +99,10 @@ end
 Return orbit period
 
 # Arguments
-- `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
+- `targeter::Lyapunovx0Targeter`: CR3BP Lyapunov initial x-state targeter object
 - `problem::CR3BPMultipleShooterProblem`: Solved CR3BP multiple shooter problem object
 """
-function getPeriod(targeter::LyapunovJCTargeter, problem::MBD.CR3BPMultipleShooterProblem)
+function getPeriod(targeter::Lyapunovx0Targeter, problem::MBD.CR3BPMultipleShooterProblem)
     return 2*problem.segments[1].TOF.data[1]
 end
 
@@ -113,11 +112,11 @@ end
 Return periodic orbit object
 
 # Arguments
-- `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
+- `targeter::Lyapunovx0Targeter`: CR3BP Lyapunov initial x-state targeter object
 - `family::CR3BPContinuationFamily`: CR3BP continuation family object
 - `orbit::Int64`: Orbit identifier
 """
-function getPeriodicOrbit(targeter::LyapunovJCTargeter, family::MBD.CR3BPContinuationFamily, orbit::Int64)
+function getPeriodicOrbit(targeter::Lyapunovx0Targeter, family::MBD.CR3BPContinuationFamily, orbit::Int64)
     period::Float64 = 2*family.segments[orbit][1].TOF.data[1]
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
@@ -187,11 +186,11 @@ end
 Return propagated state
 
 # Arguments
-- `targeter::LyapunovJCTargeter`: CR3BP Lyapunov Jacobi constant targeter object
+- `targeter::Lyapunovx0Targeter`: CR3BP Lyapunov initial x-state targeter object
 - `q0::Vector{Float64}`: Initial conditions [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
 """
-function propagateState(targeter::LyapunovJCTargeter, q0::Vector{Float64}, tSpan::Vector{Float64})
+function propagateState(targeter::Lyapunovx0Targeter, q0::Vector{Float64}, tSpan::Vector{Float64})
     propagator = MBD.Propagator()
     arc::MBD.CR3BPArc = propagate(propagator, q0, tSpan, targeter.dynamicsModel)
 

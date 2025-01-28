@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 1/26/25
+U: 1/27/25
 """
 
 using MBD, DifferentialEquations, LinearAlgebra, SPICE, StaticArrays
@@ -11,6 +11,7 @@ using Test
 
 # include("ExampleBifurcations.jl")
 include("ExampleLyapunovJCTargeter.jl")
+include("ExampleLyapunovx0Targeter.jl")
 
 @testset "Files" begin
     @test isfile("../src/body_data.xml")
@@ -742,9 +743,6 @@ end
     @test maskData(mask3, data) == data
 end
 
-# @testset "CR3BPOrbitFamily" begin
-# end
-
 # @testset "TBPDynamicsModel" begin
 #     systemData = MBD.TBPSystemData("Earth")
 #     dynamicsModel = MBD.TBPDynamicsModel(systemData)
@@ -839,45 +837,64 @@ end
     oldstd = stdout
     redirect_stdout(devnull)
     solutions::MBD.CR3BPContinuationFamily = doContinuation!(JCContinuation, solution1, solution2)
-    redirect_stdout(stdout)
     @test getNumMembers(solutions) == 100
-    orbit100 = getPeriodicOrbit(targeter, solutions, 100)
+    orbit100::MBD.CR3BPPeriodicOrbit = getPeriodicOrbit(targeter, solutions, 100)
     @test isApproxSigFigs([getJacobiConstant(orbit100)], [2.9907766923863504], 8)
-#     for s::Int64 in 1:length(solutions)
-#         solution::MBD.MultipleShooterProblem = solutions[s]
-#         orbit = MBD.CR3BPPeriodicOrbit(solution, targeter)
-#         getProperties!(targeter, orbit)
-#         getMonodromy!(targeter, orbit)
-#         getStability!(orbit)
-#         familyMembers[s] = orbit
-#     end
-#     family = MBD.CR3BPOrbitFamily(familyMembers)
-#     eigenSort!(family)
-#     @test length(family.familyMembers) == numberSteps
+    orbitFamily = MBD.CR3BPOrbitFamily(dynamicsModel)
+    orbitFamily2 = MBD.CR3BPOrbitFamily(dynamicsModel)
+    @test orbitFamily == orbitFamily2
+    for s::Int64 in 1:getNumMembers(solutions)
+        orbit::MBD.CR3BPPeriodicOrbit = getPeriodicOrbit(targeter, solutions, s)
+        push!(orbitFamily.initialConditions, orbit.initialCondition)
+        push!(orbitFamily.periods, orbit.period)
+        push!(orbitFamily.monodromies, orbit.monodromy)
+    end
+    @test getNumMembers(orbitFamily) == getNumMembers(solutions)
+    @test getJacobiConstant(dynamicsModel, orbitFamily.initialConditions[100]) == getJacobiConstant(orbit100)
+    redirect_stdout(devnull)
+    eigenSort!(orbitFamily)
+    redirect_stdout(oldstd)
+    @test isApproxSigFigs(real.(orbitFamily.eigenvalues[100]), [0.004034714876274129, 247.8489882397049, 0.5901934719701916, 0.5901934719701916, 0.999994007551255, 1.0000059924982916], 4)
+    (standardIndices::Vector{Vector{Float64}}, alternateIndices::Vector{Vector{Complex{Float64}}}) = getAlternateIndices(orbitFamily)
+    @test isApproxSigFigs(standardIndices[100], [123.9265115235783, 1.0, 1.0000000000282148], 5)
+    @test isApproxSigFigs(real.(alternateIndices[100]), [123.92651152292481, 0.5901934719700709, 1.0000000000255436], 5)
+    x0Targeter = Lyapunovx0Targeter(dynamicsModel)
+    solution3::MBD.CR3BPMultipleShooterProblem = correct(x0Targeter, stateGuess, [timeGuess[1], timeGuess[2]], stateGuess[1])
+    solution4::MBD.CR3BPMultipleShooterProblem = correct(x0Targeter, stateGuess, [timeGuess[1], timeGuess[2]], stateGuess[1]+1E-4)
+    NPContinuation = MBD.CR3BPNaturalParameterContinuationEngine(solution3, solution4, "Initial State", 1, 1E-4, 1E-2)
+    NPContinuation.printProgress = false
+    addJumpCheck!(NPContinuation, ydot0JumpCheck)
+    addEndCheck!(NPContinuation, stepsEndCheck)
+    addEndCheck!(NPContinuation, MoonEndCheck)
+    redirect_stdout(devnull)
+    solutions2::MBD.CR3BPContinuationFamily = doContinuation!(NPContinuation, solution3, solution4)
+    redirect_stdout(oldstd)
+    @test getNumMembers(solutions2) == 100
+    newOrbit100::MBD.CR3BPPeriodicOrbit = getPeriodicOrbit(x0Targeter, solutions2, 100)
+    @test isApproxSigFigs([newOrbit100.initialCondition[1]], [0.8616151323643001], 8)
 #     detectBifurcations!(targeter, family)
 #     bifurcation::MBD.Bifurcation = family.bifurcations[1]
 #     @test isApproxSigFigs(bifurcation.orbit.initialCondition, [0.85479945002, 0, 0, 0, -0.13373284140, 0], 11)
 end
 
-# @testset "Earth-Moon L1 Halo Multiple Shooter Example" begin
-#     systemData = MBD.CR3BPSystemData("Earth", "Moon")
-#     dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
-#     nodeStates::Vector{Vector{Float64}} = [[1.0277, 0, 0.1857, 0, -0.1152, 0], [1.008, -0.0476, 0.1133, -0.0714, -0.0307, -0.2984], [1.008, 0.0476, 0.1133, 0.0714, -0.0307, 0.2985], [1.0277, 0, 0.1857, 0, -0.1152, 0]]
-#     nodeTimes::Vector{Float64} = [0, 0.52854, 1.0571, 1.5856]
-#     nodes::Vector{MBD.Node} = Vector{MBD.Node}(undef, length(nodeTimes))
-#     [nodes[n] = MBD.Node(nodeTimes[n], nodeStates[n], dynamicsModel) for n in eachindex(nodeTimes)]
-#     problem = MBD.MultipleShooterProblem()
-#     segments::Vector{MBD.Segment} = Vector{MBD.Segment}(undef, length(nodeTimes)-1)
-#     for s::Int64 in 1:length(nodeTimes)-1
-#         segments[s] = MBD.Segment(nodeTimes[s+1]-nodeTimes[s], nodes[s], nodes[s+1])
-#         addSegment!(problem, segments[s])
-#     end
-#     @test length(problem.segments) == 3
-#     map(s -> addConstraint!(problem, MBD.ContinuityConstraint(s)), segments)
-#     addConstraint!(problem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 4, 5, 6]))
-#     addConstraint!(problem, MBD.JacobiConstraint(nodes[1], 3.04))
-#     @test checkJacobian(problem)
-#     multipleShooter = MBD.MultipleShooter()
-#     solution::MBD.MultipleShooterProblem = solve!(multipleShooter, problem)
-#     @test isApproxSigFigs(solution.nodes[1].state.data, solution.nodes[end].state.data, 11)
-# end
+@testset "Earth-Moon L1 Halo Multiple Shooter Example" begin
+    systemData = MBD.CR3BPSystemData("Earth", "Moon")
+    dynamicsModel = MBD.CR3BPDynamicsModel(systemData)
+    nodeStates::Vector{Vector{Float64}} = [[1.0277, 0, 0.1857, 0, -0.1152, 0], [1.008, -0.0476, 0.1133, -0.0714, -0.0307, -0.2984], [1.008, 0.0476, 0.1133, 0.0714, -0.0307, 0.2985], [1.0277, 0, 0.1857, 0, -0.1152, 0]]
+    nodeTimes::Vector{Float64} = [0, 0.52854, 1.0571, 1.5856]
+    nodes::Vector{MBD.CR3BPNode} = Vector{MBD.CR3BPNode}(undef, 4)
+    [nodes[n] = MBD.CR3BPNode(nodeTimes[n], nodeStates[n], dynamicsModel) for n = 1:4]
+    problem = MBD.CR3BPMultipleShooterProblem()
+    segments::Vector{MBD.CR3BPSegment} = Vector{MBD.CR3BPSegment}(undef, 3)
+    for s::Int16 in Int16(1):Int16(3)
+        segments[s] = MBD.CR3BPSegment(nodeTimes[s+1]-nodeTimes[s], nodes[s], nodes[s+1])
+        addSegment!(problem, segments[s])
+    end
+    map(s -> addConstraint!(problem, MBD.CR3BPContinuityConstraint(s)), segments)
+    addConstraint!(problem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 4, 5, 6]))
+    addConstraint!(problem, MBD.JacobiConstraint(nodes[1], 3.04))
+    @test checkJacobian(problem)
+    multipleShooter = MBD.CR3BPMultipleShooter()
+    solution::MBD.CR3BPMultipleShooterProblem = MBD.solve!(multipleShooter, problem)
+    @test isApproxSigFigs(solution.nodes[1].state.data, solution.nodes[end].state.data, 11)
+end
