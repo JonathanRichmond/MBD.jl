@@ -247,7 +247,7 @@ mutable struct Propagator
     maxStep::Int64                                                      # Maximum step size
     relTol::Float64                                                     # Relative tolerance
 
-    function Propagator(integratorSolver::IntegratorType = DP8, equationType::EquationType = SIMPLE)
+    function Propagator(; integratorSolver::IntegratorType = DP8, equationType::EquationType = SIMPLE)
         this = new()
 
         this.integratorFactory = IntegratorFactory(integratorSolver)
