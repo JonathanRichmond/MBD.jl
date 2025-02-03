@@ -231,7 +231,7 @@ end
 Base.:(==)(integratorFactory1::IntegratorFactory, integratorFactory2::IntegratorFactory) = (integratorFactory1.integratorType == integratorFactory2.integratorType)
 
 """
-    Propagator(integratorSolver, equationType)
+    Propagator(; integratorSolver, equationType)
 
 Propagator object
 
