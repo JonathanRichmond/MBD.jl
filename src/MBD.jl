@@ -1213,7 +1213,9 @@ Base.:(==)(arc1::BCR4BP12Arc, arc2::BCR4BP12Arc) = ((arc1.dynamicsModel == arc2.
 # Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
 # include("bifurcation/Bifurcation.jl")
+include("BCR4BP/Arc12.jl")
 include("BCR4BP/DynamicsModel12.jl")
+include("BCR4BP/EquationsOfMotion12.jl")
 include("BCR4BP/SystemData.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
