@@ -1031,9 +1031,9 @@ BCR4BP system data object
 mutable struct BCR4BPSystemData
     primaryData::StaticArrays.SVector{4, BodyData}                      # Primary data objects
     primaryNames::StaticArrays.SVector{4, String}                       # Primary names
-    primarySpiceIDs::StaticArrays.SVector{4, Int6}                      # Primary SPICE IDs
+    primarySpiceIDs::StaticArrays.SVector{4, Int16}                     # Primary SPICE IDs
 
-    function BCR4BPSystemData(p1::String, p2::String, p4::String)
+    function BCR4BPSystemData(p1::String, p2::String, p4::String, b1::String)
         this = new()
 
         this.primaryData = StaticArrays.SVector(BodyData(p1), BodyData(p2), BodyData(p3), BodyData(b1))
