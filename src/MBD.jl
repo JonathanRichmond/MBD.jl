@@ -161,7 +161,7 @@ Base.:(==)(systemData1::CR3BPSystemData, systemData2::CR3BPSystemData) = ((syste
 CR3BP dynamics model object
 
 # Arguments
-- `systemData::CR3BPSystemData`: CR3BP system object
+- `systemData::CR3BPSystemData`: CR3BP system data object
 """
 struct CR3BPDynamicsModel
     systemData::CR3BPSystemData                                         # CR3BP system data object
@@ -1048,6 +1048,71 @@ mutable struct BCR4BPSystemData
 end
 Base.:(==)(systemData1::BCR4BPSystemData, systemData2::BCR4BPSystemData) = ((systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryNames == systemData2.primaryNames) && (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs))
 
+"""
+    BCR4BP12DynamicsModel(systemData)
+
+BCR4BP P1-P2 dynamics model object
+
+# Arguments
+- `systemData::BCR4BPSystemData`: BCR4BP system data object
+"""
+struct BCR4BP12DynamicsModel
+    systemData::BCR4BPSystemData                                        # BCR4BP system data object
+
+    function BCR4BP12DynamicsModel(systemData::BCR4BPSystemData)
+        this = new(systemData)
+
+        return this
+    end
+end
+Base.:(==)(dynamicsModel1::BCR4BP12DynamicsModel, dynamicsModel2::BCR4BP12DynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
+
+"""
+    BCR4BP12EquationsOfMotion(equationType, dynamicsModel)
+
+BCR4BP P1-P2 EOM object
+
+# Arguments
+- `equationType::EquationType`: EOM type
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+struct BCR4BP12EquationsOfMotion
+    dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model object
+    equationType::EquationType                                          # EOM type
+    
+    function BCR4BP12EquationsOfMotion(equationType::EquationType, dynamicsModel::BCR4BP12DynamicsModel)
+        this = new(dynamicsModel, equationType)
+
+        return this
+    end
+end
+Base.:(==)(EOMs1::BCR4BP12EquationsOfMotion, EOMs2::BCR4BP12EquationsOfMotion) = ((EOMs1.dynamicsModel == EOMs2.dynamicsModel) && (EOMs1.equationType == EOMs2.equationType))
+
+"""
+    BCR4BP12Arc(dynamicsModel)
+
+BCR4BP P1-P2 arc object
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+mutable struct BCR4BP12Arc
+    dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model object
+    states::Vector{Vector{Float64}}                                     # State vectors along arc [ndim]
+    times::Vector{Float64}                                              # Times along arc [ndim]
+
+    function BCR4BP12Arc(dynamicsModel::BCR4BP12DynamicsModel)
+        this = new()
+
+        this.dynamicsModel = dynamicsModel
+        this.states = [[]]
+        this.times = []
+
+        return this
+    end
+end
+Base.:(==)(arc1::BCR4BP12Arc, arc2::BCR4BP12Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
+
 # """
 #     TBPSystemData(p)
 
@@ -1148,6 +1213,7 @@ Base.:(==)(systemData1::BCR4BPSystemData, systemData2::BCR4BPSystemData) = ((sys
 # Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
 # include("bifurcation/Bifurcation.jl")
+include("BCR4BP/DynamicsModel12.jl")
 include("BCR4BP/SystemData.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
