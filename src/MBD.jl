@@ -1017,6 +1017,37 @@ mutable struct CR3BPManifold
     end
 end
 
+"""
+    BCR4BPSystemData(p1, p2, p4, b1)
+
+BCR4BP system data object
+
+# Arguments
+- `p1::String`: Name of first primary
+- `p2::String`: Name of second primary
+- `p4::String`: Name of fourth primary
+- `b1::String`: Name of first barycenter
+"""
+mutable struct BCR4BPSystemData
+    primaryData::StaticArrays.SVector{4, BodyData}                      # Primary data objects
+    primaryNames::StaticArrays.SVector{4, String}                       # Primary names
+    primarySpiceIDs::StaticArrays.SVector{4, Int6}                      # Primary SPICE IDs
+
+    function BCR4BPSystemData(p1::String, p2::String, p4::String)
+        this = new()
+
+        this.primaryData = StaticArrays.SVector(BodyData(p1), BodyData(p2), BodyData(p3), BodyData(b1))
+        this.primaryNames = StaticArrays.SVector(p1, p2, p4, b1)
+        this.primarySpiceIDs = StaticArrays.SVector(this.primaryData[1].spiceID, this.primaryData[2].spiceID, this.primaryData[3].spiceID, this.primaryData[4].spiceID)
+        (this.primaryData[2].parentSpiceID == this.primarySpiceIDs[1]) || throw(ArgumentError("First primary must be parent of second primary"))
+        (this.primaryData[1].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of fourth primary"))
+        (this.primaryData[4].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of first barycenter"))
+
+        return this
+    end
+end
+Base.:(==)(systemData1::BCR4BPSystemData, systemData2::BCR4BPSystemData) = ((systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryNames == systemData2.primaryNames) && (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs))
+
 # """
 #     TBPSystemData(p)
 
@@ -1117,6 +1148,7 @@ end
 # Base.:(==)(trajectory1::TBPTrajectory, trajectory2::TBPTrajectory) = ((trajectory1.a == trajectory2.a) && (trajectory1.dynamicsModel == trajectory2.dynamicsModel) && (trajectory1.E == trajectory2.E) && (trajectory1.e == trajectory2.e) && (trajectory1.h == trajectory2.h) && (trajectory1.i == trajectory2.i) && (trajectory1.initialCondition == trajectory2.initialCondition) && (trajectory1.Omega == trajectory2.Omega) && (trajectory1.omega == trajectory2.omega) && (trajectory1.theta == trajectory2.theta))
 
 # include("bifurcation/Bifurcation.jl")
+include("BCR4BP/SystemData.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
 include("continuation/BoundingBoxJumpCheck.jl")
