@@ -1036,7 +1036,7 @@ mutable struct BCR4BPSystemData
     function BCR4BPSystemData(p1::String, p2::String, p4::String, b1::String)
         this = new()
 
-        this.primaryData = StaticArrays.SVector(BodyData(p1), BodyData(p2), BodyData(p3), BodyData(b1))
+        this.primaryData = StaticArrays.SVector(BodyData(p1), BodyData(p2), BodyData(p4), BodyData(b1))
         this.primaryNames = StaticArrays.SVector(p1, p2, p4, b1)
         this.primarySpiceIDs = StaticArrays.SVector(this.primaryData[1].spiceID, this.primaryData[2].spiceID, this.primaryData[3].spiceID, this.primaryData[4].spiceID)
         (this.primaryData[2].parentSpiceID == this.primarySpiceIDs[1]) || throw(ArgumentError("First primary must be parent of second primary"))
