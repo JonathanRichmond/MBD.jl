@@ -20,7 +20,7 @@ Return arc object with data corresponding to specified index removed
 - `index::Int64`: Element index
 """
 function deleteStateAndTime!(arc::CR3BPArc, index::Int64)
-    (index > length(arc.states)) && throw(BoundsError(arc.states, index))
+    (index > getStateCount(arc)) && throw(BoundsError(arc.states, index))
     deleteat!(arc.states, index)
     deleteat!(arc.times, index)
 end
@@ -47,7 +47,7 @@ Return state at specified index
 - `index::Int64`: Element index
 """
 function getStateByIndex(arc::CR3BPArc, index::Int64)
-    (index > length(arc.states)) && throw(BoundsError(arc.states, index))
+    (index > getStateCount(arc)) && throw(BoundsError(arc.states, index))
 
     (index < 0) ? (return copy(arc.states[end+1+index])) : (return copy(arc.states[index]))
 end
@@ -74,7 +74,7 @@ Return time at specified index
 - `index::Int64`: Element index
 """
 function getTimeByIndex(arc::CR3BPArc, index::Int64)
-    (index > length(arc.times)) && throw(BoundsError(arc.times, index))
+    (index > getStateCount(arc)) && throw(BoundsError(arc.times, index))
 
     (index < 0) ? (return arc.times[end+1+index]) : (return arc.times[index])
 end

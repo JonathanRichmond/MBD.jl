@@ -2,12 +2,12 @@
 BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
-C: 2/18/25
+C: 2/19/25
 """
 
 import MBD: BCR4BP12DynamicsModel
 
-# export 
+export getEquationsOfMotion, getStateSize, get12MassRatio
 
 # """
 #     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -102,19 +102,6 @@ import MBD: BCR4BP12DynamicsModel
 # end
 
 # """
-#     getEquationsOfMotion(dynamicsModel, equationType)
-
-# Return EOMs
-
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `equationType::EquationType`: EOM type
-# """
-# function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-#     return MBD.CR3BPEquationsOfMotion(equationType, dynamicsModel)
-# end
-
-# """
 #     getEpochDependencies(dynamicsModel, q)
 
 # Return derivative of state with respect to epoch
@@ -130,6 +117,19 @@ import MBD: BCR4BP12DynamicsModel
 
 #     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
 # end
+
+"""
+    getEquationsOfMotion(dynamicsModel, equationType)
+
+Return EOMs
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `equationType::EquationType`: EOM type
+"""
+function getEquationsOfMotion(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType)
+    return MBD.BCR4BP12EquationsOfMotion(equationType, dynamicsModel)
+end
 
 # """
 #     getEquilibriumPoint(dynamicsModel, point)
@@ -218,18 +218,6 @@ import MBD: BCR4BP12DynamicsModel
 # end
 
 # """
-#     getMassRatio(dynamicsModel)
-
-# Return CR3BP system mass ratio
-
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# """
-# function getMassRatio(dynamicsModel::CR3BPDynamicsModel)
-#     return getMassRatio(dynamicsModel.systemData)
-# end
-
-# """
 #     getParameterDependencies(dynamicsModel, q_full)
 
 # Return derivative of state with respect to parameters
@@ -302,20 +290,20 @@ import MBD: BCR4BP12DynamicsModel
 #     return ddUdr
 # end
 
-# """
-#     getStateSize(dynamicsModel, equationType)
+"""
+    getStateSize(dynamicsModel, equationType)
 
-# Return number of state variables
+Return number of state variables
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `equationType::EquationType`: EOM type
-# """
-# function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-#     type = Dict(MBD.SIMPLE => Int16(6), MBD.STM => Int16(42), MBD.FULL => Int16(42), MBD.ARCLENGTH => Int16(43), MBD.MOMENTUM => Int16(43))
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `equationType::EquationType`: EOM type
+"""
+function getStateSize(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType)
+    type = Dict(MBD.SIMPLE => Int16(6))#, MBD.STM => Int16(42), MBD.FULL => Int16(42), MBD.ARCLENGTH => Int16(43), MBD.MOMENTUM => Int16(43))
 
-#     return type[equationType]
-# end
+    return type[equationType]
+end
 
 # """
 #     getStateTransitionMatrix(dynamicsModel, q0)
@@ -360,6 +348,18 @@ import MBD: BCR4BP12DynamicsModel
 
 #     return [aMultiplier*xDist+r[1], aMultiplier*r[2]+r[2], aMultiplier*r[3]]
 # end
+
+"""
+    get12MassRatio(dynamicsModel)
+
+Return BCR4BP P1-P2 system mass ratio
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function get12MassRatio(dynamicsModel::BCR4BP12DynamicsModel)
+    return get12MassRatio(dynamicsModel.systemData)
+end
 
 # """
 #     isEpochIndependent(dynamicsModel)

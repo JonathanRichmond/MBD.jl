@@ -2,35 +2,41 @@
 BCR4BP P1-P2 equations of motion wrapper
 
 Author: Jonathan Richmond
-C: 2/18/25
+C: 2/19/25
 """
 
 import MBD: BCR4BP12EquationsOfMotion
 
-# export 
+export computeDerivatives!, getStateSize, get12MassRatio
 
-# """
-#     computeDerivatives!(qdot, q, params, t)
+"""
+    computeDerivatives!(qdot, q, params, t)
 
-# Return time derivative of state vector
+Return time derivative of state vector
 
-# # Arguments
-# - `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
-# - `q::Vector{Float64}`: State vector [ndim]
-# - `params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}`: Propagation parameters
-# - `t::Float64`: Time [ndim]
-# """
-# function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{CR3BPEquationsOfMotion, Vararg{Any}}, t::Float64)
-#     mu::Float64 = getMassRatio(params[1])
-#     omm::Float64 = 1-mu
-#     r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
-#     r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
-#     r_13_3::Float64 = r_13^3
-#     r_23_3::Float64 = r_23^3
-#     qdot[1:3] = q[4:6]
-#     qdot[4] = 2*q[5]+q[1]-omm*(q[1]+mu)/r_13_3-mu*(q[1]-omm)/r_23_3
-#     qdot[5] = q[2]-2*q[4]-omm*q[2]/r_13_3-mu*q[2]/r_23_3
-#     qdot[6] = -omm*q[3]/r_13_3-mu*q[3]/r_23_3
+# Arguments
+- `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
+- `q::Vector{Float64}`: State vector [ndim]
+- `params::Tuple{BCR4BP12EquationsOfMotion, Float64, Vararg{Any}}`: Propagation parameters
+- `t::Float64`: Time [ndim]
+"""
+function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{BCR4BP12EquationsOfMotion, Float64, Vararg{Any}}, t::Float64)
+    mu12::Float64 = get12MassRatio(params[1])
+    omm::Float64 = 1-mu12
+    a4::Float64 = get4Distance(params[1])
+    m4::Float64 = get4Mass(params[1])
+    r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
+    r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
+    r_43::Float64 = sqrt((q[1]-a4*cos(q[7]))^2+(q[2]-a4*sin(q[7]))^2+q[3]^2)
+    r_13_3::Float64 = r_13^3
+    r_23_3::Float64 = r_23^3
+    r_43_3::Float64 = r_43^3
+    a4_2::Float64 = a4^2
+    qdot[1:3] = q[4:6]
+    qdot[4] = 2*q[5]+q[1]-omm*(q[1]+mu12)/r_13_3-mu12*(q[1]-omm)/r_23_3-m4*(q[1]-a4*cos(q[7]))/r_43_3-m4*cos(q[7])/a4_2
+    qdot[5] = q[2]-2*q[4]-omm*q[2]/r_13_3-mu12*q[2]/r_23_3-m4*(q[2]-a4*sin(q[7]))/r_43_3-m4*sin(q[7])/a4_2
+    qdot[6] = -omm*q[3]/r_13_3-mu12*q[3]/r_23_3-m4*q[3]/r_43_3
+    qdot[7] = sqrt((m4+1)/(a4^3))-1
 #     if params[1].equationType != MBD.SIMPLE
 #         r_13_5::Float64 = r_13_3*r_13^2
 #         r_23_5::Float64 = r_23_3*r_23^2
@@ -53,28 +59,28 @@ import MBD: BCR4BP12EquationsOfMotion
 #     elseif params[1].equationType == MBD.MOMENTUM
 #         qdot[43] = q[1]*q[4]+q[2]*q[5]+q[3]*q[6]
 #     end
-# end
+end
 
-# """
-#     getMassRatio(EOMs)
+"""
+    getStateSize(EOMs)
 
-# Return CR3BP system mass ratio
+Return size of state vector
 
-# # Arguments
-# - `EOMs::CR3BPEquationsOfMotion`: CR3BP equations of motion object
-# """
-# function getMassRatio(EOMs::CR3BPEquationsOfMotion)
-#     return getMassRatio(EOMs.dynamicsModel)
-# end
+# Arguments
+- `EOMs::BCR4BP12EquationsOfMotion`: BCR4BP P1-P2 equations of motion object
+"""
+function getStateSize(EOMs::BCR4BP12EquationsOfMotion)
+    return getStateSize(EOMs.dynamicsModel, EOMs.equationType)
+end
 
-# """
-#     getStateSize(EOMs)
+"""
+    get12MassRatio(EOMs)
 
-# Return size of state vector
+Return BCR4BP P1-P2 system mass ratio
 
-# # Arguments
-# - `EOMs::CR3BPEquationsOfMotion`: CR3BP equations of motion object
-# """
-# function getStateSize(EOMs::CR3BPEquationsOfMotion)
-#     return getStateSize(EOMs.dynamicsModel, EOMs.equationType)
-# end
+# Arguments
+- `EOMs::BCR4BP12EquationsOfMotion`: BCR4BP P1-P2 equations of motion object
+"""
+function get12MassRatio(EOMs::BCR4BP12EquationsOfMotion)
+    return get12MassRatio(EOMs.dynamicsModel)
+end

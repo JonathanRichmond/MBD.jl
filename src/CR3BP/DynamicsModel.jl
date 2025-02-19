@@ -10,7 +10,7 @@ import LinearAlgebra, SPICE, StaticArrays
 import MBD: CR3BPDynamicsModel
 
 export appendExtraInitialConditions, evaluateEquations, get2BApproximation, getCharLength
-export getCharTime, getEquationsOfMotion, getEpochDependencies, getEquilibriumPoint, getExcursion
+export getCharTime, getEpochDependencies, getEquationsOfMotion, getEquilibriumPoint, getExcursion
 export getJacobiConstant, getLinearVariation, getMassRatio, getParameterDependencies
 export getPrimaryPosition, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
 export getTidalAcceleration, isEpochIndependent, primaryInertial2Rotating
@@ -110,19 +110,6 @@ function getCharTime(dynamicsModel::CR3BPDynamicsModel)
 end
 
 """
-    getEquationsOfMotion(dynamicsModel, equationType)
-
-Return EOMs
-
-# Arguments
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-- `equationType::EquationType`: EOM type
-"""
-function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
-    return MBD.CR3BPEquationsOfMotion(equationType, dynamicsModel)
-end
-
-"""
     getEpochDependencies(dynamicsModel, q)
 
 Return derivative of state with respect to epoch
@@ -137,6 +124,19 @@ function getEpochDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{
     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
+end
+
+"""
+    getEquationsOfMotion(dynamicsModel, equationType)
+
+Return EOMs
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `equationType::EquationType`: EOM type
+"""
+function getEquationsOfMotion(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType)
+    return MBD.CR3BPEquationsOfMotion(equationType, dynamicsModel)
 end
 
 """
