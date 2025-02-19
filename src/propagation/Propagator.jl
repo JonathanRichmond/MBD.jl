@@ -64,8 +64,8 @@ function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Fl
         tf::Float64 = tSpan[tIndex]
         problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs,))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
-        arcOut.states = sol.u
-        arcOut.times = sol.t
+        append!(arcOut.states, sol.u)
+        append!(arcOut.times, sol.t)
     end
 
     return arcOut
