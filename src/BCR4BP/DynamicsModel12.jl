@@ -446,7 +446,7 @@ function rotating122Rotating41(dynamicsModel::BCR4BP12DynamicsModel, states12::V
         theta4::Float64 = state[7]
         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-cos(theta4) -sin(theta4) 0; sin(theta4) -cos(theta4) 0; 0 0 1])
         Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}(theta4dot.*[sin(theta4) -cos(theta4) 0; cos(theta4) sin(theta4) 0; 0 0 0])
-        states41[t] = [(1/a4).*C zeros(Float64, 3, 3); sqrt(a4/(m4+1)).*Cdot sqrt(a4/(m4+1)).*C]*state+append!(1-get41MassRatio(dynamicsModel.systemData), zeros(Float64, 6))
+        states41[t] = [(1/a4).*C zeros(Float64, 3, 3); sqrt(a4/(m4+1)).*Cdot sqrt(a4/(m4+1)).*C; zeros(Float64, 1, 6) -1]*state+append!(1-get41MassRatio(dynamicsModel.systemData), zeros(Float64, 6))
     end
     times41::Vector{Float64} = (get12CharTime(dynamicsModel.systemData)/get41CharTime(dynamicsModel.systemData)).*times12
 
