@@ -20,7 +20,7 @@ Return time derivative of state vector
 - `params::Tuple{BCR4BP12EquationsOfMotion, Float64, Vararg{Any}}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
-function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{BCR4BP12EquationsOfMotion, Float64, Vararg{Any}}, t::Float64)
+function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{BCR4BP12EquationsOfMotion, Vararg{Any}}, t::Float64)
     mu12::Float64 = get12MassRatio(params[1])
     omm::Float64 = 1-mu12
     a4::Float64 = get4Distance(params[1])
