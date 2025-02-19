@@ -440,10 +440,10 @@ function primaryInertial2Rotating(dynamicsModel::CR3BPDynamicsModel, primary::In
     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
     for i in 1:length(times)
-        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
-        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])
-        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6}([C zeros(Float64, (3,3)); Cdot C])
-        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6}(N\states_primaryInertial[i])
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N\states_primaryInertial[i])
         states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
     end
 
