@@ -25,7 +25,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
     omm::Float64 = 1-mu12
     a4::Float64 = get4Distance(params[1])
     m4::Float64 = get4Mass(params[1])
-    r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
+    r_13::Float64 = sqrt((q[1]+mu12)^2+q[2]^2+q[3]^2)
     r_23::Float64 = sqrt((q[1]-omm)^2+q[2]^2+q[3]^2)
     r_43::Float64 = sqrt((q[1]-a4*cos(q[7]))^2+(q[2]-a4*sin(q[7]))^2+q[3]^2)
     r_13_3::Float64 = r_13^3
