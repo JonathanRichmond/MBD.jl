@@ -7,7 +7,7 @@ C: 2/19/25
 
 import MBD: BCR4BP12EquationsOfMotion
 
-export computeDerivatives!, getStateSize, get12MassRatio
+export computeDerivatives!, getStateSize, get12MassRatio, get4Distance, get4Mass
 
 """
     computeDerivatives!(qdot, q, params, t)
@@ -17,7 +17,7 @@ Return time derivative of state vector
 # Arguments
 - `qdot::Vector{Float64}`: Time derivative of state vector [ndim]
 - `q::Vector{Float64}`: State vector [ndim]
-- `params::Tuple{BCR4BP12EquationsOfMotion, Float64, Vararg{Any}}`: Propagation parameters
+- `params::Tuple{BCR4BP12EquationsOfMotion, Vararg{Any}}`: Propagation parameters
 - `t::Float64`: Time [ndim]
 """
 function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::Tuple{BCR4BP12EquationsOfMotion, Vararg{Any}}, t::Float64)
@@ -83,4 +83,28 @@ Return BCR4BP P1-P2 system mass ratio
 """
 function get12MassRatio(EOMs::BCR4BP12EquationsOfMotion)
     return get12MassRatio(EOMs.dynamicsModel)
+end
+
+"""
+    get4Distance(EOMs)
+
+Return BCR4BP P4 distance from B1 [ndim]
+
+# Arguments
+- `EOMs::BCR4BP12EquationsOfMotion`: BCR4BP P1-P2 equations of motion object
+"""
+function get4Distance(EOMs::BCR4BP12EquationsOfMotion)
+    return get4Distance(EOMs.dynamicsModel)
+end
+
+"""
+    get4Mass(EOMs)
+
+Return BCR4BP P4 mass [ndim]
+
+# Arguments
+- `EOMs::BCR4BP12EquationsOfMotion`: BCR4BP P1-P2 equations of motion object
+"""
+function get4Mass(EOMs::BCR4BP12EquationsOfMotion)
+    return get4Mass(EOMs.dynamicsModel)
 end

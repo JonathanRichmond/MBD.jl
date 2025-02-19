@@ -7,7 +7,7 @@ C: 2/19/25
 
 import MBD: BCR4BP12DynamicsModel
 
-export getEquationsOfMotion, getStateSize, get12MassRatio
+export getEquationsOfMotion, getStateSize, get12MassRatio, get4Distance, get4Mass
 
 # """
 #     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -359,6 +359,30 @@ Return BCR4BP P1-P2 system mass ratio
 """
 function get12MassRatio(dynamicsModel::BCR4BP12DynamicsModel)
     return get12MassRatio(dynamicsModel.systemData)
+end
+
+"""
+    get4Distance(dynamicsModel)
+
+Return BCR4BP P4 distance from B1 [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function get4Distance(dynamicsModel::BCR4BP12DynamicsModel)
+    return get4Distance(dynamicsModel.systemData)
+end
+
+"""
+    get4Mass(dynamicsModel)
+
+Return BCR4BP P4 mass [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function get4Mass(dynamicsModel::BCR4BP12DynamicsModel)
+    return get4Mass(dynamicsModel.systemData)
 end
 
 # """
