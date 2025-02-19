@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 1/15/25
+U: 2/19/25
 """
 
 import DifferentialEquations
@@ -27,15 +27,15 @@ function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Fl
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
-            q0 = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
-            deleteStateAndTime!(arcOut, getStateCount(arcOut))
+            q0 = copy(getStateByIndex(arcOut, -1))
+            deleteStateAndTime!(arcOut, -1)
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
         problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs,))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
-        arcOut.states = sol.u
-        arcOut.times = sol.t
+        append!(arcOut.states, sol.u)
+        append!(arcOut.times, sol.t)
     end
 
     return arcOut
@@ -89,15 +89,15 @@ function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialE
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
-            q0 = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
-            deleteStateAndTime!(arcOut, getStateCount(arcOut))
+            q0 = copy(getStateByIndex(arcOut, -1))
+            deleteStateAndTime!(arcOut, -1)
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
         problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
-        arcOut.states = sol.u
-        arcOut.times = sol.t
+        append!(arcOut.states, sol.u)
+        append!(arcOut.times, sol.t)
     end
 
     return arcOut

@@ -279,7 +279,7 @@ mutable struct CR3BPArc
         this = new()
 
         this.dynamicsModel = dynamicsModel
-        this.states = [[]]
+        this.states = []
         this.times = []
 
         return this
@@ -406,7 +406,7 @@ mutable struct CR3BPMultipleShooterProblem
         this.freeVariableIndexMap = Dict{Variable, Int16}()
         this.constraintVector = []
         this.constraintIndexMap = Dict{AbstractConstraint, Int16}()
-        this.jacobian = [[]]
+        this.jacobian = []
         this.hasBeenBuilt = false
 
         return this
