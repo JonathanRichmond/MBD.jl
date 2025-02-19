@@ -441,7 +441,7 @@ function rotating122Rotating41(dynamicsModel::BCR4BP12DynamicsModel, states12::V
     a4::Float64 = get4Distance(dynamicsModel.systemData)
     theta4dot::Float64 = sqrt((m4+1)/(a4^3))-1
     states41::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
-    for t:Int16 = Int16(1):numTimes
+    for t::Int16 = Int16(1):numTimes
         state::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states12[t])
         theta4::Float64 = state[7]
         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-cos(theta4) -sin(theta4) 0; sin(theta4) -cos(theta4) 0; 0 0 1])
