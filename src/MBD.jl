@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 2/3/25
+U: 2/19/25
 """
 module MBD
 
@@ -1105,7 +1105,7 @@ mutable struct BCR4BP12Arc
         this = new()
 
         this.dynamicsModel = dynamicsModel
-        this.states = [[]]
+        this.states = []
         this.times = []
 
         return this

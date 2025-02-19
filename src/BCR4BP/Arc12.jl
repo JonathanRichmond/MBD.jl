@@ -2,7 +2,7 @@
 BCR4BP P1-P2 arc wrapper
 
 Author: Jonathan Richmond
-C: 2/18/25
+C: 2/19/25
 """
 
 import MBD: CR3BPArc
@@ -20,8 +20,9 @@ Return arc object with data corresponding to specified index removed
 """
 function deleteStateAndTime!(arc::BCR4BP12Arc, index::Int64)
     (index > getStateCount(arc)) && throw(BoundsError(arc.states, index))
-    deleteat!(arc.states, index)
-    deleteat!(arc.times, index)
+    newIndex::Int64 = (index < 0) ? getStateCount(arc) : index
+    deleteat!(arc.states, newIndex)
+    deleteat!(arc.times, newIndex)
 end
 
 # """

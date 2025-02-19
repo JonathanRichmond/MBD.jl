@@ -57,8 +57,8 @@ function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Fl
     EOMs::MBD.BCR4BP12EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
-            q0 = copy(getStateByIndex(arcOut, getStateCount(arcOut)))
-            deleteStateAndTime!(arcOut, getStateCount(arcOut))
+            q0 = copy(getStateByIndex(arcOut, -1))
+            deleteStateAndTime!(arcOut, -1)
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
