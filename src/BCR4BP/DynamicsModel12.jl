@@ -436,7 +436,7 @@ Return BCR4BP P4-B1 rotating frame states and times [ndim]
 - `times12::Vector{Float64}`: BCR4BP P1-P2 rotating frame times [ndim]
 """
 function rotating122Rotating41(dynamicsModel::BCR4BP12DynamicsModel, states12::Vector{Vector{Float64}}, times12::Vector{Float64})
-    numTimes::Int16 = Int16(length(times))
+    numTimes::Int16 = Int16(length(times12))
     m4::Float64 = get4Mass(dynamicsModel.systemData)
     a4::Float64 = get4Distance(dynamicsModel.systemData)
     theta4dot::Float64 = sqrt((m4+1)/(a4^3))-1
