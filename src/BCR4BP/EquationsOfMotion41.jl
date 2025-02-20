@@ -41,7 +41,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
     qdot[4] = 2*q[5]+q[1]-mu41*omm12*(q[1]-x1)/r_13_3-mu41*mu12*(q[1]-x2)/r_23_3-omm41*(q[1]+mu41)/r_43_3
     qdot[5] = q[2]-2*q[4]-mu41*omm12*(q[2]-y1)/r_13_3-mu41*mu12*(q[2]-y2)/r_23_3-omm41*q[2]/r_43_3
     qdot[6] = -mu41*omm12*q[3]/r_13_3-mu41*mu12*q[3]/r_23_3-omm41*q[3]/r_43_3
-    qdot[7] = sqrt(mu41*a4^3)*(1-sqrt((m4+1)/(a4^3)))
+    qdot[7] = sqrt(a4^3/(m4+1))-1
 #     if params[1].equationType != MBD.SIMPLE
 #         r_13_5::Float64 = r_13_3*r_13^2
 #         r_23_5::Float64 = r_23_3*r_23^2
