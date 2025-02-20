@@ -1,15 +1,15 @@
 """
-BCR4BP P1-P2 dynamics model wrapper
+BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
-C: 2/19/25
+C: 2/20/25
 """
 
 import StaticArrays
-import MBD: BCR4BP12DynamicsModel
+import MBD: BCR4BP41DynamicsModel
 
-export getEquationsOfMotion, getStateSize, get12MassRatio, get4Distance, get4Mass
-export rotating122Rotating41
+export getEquationsOfMotion, getStateSize, get12MassRatio, get4Distance, get4Mass, get41MassRatio
+# export rotating412Rotating12
 
 # """
 #     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -126,11 +126,11 @@ export rotating122Rotating41
 Return EOMs
 
 # Arguments
-- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 - `equationType::EquationType`: EOM type
 """
-function getEquationsOfMotion(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType)
-    return MBD.BCR4BP12EquationsOfMotion(equationType, dynamicsModel)
+function getEquationsOfMotion(dynamicsModel::BCR4BP41DynamicsModel, equationType::MBD.EquationType)
+    return MBD.BCR4BP41EquationsOfMotion(equationType, dynamicsModel)
 end
 
 # """
@@ -298,10 +298,10 @@ end
 Return number of state variables
 
 # Arguments
-- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 - `equationType::EquationType`: EOM type
 """
-function getStateSize(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType)
+function getStateSize(dynamicsModel::BCR4BP41DynamicsModel, equationType::MBD.EquationType)
     type = Dict(MBD.SIMPLE => Int16(7))#, MBD.STM => Int16(42), MBD.FULL => Int16(42), MBD.ARCLENGTH => Int16(43), MBD.MOMENTUM => Int16(43))
 
     return type[equationType]
@@ -357,9 +357,9 @@ end
 Return BCR4BP P1-P2 system mass ratio
 
 # Arguments
-- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 """
-function get12MassRatio(dynamicsModel::BCR4BP12DynamicsModel)
+function get12MassRatio(dynamicsModel::BCR4BP41DynamicsModel)
     return get12MassRatio(dynamicsModel.systemData)
 end
 
@@ -369,9 +369,9 @@ end
 Return BCR4BP P4 distance from B1 [ndim]
 
 # Arguments
-- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 """
-function get4Distance(dynamicsModel::BCR4BP12DynamicsModel)
+function get4Distance(dynamicsModel::BCR4BP41DynamicsModel)
     return get4Distance(dynamicsModel.systemData)
 end
 
@@ -381,10 +381,22 @@ end
 Return BCR4BP P4 mass [ndim]
 
 # Arguments
-- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 """
-function get4Mass(dynamicsModel::BCR4BP12DynamicsModel)
+function get4Mass(dynamicsModel::BCR4BP41DynamicsModel)
     return get4Mass(dynamicsModel.systemData)
+end
+
+"""
+    get41MassRatio(dynamicsModel)
+
+Return BCR4BP P4-B1 system mass ratio
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+"""
+function get41MassRatio(dynamicsModel::BCR4BP41DynamicsModel)
+    return get41MassRatio(dynamicsModel.systemData)
 end
 
 # """
@@ -426,32 +438,32 @@ end
 # end
 
 """
-    rotating122Rotating41(dynamicsModel, states12, times12)
+    rotating412Rotating12(dynamicsModel, states41, times41)
 
-Return BCR4BP P4-B1 rotating frame states and times [ndim]
+Return BCR4BP P1-P2 rotating frame states and times [ndim]
 
 # Arguments
-- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
-- `states12::Vector{Vector{Float64}}`: BCR4BP P1-P2 rotating frame states [ndim]
-- `times12::Vector{Float64}`: BCR4BP P1-P2 rotating frame times [ndim]
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `states41::Vector{Vector{Float64}}`: BCR4BP P4-B1 rotating frame states [ndim]
+- `times41::Vector{Float64}`: BCR4BP P4-B1 rotating frame times [ndim]
 """
-function rotating122Rotating41(dynamicsModel::BCR4BP12DynamicsModel, states12::Vector{Vector{Float64}}, times12::Vector{Float64})
-    numTimes::Int16 = Int16(length(times12))
-    m4::Float64 = get4Mass(dynamicsModel.systemData)
-    a4::Float64 = get4Distance(dynamicsModel.systemData)
-    theta4dot::Float64 = sqrt((m4+1)/(a4^3))-1
-    states41::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
-    for t::Int16 = Int16(1):numTimes
-        state::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states12[t])
-        theta4::Float64 = state[7]
-        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-cos(theta4) -sin(theta4) 0; sin(theta4) -cos(theta4) 0; 0 0 1])
-        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}(theta4dot.*[sin(theta4) -cos(theta4) 0; cos(theta4) sin(theta4) 0; 0 0 0])
-        states41[t] = [(1/a4).*C zeros(Float64, 3, 4); sqrt(a4/(m4+1)).*Cdot sqrt(a4/(m4+1)).*C zeros(Float64, 3, 1); zeros(Float64, 1, 6) -1]*state+append!([1-get41MassRatio(dynamicsModel.systemData)], zeros(Float64, 5), [pi])
-    end
-    times41::Vector{Float64} = (get12CharTime(dynamicsModel.systemData)/get41CharTime(dynamicsModel.systemData)).*times12
+# function rotating412Rotating12(dynamicsModel::BCR4BP41DynamicsModel, states41::Vector{Vector{Float64}}, times41::Vector{Float64})
+#     numTimes::Int16 = Int16(length(times12))
+#     m4::Float64 = get4Mass(dynamicsModel.systemData)
+#     a4::Float64 = get4Distance(dynamicsModel.systemData)
+#     theta4dot::Float64 = sqrt((m4+1)/(a4^3))-1
+#     states41::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+#     for t::Int16 = Int16(1):numTimes
+#         state::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states12[t])
+#         theta4::Float64 = state[7]
+#         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-cos(theta4) -sin(theta4) 0; sin(theta4) -cos(theta4) 0; 0 0 1])
+#         Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}(theta4dot.*[sin(theta4) -cos(theta4) 0; cos(theta4) sin(theta4) 0; 0 0 0])
+#         states41[t] = [(1/a4).*C zeros(Float64, 3, 4); sqrt(a4/(m4+1)).*Cdot sqrt(a4/(m4+1)).*C zeros(Float64, 3, 1); zeros(Float64, 1, 6) -1]*state+append!([1-get41MassRatio(dynamicsModel.systemData)], zeros(Float64, 5), [pi])
+#     end
+#     times41::Vector{Float64} = (get12CharTime(dynamicsModel.systemData)/get41CharTime(dynamicsModel.systemData)).*times12
 
-    return (states41, times41)
-end
+#     return (states41, times41)
+# end
 
 # """
 #     rotating2PrimaryEclipJ2000(dynamicsModel, initialEpoch, states, times)

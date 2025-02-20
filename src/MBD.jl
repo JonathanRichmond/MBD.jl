@@ -1113,6 +1113,71 @@ mutable struct BCR4BP12Arc
 end
 Base.:(==)(arc1::BCR4BP12Arc, arc2::BCR4BP12Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
 
+"""
+    BCR4BP41DynamicsModel(systemData)
+
+BCR4BP P4-B1 dynamics model object
+
+# Arguments
+- `systemData::BCR4BPSystemData`: BCR4BP system data object
+"""
+struct BCR4BP41DynamicsModel
+    systemData::BCR4BPSystemData                                        # BCR4BP system data object
+
+    function BCR4BP41DynamicsModel(systemData::BCR4BPSystemData)
+        this = new(systemData)
+
+        return this
+    end
+end
+Base.:(==)(dynamicsModel1::BCR4BP41DynamicsModel, dynamicsModel2::BCR4BP41DynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
+
+"""
+    BCR4BP41EquationsOfMotion(equationType, dynamicsModel)
+
+BCR4BP P4-B1 EOM object
+
+# Arguments
+- `equationType::EquationType`: EOM type
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+"""
+struct BCR4BP41EquationsOfMotion
+    dynamicsModel::BCR4BP41DynamicsModel                                # BCR4BP P4-B1 dynamics model object
+    equationType::EquationType                                          # EOM type
+    
+    function BCR4BP41EquationsOfMotion(equationType::EquationType, dynamicsModel::BCR4BP41DynamicsModel)
+        this = new(dynamicsModel, equationType)
+
+        return this
+    end
+end
+Base.:(==)(EOMs1::BCR4BP41EquationsOfMotion, EOMs2::BCR4BP41EquationsOfMotion) = ((EOMs1.dynamicsModel == EOMs2.dynamicsModel) && (EOMs1.equationType == EOMs2.equationType))
+
+"""
+    BCR4BP41Arc(dynamicsModel)
+
+BCR4BP P4-B1 arc object
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+"""
+mutable struct BCR4BP41Arc
+    dynamicsModel::BCR4BP41DynamicsModel                                # BCR4BP P4-B1 dynamics model object
+    states::Vector{Vector{Float64}}                                     # State vectors along arc [ndim]
+    times::Vector{Float64}                                              # Times along arc [ndim]
+
+    function BCR4BP41Arc(dynamicsModel::BCR4BP41DynamicsModel)
+        this = new()
+
+        this.dynamicsModel = dynamicsModel
+        this.states = []
+        this.times = []
+
+        return this
+    end
+end
+Base.:(==)(arc1::BCR4BP41Arc, arc2::BCR4BP41Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
+
 # """
 #     TBPSystemData(p)
 
@@ -1214,8 +1279,11 @@ Base.:(==)(arc1::BCR4BP12Arc, arc2::BCR4BP12Arc) = ((arc1.dynamicsModel == arc2.
 
 # include("bifurcation/Bifurcation.jl")
 include("BCR4BP/Arc12.jl")
+include("BCR4BP/Arc41.jl")
 include("BCR4BP/DynamicsModel12.jl")
+include("BCR4BP/DynamicsModel41.jl")
 include("BCR4BP/EquationsOfMotion12.jl")
+include("BCR4BP/EquationsOfMotion41.jl")
 include("BCR4BP/SystemData.jl")
 include("continuation/AdaptiveStepSizeByElementGenerator.jl")
 include("continuation/BoundingBoxContinuationEndCheck.jl")
