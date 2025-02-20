@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 2/19/25
+U: 2/20/25
 """
 
 import DifferentialEquations

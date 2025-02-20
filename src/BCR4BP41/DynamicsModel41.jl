@@ -9,7 +9,7 @@ import StaticArrays
 import MBD: BCR4BP41DynamicsModel
 
 export getEquationsOfMotion, getStateSize, get12MassRatio, get4Distance, get4Mass, get41MassRatio
-# export rotating412Rotating12
+export rotating412Rotating12
 
 # """
 #     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -447,23 +447,23 @@ Return BCR4BP P1-P2 rotating frame states and times [ndim]
 - `states41::Vector{Vector{Float64}}`: BCR4BP P4-B1 rotating frame states [ndim]
 - `times41::Vector{Float64}`: BCR4BP P4-B1 rotating frame times [ndim]
 """
-# function rotating412Rotating12(dynamicsModel::BCR4BP41DynamicsModel, states41::Vector{Vector{Float64}}, times41::Vector{Float64})
-#     numTimes::Int16 = Int16(length(times12))
-#     m4::Float64 = get4Mass(dynamicsModel.systemData)
-#     a4::Float64 = get4Distance(dynamicsModel.systemData)
-#     theta4dot::Float64 = sqrt((m4+1)/(a4^3))-1
-#     states41::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
-#     for t::Int16 = Int16(1):numTimes
-#         state::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states12[t])
-#         theta4::Float64 = state[7]
-#         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-cos(theta4) -sin(theta4) 0; sin(theta4) -cos(theta4) 0; 0 0 1])
-#         Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}(theta4dot.*[sin(theta4) -cos(theta4) 0; cos(theta4) sin(theta4) 0; 0 0 0])
-#         states41[t] = [(1/a4).*C zeros(Float64, 3, 4); sqrt(a4/(m4+1)).*Cdot sqrt(a4/(m4+1)).*C zeros(Float64, 3, 1); zeros(Float64, 1, 6) -1]*state+append!([1-get41MassRatio(dynamicsModel.systemData)], zeros(Float64, 5), [pi])
-#     end
-#     times41::Vector{Float64} = (get12CharTime(dynamicsModel.systemData)/get41CharTime(dynamicsModel.systemData)).*times12
+function rotating412Rotating12(dynamicsModel::BCR4BP41DynamicsModel, states41::Vector{Vector{Float64}}, times41::Vector{Float64})
+    numTimes::Int16 = Int16(length(times41))
+    m4::Float64 = get4Mass(dynamicsModel.systemData)
+    a4::Float64 = get4Distance(dynamicsModel.systemData)
+    theta2dot::Float64 = sqrt((a4^3)/(m4+1))-1
+    states12::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for t::Int16 = Int16(1):numTimes
+        state::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states41[t])
+        theta2::Float64 = state[7]
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(theta2) sin(theta2) 0; -sin(theta2) cos(theta2) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}(theta2dot.*[-sin(theta2) cos(theta2) 0; -cos(theta2) -sin(theta2) 0; 0 0 0])
+        states12[t] = [a4.*C zeros(Float64, 3, 4); sqrt((m4+1)/a4).*Cdot sqrt((m4+1)/a4).*C zeros(Float64, 3, 1); zeros(Float64, 1, 6) -1]*(state+append!([-1+get41MassRatio(dynamicsModel.systemData)], zeros(Float64, 6)))+append!(zeros(Float64, 6), [pi])
+    end
+    times12::Vector{Float64} = (get41CharTime(dynamicsModel.systemData)/get12CharTime(dynamicsModel.systemData)).*times41
 
-#     return (states41, times41)
-# end
+    return (states12, times12)
+end
 
 # """
 #     rotating2PrimaryEclipJ2000(dynamicsModel, initialEpoch, states, times)
