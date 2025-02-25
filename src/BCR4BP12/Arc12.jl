@@ -25,18 +25,6 @@ function deleteStateAndTime!(arc::BCR4BP12Arc, index::Int64)
     deleteat!(arc.times, newIndex)
 end
 
-# """
-#     getMassRatio(arc)
-
-# Return CR3BP system mass ratio
-
-# # Arguments
-# - `arc::CR3BPArc`: CR3BP arc object
-# """
-# function getMassRatio(arc::CR3BPArc)
-#     return getMassRatio(arc.dynamicsModel)
-# end
-
 """
     getStateByIndex(arc, index)
 
