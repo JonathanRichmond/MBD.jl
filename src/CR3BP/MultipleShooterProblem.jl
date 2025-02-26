@@ -135,7 +135,7 @@ Return true if Jacobian is accurate
 - `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 """
 function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
-    stepSize::Float64 = 1E-8
+    stepSize::Float64 = sqrt(eps(Float64))
     relTol::Float64 = 2E-3
     problem::CR3BPMultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
@@ -170,7 +170,7 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
         for c::Int16 in Int16(1):Int16(numFreeVariables)
             (abs(jacobianNumerical[r,c]) > 1E-12) && (relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c])
             if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c]))"))
+                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint: $(typeof(reverseConstraintIndexMaP[r])), Free Variable: $(typeof(reverseFreeVariableIndexMap[c]))"))
                 return false
             end
         end
