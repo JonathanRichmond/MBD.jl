@@ -136,7 +136,7 @@ Return true if Jacobian is accurate
 """
 function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
     stepSize::Float64 = sqrt(eps(Float64))
-    relTol::Float64 = 0.1
+    relTol::Float64 = 2E-3
     problem::CR3BPMultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
     numFreeVariables::Int64 = getNumFreeVariables!(problem)
@@ -169,7 +169,7 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
         for c::Int16 in Int16(1):Int16(numFreeVariables)
             (abs(jacobianNumerical[r,c]) > 1E-12) && (relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c])
             if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint: $(typeof(reverseConstraintIndexMap[r])), Free Variable: $(reverseFreeVariableIndexMap[c])"))
+                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint (sub-index: $(r-problem.constraintIndexMap[reverseConstraintIndexMap[r]]+1)) = $(typeof(reverseConstraintIndexMap[r])), Free Variable (sub-index: c-freeVariableIndexMap[reverseFreeVariableIndexMap[c]]+1) = $(reverseFreeVariableIndexMap[c].name)"))
                 return false
             end
         end
