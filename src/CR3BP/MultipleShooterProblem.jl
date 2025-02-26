@@ -164,6 +164,7 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
         numEntries::Int16 = Int16(getNumConstraintRows(index))
         [reverseConstraintIndexMap[value+i] = index for i in 1:numEntries]
     end
+    println(collect(keys(reverseConstraintIndexMap)))
     absDiff::StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64}(jacobianNumerical-jacobianAnalytical)
     relDiff::StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64}(copy(absDiff))
     for r::Int16 in Int16(1):Int16(numConstraints)
