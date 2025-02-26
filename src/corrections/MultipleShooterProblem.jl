@@ -140,7 +140,7 @@ Return true if Jacobian is accurate
 - `multipleShooterProblem::MultipleShooterProblem`: Multiple shooter problem object
 """
 function checkJacobian(multipleShooterProblem::MultipleShooterProblem)
-    stepSize::Float64 = 1E-8
+    stepSize::Float64 = sqrt(eps(Float64))
     relTol::Float64 = 2E-3
     problem::MultipleShooterProblem = shallowClone(multipleShooterProblem)
     jacobianNumerical::Matrix{Float64} = zeros(Float64, (getNumberConstraints(problem), getNumberFreeVariables(problem)))
