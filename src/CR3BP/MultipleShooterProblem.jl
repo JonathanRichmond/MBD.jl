@@ -163,14 +163,13 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
         numEntries::Int16 = Int16(getNumConstraintRows(index))
         [reverseConstraintIndexMap[value+i-1] = index for i in 1:numEntries]
     end
-    println(collect(keys(reverseConstraintIndexMap)))
     absDiff::StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64}(jacobianNumerical-jacobianAnalytical)
     relDiff::StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64}(copy(absDiff))
     for r::Int16 in Int16(1):Int16(numConstraints)
         for c::Int16 in Int16(1):Int16(numFreeVariables)
             (abs(jacobianNumerical[r,c]) > 1E-12) && (relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c])
             if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint: $(typeof(reverseConstraintIndexMap[r])), Free Variable: $(typeof(reverseFreeVariableIndexMap[c]))"))
+                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint: $(typeof(reverseConstraintIndexMap[r])), Free Variable: $(reverseFreeVariableIndexMap[c])"))
                 return false
             end
         end
