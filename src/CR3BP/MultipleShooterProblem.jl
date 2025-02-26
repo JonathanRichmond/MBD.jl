@@ -170,7 +170,7 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
         for c::Int16 in Int16(1):Int16(numFreeVariables)
             (abs(jacobianNumerical[r,c]) > 1E-12) && (relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c])
             if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint: $(typeof(reverseConstraintIndexMaP[r])), Free Variable: $(typeof(reverseFreeVariableIndexMap[c]))"))
+                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint: $(typeof(reverseConstraintIndexMap[r])), Free Variable: $(typeof(reverseFreeVariableIndexMap[c]))"))
                 return false
             end
         end
