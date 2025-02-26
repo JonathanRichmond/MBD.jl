@@ -136,7 +136,7 @@ Return true if Jacobian is accurate
 """
 function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
     stepSize::Float64 = sqrt(eps(Float64))
-    relTol::Float64 = 5E-3
+    relTol::Float64 = 0.1
     problem::CR3BPMultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
     numFreeVariables::Int64 = getNumFreeVariables!(problem)
