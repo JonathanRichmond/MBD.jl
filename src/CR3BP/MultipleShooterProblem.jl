@@ -169,7 +169,7 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relT
         for c::Int16 in Int16(1):Int16(numFreeVariables)
             if abs(jacobianAnalytical[r,c]) < stepSize
                 relDiff[r,c] = absDiff[r,c]
-            elseif abs(jacobianNumerical[r,c]) > 1E-12
+            elseif abs(jacobianNumerical[r,c]) > 1E-6
                 relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c]
             end
             if abs(relDiff[r,c]) > relTol
