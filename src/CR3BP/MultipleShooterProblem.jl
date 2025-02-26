@@ -152,17 +152,16 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem)
         constraintVectorPlus::StaticArrays.SVector{numConstraints, Float64} = StaticArrays.SVector{numConstraints, Float64}(copy(getConstraintVector!(problem)))
         jacobianNumerical[:,varIndex] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
     end
-    constraintIndexMap::Dict{MBD.AbstractConstraint, Int16} = problem.constraintIndexMap
     freeVariableIndexMap::Dict{MBD.Variable, Int16} = getFreeVariableIndexMap!(problem)
     reverseConstraintIndexMap::Dict{Int16, MBD.AbstractConstraint} = Dict{Int16, MBD.AbstractConstraint}()
     reverseFreeVariableIndexMap::Dict{Int16, MBD.Variable} = Dict{Int16, MBD.Variable}()
     for (index::MBD.Variable, value::Int16) in freeVariableIndexMap
         numEntries::Int16 = Int16(getNumFreeVariables(index))
-        [reverseFreeVariableIndexMap[value+i] = index for i in 1:numEntries]
+        [reverseFreeVariableIndexMap[value+i-1] = index for i in 1:numEntries]
     end
-    for (index::MBD.AbstractConstraint, value::Int16) in constraintIndexMap
+    for (index::MBD.AbstractConstraint, value::Int16) in problem.constraintIndexMap
         numEntries::Int16 = Int16(getNumConstraintRows(index))
-        [reverseConstraintIndexMap[value+i] = index for i in 1:numEntries]
+        [reverseConstraintIndexMap[value+i-1] = index for i in 1:numEntries]
     end
     println(collect(keys(reverseConstraintIndexMap)))
     absDiff::StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64}(jacobianNumerical-jacobianAnalytical)
