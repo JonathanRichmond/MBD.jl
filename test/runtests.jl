@@ -891,7 +891,7 @@ end
         addSegment!(problem, segments[s])
     end
     map(s -> addConstraint!(problem, MBD.CR3BPContinuityConstraint(s)), segments)
-    addConstraint!(problem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 4, 5, 6]))
+    addConstraint!(problem, MBD.StateMatchConstraint(nodes[1].state, nodes[end].state, [1, 2, 3, 5, 6]))
     addConstraint!(problem, MBD.JacobiConstraint(nodes[1], 3.04))
     @test checkJacobian(problem)
     multipleShooter = MBD.CR3BPMultipleShooter()
