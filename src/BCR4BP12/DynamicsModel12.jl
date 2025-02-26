@@ -2,41 +2,41 @@
 BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
-C: 2/19/25
+C: 2/26/25
 """
 
 import StaticArrays
 import MBD: BCR4BP12DynamicsModel
 
-export getEquationsOfMotion, getStateSize, get12MassRatio, get4Distance, get4Mass
-export rotating122Rotating41
+export appendExtraInitialConditions, getEquationsOfMotion, getStateSize, get12MassRatio
+export get4Distance, get4Mass, rotating122Rotating41
 
-# """
-#     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
+"""
+    appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
 
-# Return state vector with extra initial conditions
+Return state vector with extra initial conditions
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `q0_simple::Vector{Float64}`: Simple initial state vector [ndim]
-# - `outputEquationType::EquationType`: Output state EOM type
-# """
-# function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::MBD.EquationType)
-#     n_in::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
-#     (Int16(length(q0_simple)) == n_in) || throw(ArgumentError("State vector length is $(length(q0_simple)), but should be $n_in"))
-#     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
-#     n_STM::Int16 = getStateSize(dynamicsModel, MBD.STM)
-#     n_out::Int16 = getStateSize(dynamicsModel, outputEquationType)
-#     q0_out::Vector{Float64} = zeros(Float64, n_out)
-#     if n_in >= n_out
-#         q0_out = q0_simple[1:n_out]
-#     else
-#         q0_out[1:n_in] = q0_simple
-#         [q0_out[i] = 1 for i in n_simple+1:n_simple+1:n_STM]
-#     end
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `q0_simple::Vector{Float64}`: Simple initial state vector [ndim]
+- `outputEquationType::EquationType`: Output state EOM type
+"""
+function appendExtraInitialConditions(dynamicsModel::BCR4BP12DynamicsModel, q0_simple::Vector{Float64}, outputEquationType::MBD.EquationType)
+    n_in::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    (Int16(length(q0_simple)) == n_in) || throw(ArgumentError("State vector length is $(length(q0_simple)), but should be $n_in"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    n_STM::Int16 = getStateSize(dynamicsModel, MBD.STM)
+    n_out::Int16 = getStateSize(dynamicsModel, outputEquationType)
+    q0_out::Vector{Float64} = zeros(Float64, n_out)
+    if n_in >= n_out
+        q0_out = q0_simple[1:n_out]
+    else
+        q0_out[1:n_in] = q0_simple
+        [q0_out[i] = 1 for i in n_simple+1:n_simple+1:n_STM]
+    end
 
-#     return q0_out
-# end
+    return q0_out
+end
 
 # """
 #     evaluateEquations(dynamicsModel, equationType, t, q)
@@ -302,7 +302,7 @@ Return number of state variables
 - `equationType::EquationType`: EOM type
 """
 function getStateSize(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType)
-    type = Dict(MBD.SIMPLE => Int16(7))#, MBD.STM => Int16(42), MBD.FULL => Int16(42), MBD.ARCLENGTH => Int16(43), MBD.MOMENTUM => Int16(43))
+    type = Dict(MBD.SIMPLE => Int16(7), MBD.STM => Int16(56), MBD.FULL => Int16(56), MBD.ARCLENGTH => Int16(57), MBD.MOMENTUM => Int16(57))
 
     return type[equationType]
 end
