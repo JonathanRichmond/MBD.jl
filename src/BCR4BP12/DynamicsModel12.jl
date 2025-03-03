@@ -78,7 +78,7 @@ function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 1E-5)
                 relDiff[r,c] = absDiff[r,c]/STMNumerical[r,c]
             end
             if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c]))"))
+                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(STMNumerical[r,c]); Actual = $(STMAnalytical[r,c]) (Relative error = $(relDiff[r,c]))"))
                 return false
             end
         end
