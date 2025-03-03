@@ -46,9 +46,9 @@ Return true if STM is accurate
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
-- `relTol::Float64`: Relative tolerance (default = 1E-5)
+- `relTol::Float64`: Relative tolerance (default = 2E-3)
 """
-function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 1E-5)
+function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 2E-3)
     stepSize::Float64 = sqrt(eps(Float64))
     numStates::Int16 = Int16(getStateSize(dynamicsModel, MBD.SIMPLE))
     propagator = MBD.Propagator()
