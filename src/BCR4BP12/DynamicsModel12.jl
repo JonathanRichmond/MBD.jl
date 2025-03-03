@@ -50,7 +50,7 @@ Return true if STM is accurate
 """
 function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 1E-5)
     stepSize::Float64 = sqrt(eps(Float64))
-    numStates::Int16 = Int16(getStateSize(dynamicsModel))
+    numStates::Int16 = Int16(getStateSize(dynamicsModel, MBD.SIMPLE))
     propagator = MBD.Propagator()
     propagatorSTM = MBD.Propagator(equationType = MBD.STM)
     X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0, 0]
