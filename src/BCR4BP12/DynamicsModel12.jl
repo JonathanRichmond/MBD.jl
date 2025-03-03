@@ -56,7 +56,7 @@ function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 2E-3)
     X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0, 0]
     tau::Float64 = 0.1
     arc::MBD.BCR4BP12Arc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
-    STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(reshape(getStateByIndex(arc, -1)[(numStates+1):(numStates+numStates^2)], (7,7)))
+    STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(reshape(getStateByIndex(arc, -1)[(numStates+1):(numStates+numStates^2)], (numStates,numStates)))
     STMNumerical::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(zeros(Float64, (numStates, numStates)))
     for index::Int16 in Int16(1):numStates
         perturbedFreeVariables::Vector{Float64} = copy(X)

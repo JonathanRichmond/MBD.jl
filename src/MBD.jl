@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 2/19/25
+U: 3/3/25
 """
 module MBD
 
@@ -168,6 +168,8 @@ struct CR3BPDynamicsModel
 
     function CR3BPDynamicsModel(systemData::CR3BPSystemData)
         this = new(systemData)
+
+        checkSTM(this)
 
         return this
     end
@@ -1126,6 +1128,8 @@ struct BCR4BP41DynamicsModel
 
     function BCR4BP41DynamicsModel(systemData::BCR4BPSystemData)
         this = new(systemData)
+
+        checkSTM(this)
 
         return this
     end
