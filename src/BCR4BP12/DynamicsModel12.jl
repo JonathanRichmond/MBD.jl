@@ -3,12 +3,13 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
+U: 3/3/25
 """
 
 import StaticArrays
 import MBD: BCR4BP12DynamicsModel
 
-export appendExtraInitialConditions, getEquationsOfMotion, getStateSize, get12MassRatio
+export appendExtraInitialConditions, checkSTM, getEquationsOfMotion, getStateSize, get12MassRatio
 export get4Distance, get4Mass, rotating122Rotating41
 
 """
@@ -36,6 +37,54 @@ function appendExtraInitialConditions(dynamicsModel::BCR4BP12DynamicsModel, q0_s
     end
 
     return q0_out
+end
+
+"""
+    checkSTM(dynamicsModel; relTol)
+
+Return true if STM is accurate
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `relTol::Float64`: Relative tolerance (default = 1E-5)
+"""
+function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 1E-5)
+    stepSize::Float64 = sqrt(eps(Float64))
+    numStates::Int16 = Int16(getStateSize(dynamicsModel))
+    propagator = MBD.Propagator()
+    propagatorSTM = MBD.Propagator(equationType = MBD.STM)
+    X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0, 0]
+    tau::Float64 = 0.1
+    arc::MBD.BCR4BP12Arc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
+    STMAnalytical::StaticArrays.SMatrix{numStates, numStates, Float64} = StaticArrays.SMatrix{numStates, numStates, Float64}(reshape(getStateByIndex(arc, -1)[(numStates+1):(numStates+numStates^2)], (7,7)))
+    STMNumerical::StaticArrays.MMatrix{numStates, numStates, Float64} = StaticArrays.MMatrix{numStates, numStates, Float64}(zeros(Float64, (numStates, numStates)))
+    for index::Int16 in Int16(1):numStates
+        perturbedFreeVariables::Vector{Float64} = copy(X)
+        perturbedFreeVariables[varIndex] -= stepSize
+        arcMinus::MBD.BCR4BP12Arc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
+        constraintVectorMinus::StaticArrays.SVector{numStates, Float64} = StaticArrays.SVector{numStates, Float64}(getStateByIndex(arcMinus, -1))
+        perturbedFreeVariables[varIndex] += 2*stepSize
+        arcPlus::MBD.BCR4BP12Arc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
+        constraintVectorPlus::StaticArrays.SVector{numStates, Float64} = StaticArrays.SVector{numStates, Float64}(getStateByIndex(arcPlus, -1))
+        STMNumerical[:,index] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
+    end
+    absDiff::StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64}(STMNumerical-STMAnalytical)
+    relDiff::StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64}(copy(absDiff))
+    for r::Int16 in Int16(1):numStates
+        for c::Int16 in Int16(1):numStates
+            if abs(STMAnalytical[r,c]) < stepSize*1E3
+                relDiff[r,c] = absDiff[r,c]
+            elseif abs(STMNumerical[r,c]) > 1E-11
+                relDiff[r,c] = absDiff[r,c]/STMNumerical[r,c]
+            end
+            if abs(relDiff[r,c]) > relTol
+                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c]))"))
+                return false
+            end
+        end
+    end
+
+    return true
 end
 
 # """
