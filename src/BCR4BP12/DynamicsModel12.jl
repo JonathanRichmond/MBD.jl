@@ -60,10 +60,10 @@ function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 1E-5)
     STMNumerical::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(zeros(Float64, (numStates, numStates)))
     for index::Int16 in Int16(1):numStates
         perturbedFreeVariables::Vector{Float64} = copy(X)
-        perturbedFreeVariables[varIndex] -= stepSize
+        perturbedFreeVariables[index] -= stepSize
         arcMinus::MBD.BCR4BP12Arc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
         constraintVectorMinus::StaticArrays.SVector{Int64(numStates), Float64} = StaticArrays.SVector{Int64(numStates), Float64}(getStateByIndex(arcMinus, -1))
-        perturbedFreeVariables[varIndex] += 2*stepSize
+        perturbedFreeVariables[index] += 2*stepSize
         arcPlus::MBD.BCR4BP12Arc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
         constraintVectorPlus::StaticArrays.SVector{Int64(numStates), Float64} = StaticArrays.SVector{Int64(numStates), Float64}(getStateByIndex(arcPlus, -1))
         STMNumerical[:,index] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
