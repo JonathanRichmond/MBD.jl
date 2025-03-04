@@ -3,7 +3,7 @@ CR3BP multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 2/26/25
+U: 3/4/25
 """
 
 import StaticArrays
