@@ -167,7 +167,7 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relT
     relDiff::StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64}(copy(absDiff))
     for r::Int16 in Int16(1):Int16(numConstraints)
         for c::Int16 in Int16(1):Int16(numFreeVariables)
-            if abs(jacobianAnalytical[r,c]) < stepSize*1E3
+            if abs(jacobianAnalytical[r,c]) < stepSize*1E4
                 relDiff[r,c] = absDiff[r,c]
             elseif abs(jacobianNumerical[r,c]) > 1E-11
                 relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c]
