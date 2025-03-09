@@ -103,7 +103,7 @@ Return time derivative of state vector
 """
 function evaluateEquations(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType, t::Float64, q::Vector{Float64})
     qdot::Vector{Float64} = Vector{Float64}(undef, getStateSize(dynamicsModel, equationType))
-    EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType)
+    EOMs::MBD.BCR4BP12EquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType)
     computeDerivatives!(qdot, q, (EOMs,), t)
 
     return qdot
