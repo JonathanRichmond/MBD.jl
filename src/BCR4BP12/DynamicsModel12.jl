@@ -118,7 +118,7 @@ Return derivative of state with respect to epoch
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 - `q_full::Vector{Float64}`: Full state vector [ndim]
 """
-function getEpochDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
+function getEpochDependencies(dynamicsModel::BCR4BP12DynamicsModel, q_full::Vector{Float64})
     n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
     (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
