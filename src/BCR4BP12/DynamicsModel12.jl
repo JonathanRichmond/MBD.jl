@@ -3,14 +3,17 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 3/3/25
+U: 3/6/25
 """
 
 import StaticArrays
 import MBD: BCR4BP12DynamicsModel
 
-export appendExtraInitialConditions, checkSTM, getEquationsOfMotion, getStateSize, get12MassRatio
-export get4Distance, get4Mass, rotating122Rotating41
+export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
+export getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
+export getPrimaryPosition, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
+export get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance, get4Mass
+export isEpochIndependent, rotating122Rotating41
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -50,13 +53,13 @@ Return true if STM is accurate
 """
 function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 2E-3)
     stepSize::Float64 = sqrt(eps(Float64))
-    numStates::Int16 = Int16(getStateSize(dynamicsModel, MBD.SIMPLE))
+    numStates::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
     propagator = MBD.Propagator()
     propagatorSTM = MBD.Propagator(equationType = MBD.STM)
     X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0, 0]
     tau::Float64 = 0.1
     arc::MBD.BCR4BP12Arc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
-    STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(reshape(getStateByIndex(arc, -1)[(numStates+1):(numStates+numStates^2)], (numStates,numStates)))
+    STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(getStateTransitionMatrix(dynamicsModel, getStateByIndex(arc, -1)))
     STMNumerical::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(zeros(Float64, (numStates, numStates)))
     for index::Int16 in Int16(1):numStates
         perturbedFreeVariables::Vector{Float64} = copy(X)
@@ -87,87 +90,41 @@ function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 2E-3)
     return true
 end
 
-# """
-#     evaluateEquations(dynamicsModel, equationType, t, q)
+"""
+    evaluateEquations(dynamicsModel, equationType, t, q)
 
-# Return time derivative of state vector
+Return time derivative of state vector
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `equationType::EquationType`: EOM type
-# - `t::Float64`: Time [ndim]
-# - `q::Vector{Float64}`: State vector [ndim]
-# """
-# function evaluateEquations(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.EquationType, t::Float64, q::Vector{Float64})
-#     qdot::Vector{Float64} = Vector{Float64}(undef, getStateSize(dynamicsModel, equationType))
-#     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType)
-#     computeDerivatives!(qdot, q, (EOMs,), t)
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `equationType::EquationType`: EOM type
+- `t::Float64`: Time [ndim]
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function evaluateEquations(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.EquationType, t::Float64, q::Vector{Float64})
+    qdot::Vector{Float64} = Vector{Float64}(undef, getStateSize(dynamicsModel, equationType))
+    EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, equationType)
+    computeDerivatives!(qdot, q, (EOMs,), t)
 
-#     return qdot
-# end
+    return qdot
+end
 
-# """
-#     get2BApproximation(dynamicsModel, bodyData, primary, radius)
+"""
+    getEpochDependencies(dynamicsModel, q)
 
-# Return states of 2BP approximation about primary
+Return derivative of state with respect to epoch
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `bodyData::BodyData`: Body data object
-# - `primary::Int64`: Primary identifier
-# - `radius::Float64`: Circular radius [ndim]
-# """
-# function get2BApproximation(dynamicsModel::CR3BPDynamicsModel, bodyData::MBD.BodyData, primary::Int64, radius::Float64)
-#     lstar::Float64 = getCharLength(dynamicsModel)
-#     tstar::Float64 = getCharTime(dynamicsModel)
-#     radius_dim::Float64 = radius*lstar
-#     circularVelocity_dim::Float64 = sqrt(bodyData.gravParam/radius_dim)
-#     v::Float64 = circularVelocity_dim*tstar/lstar
-#     q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `q_full::Vector{Float64}`: Full state vector [ndim]
+"""
+function getEpochDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
+    n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
+    (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
-#     return primaryInertial2Rotating(dynamicsModel, primary, [q_primaryInertial], [0.0])[1]
-# end
-
-# """
-#     getCharLength(dynamicsModel)
-
-# Return CR3BP characteristic length
-
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# """
-# function getCharLength(dynamicsModel::CR3BPDynamicsModel)
-#     return getCharLength(dynamicsModel.systemData)
-# end
-
-# """
-#     getCharTime(dynamicsModel)
-
-# Return CR3BP characteristic time
-
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# """
-# function getCharTime(dynamicsModel::CR3BPDynamicsModel)
-#     return getCharTime(dynamicsModel.systemData)
-# end
-
-# """
-#     getEpochDependencies(dynamicsModel, q)
-
-# Return derivative of state with respect to epoch
-
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `q_full::Vector{Float64}`: Full state vector [ndim]
-# """
-# function getEpochDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
-#     n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
-#     (Int64(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
-#     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
-
-#     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
-# end
+    isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple^2+1:n_simple^2+n_simple])
+end
 
 """
     getEquationsOfMotion(dynamicsModel, equationType)
@@ -232,114 +189,134 @@ end
 #     (count >= maxCount) ? throw(ErrorException("Could not converge on equilibrium pointlocation")) : (return pos)
 # end
 
-# """
-#     getExcursion(dynamicsModel, primary, q)
+"""
+    getExcursion(dynamicsModel, primary, q)
 
-# Return distance from primary
+Return distance from primary
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `primary::Int64`: Primary identifier
-# - `q::Vector{Float64}`: State vector [ndim]
-# """
-# function getExcursion(dynamicsModel::CR3BPDynamicsModel, primary::Int64, q::Vector{Float64})
-#     lstar::Float64 = getCharLength(dynamicsModel)
-#     primaryPos::Vector{Float64} = getPrimaryPosition(dynamicsModel, primary)
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `primary::Int64`: Primary identifier
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function getExcursion(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, q::Vector{Float64})
+    lstar12::Float64 = get12CharLength(dynamicsModel)
+    primaryPos::Vector{Float64} = getPrimaryPosition(dynamicsModel, primary)
 
-#     return LinearAlgebra.norm(q[1:3]-primaryPos)*lstar
-# end
+    return LinearAlgebra.norm(q[1:3]-primaryPos)*lstar12
+end
 
-# """
-#     getJacobiConstant(dynamicsModel, q)
+"""
+    getHamiltonian(dynamicsModel, q)
 
-# Return CR3BP Jacobi constant
+Return BCR4BP P1-P2 Hamiltonian
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `q::Vector{Float64}`: State vector [ndim]
-# """
-# function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
-#     mu::Float64 = getMassRatio(dynamicsModel)
-#     v_2::Float64 = q[4]^2+q[5]^2+q[6]^2
-#     r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
-#     r_23::Float64 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
-#     U::Float64 = (1-mu)/r_13+mu/r_23+(1/2)*(q[1]^2+q[2]^2)
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function getHamiltonian(dynamicsModel::BCR4BP12DynamicsModel, q::Vector{Float64})
+    mu12::Float64 = get12MassRatio(dynamicsModel)
+    m4::Float64 = get4Mass(dynamicsModel)
+    a4::Float64 = get4Distance(dynamicsModel)
+    v_2::Float64 = q[4]^2+q[5]^2+q[6]^2
+    r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
+    r_23::Float64 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
+    r_43::Float64 = sqrt((q[1]-a4*cos(q[7]))^2+(q[2]-a4*sin(q[7]))^2+q[3]^2)
+    U::Float64 = (1-mu12)/r_13+mu12/r_23+m4/r_43-m4*(q[1]*cos(q[7])+q[2]*sin(q[7]))/a4^2+(1/2)*(q[1]^2+q[2]^2)
 
-#     return 2*U-v_2
-# end
+    return 2*U-v_2
+end
 
-# """
-#     getParameterDependencies(dynamicsModel, q_full)
+"""
+    getParameterDependencies(dynamicsModel, q_full)
 
-# Return derivative of state with respect to parameters
+Return derivative of state with respect to parameters
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `q_full::Vector{Float64}`: Full state vector [ndim]
-# """
-# function getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
-#     n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
-#     (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
-#     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
-#     i0::Int16 = n_simple*(n_simple+1+(isEpochIndependent(dynamicsModel) ? 0 : 1))
-#     n::Int16 = n_full-i0
-#     (n == Int16(0)) && (return zeros(Float64, (n_simple,0)))
-#     n_params::Int16 = n/n_simple
-#     dqdp::Matrix{Float64} = zeros(Float64, (n_simple,n_params))
-#     for r::Int16 in Int16(1):n_simple
-#         for c::Int16 in Int16(1):n_params
-#             dqdp[r,c] = q_full[i0+n_simple*(c-1)+r]
-#         end
-#     end
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `q_full::Vector{Float64}`: Full state vector [ndim]
+"""
+function getParameterDependencies(dynamicsModel::BCR4BP12DynamicsModel, q_full::Vector{Float64})
+    n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
+    (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    i0::Int16 = n_simple*(n_simple+1)
+    n::Int16 = n_full-i0
+    (n == Int16(0)) && (return zeros(Float64, (n_simple,0)))
+    n_params::Int16 = n/n_simple
+    dqdp::Matrix{Float64} = zeros(Float64, (n_simple,n_params))
+    for r::Int16 in Int16(1):n_simple
+        for c::Int16 in Int16(1):n_params
+            dqdp[r,c] = q_full[i0+n_simple*(c-1)+r]
+        end
+    end
 
-#     return dqdp
-# end
+    return dqdp
+end
 
-# """
-#     getPrimaryPosition(dynamicsModel, primary)
+"""
+    getPrimaryPosition(dynamicsModel, primary, theta4)
 
-# Return location of primary in rotating frame
+Return location of primary in rotating frame
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `primary::Int64`: Primary identifier
-# """
-# function getPrimaryPosition(dynamicsModel::CR3BPDynamicsModel, primary::Int64)
-#     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
-#     mu::Float64 = getMassRatio(dynamicsModel)
-#     pos::Vector{Float64} = zeros(Float64, 3)
-#     pos[1] = (primary == 1 ? -mu : (1-mu))
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `primary::Int64`: Primary identifier
+- `thea4::Float64`: P4 angle [ndim]
+"""
+function getPrimaryPosition(dynamicsModel::CR3BPDynamicsModel, primary::Int64, theta4::Float64)
+    (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
+    mu12::Float64 = get12MassRatio(dynamicsModel)
+    a4::Float64 = get4Distance(dynamicsModel)
+    pos::Vector{Float64} = zeros(Float64, 3)
+    if primary == 1
+        pos[1] = -mu12
+    elseif primary == 2
+        pos[1] = 1-mu12
+    elseif primary == 4
+        pos[1] = a4*cos(theta4)
+        pos[2] = a4*sin(theta4)
+    end
 
-#     return pos
-# end
+    return pos
+end
 
-# """
-#     getPsuedopotentialJacobian(dynamicsModel, r)
+"""
+    getPsuedopotentialJacobian(dynamicsModel, q)
 
-# Return second derivative of pseudopotential function at given location
+Return second derivative of pseudopotential function at given location and P4 angle
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `r::Vector{Float64}`: Position vector [ndim]
-# """
-# function getPseudopotentialJacobian(dynamicsModel::CR3BPDynamicsModel, r::Vector{Float64})
-#     mu::Float64 = getMassRatio(dynamicsModel)
-#     r_13::Float64 = sqrt((r[1]+mu)^2+r[2]^2+r[3]^2)
-#     r_23::Float64 = sqrt((r[1]-1+mu)^2+r[2]^2+r[3]^2)
-#     r_13_3::Float64 = r_13^3
-#     r_23_3::Float64 = r_23^3
-#     r_13_5::Float64 = r_13_3*r_13^2
-#     r_23_5::Float64 = r_23_3*r_23^2
-#     ddUdr::Vector{Float64} = zeros(Float64, 6)
-#     ddUdr[1] = 1-(1-mu)/r_13_3-mu/r_23_3+3*(1-mu)*(r[1]+mu)^2/r_13_5+3*mu*(r[1]+mu-1)^2/r_23_5
-#     ddUdr[2] = 1-(1-mu)/r_13_3-mu/r_23_3+3*(1-mu)*r[2]^2/r_13_5+3*mu*r[2]^2/r_23_5
-#     ddUdr[3] = -1*(1-mu)/r_13_3-mu/r_23_3+3*(1-mu)*r[3]^2/r_13_5+3*mu*r[3]^2/r_23_5
-#     ddUdr[4] = 3*(1-mu)*(r[1]+mu)*r[2]/r_13_5+3*mu*(r[1]+mu-1)*r[2]/r_23_5
-#     ddUdr[5] = 3*(1-mu)*(r[1]+mu)*r[3]/r_13_5+3*mu*(r[1]+mu-1)*r[3]/r_23_5
-#     ddUdr[6] = 3*(1-mu)*r[2]*r[3]/r_13_5+3*mu*r[2]*r[3]/r_23_5
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function getPseudopotentialJacobian(dynamicsModel::BCR4BP12DynamicsModel, q::Vector{Float64})
+    mu12::Float64 = get12MassRatio(dynamicsModel)
+    a4::Float64 = get4Distance(dynamicsModel)
+    m4::Float64 = get4Mass(dynamicsModel)
+    r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
+    r_23::Float64 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
+    r_43::Float64 = sqrt((q[1]-a4*cos(q[7]))^2+(q[2]-a4*sin(q[7]))^2+q[3]^2)
+    r_13_3::Float64 = r_13^3
+    r_23_3::Float64 = r_23^3
+    r_43_3::Float64 = r_43^3
+    r_13_5::Float64 = r_13_3*r_13^2
+    r_23_5::Float64 = r_23_3*r_23^2
+    r_43_5::Float64 = r_43_3*r_43^2
+    ddUdr::Vector{Float64} = zeros(Float64, 9)
+    ddUdr[1] = 1-(1-mu12)/r_13_3-mu12/r_23_3-m4/r_43_3+3*(1-mu12)*(q[1]+mu12)^2/r_13_5+3*mu12*(q[1]+mu12-1)^2/r_23_5+3*m4*(q[1]-a4*cos(q[7]))^2/r_43_5
+    ddUdr[2] = 1-(1-mu12)/r_13_3-mu12/r_23_3-m4/r_43_3+3*(1-mu12)*q[2]^2/r_13_5+3*mu12*q[2]^2/r_23_5+3*m4*(q[2]-a4*sin(q[7]))^2/r_43_5
+    ddUdr[3] = -1*(1-mu12)/r_13_3-mu12/r_23_3-m4/r_43_3+3*(1-mu12)*q[3]^2/r_13_5+3*mu12*q[3]^2/r_23_5+3*m4*q[3]^2/r_43_5
+    ddUdr[4] = 3*(1-mu12)*(q[1]+mu12)*q[2]/r_13_5+3*mu12*(q[1]+mu12-1)*q[2]/r_23_5+3*m4*(q[1]-a4*cos(q[7]))*(q[2]-a4*sin(q[7]))/r_43_5
+    ddUdr[5] = 3*(1-mu12)*(q[1]+mu12)*q[3]/r_13_5+3*mu12*(q[1]+mu12-1)*q[3]/r_23_5+3*m4*(q[1]-a4*cos(q[7]))*q[3]/r_43_5
+    ddUdr[6] = 3*(1-mu12)*q[2]*q[3]/r_13_5+3*mu12*q[2]*q[3]/r_23_5+3*m4*(q[2]-a4*sin(q[7]))*q[3]/r_43_5
+    ddUdr[7] = -m4*a4*sin(q[7])/r_43_3+3*m4*a4*(q[1]-a4*cos(q[7]))*(q[1]*sin(q[7])-q[2]*cos(q[7]))/r_43_5+m4*sin(q[7])/a4^2
+    ddUdr[8] = m4*a4*cos(q[7])/r_43_3+3*m4*a4*(q[2]-a4*sin(q[7]))*(q[1]*sin(q[7])-q[2]*cos(q[7]))/r_43_5-m4*cos(q[7])/a4^2
+    ddUdr[9] = 3*m4*a4*q[3]*(q[1]*sin(q[7])-q[2]*cos(q[7]))/r_43_5
 
-#     return ddUdr
-# end
+    return ddUdr
+end
 
 """
     getStateSize(dynamicsModel, equationType)
@@ -356,28 +333,28 @@ function getStateSize(dynamicsModel::BCR4BP12DynamicsModel, equationType::MBD.Eq
     return type[equationType]
 end
 
-# """
-#     getStateTransitionMatrix(dynamicsModel, q0)
+"""
+    getStateTransitionMatrix(dynamicsModel, q0)
 
-# Return STM
+Return STM
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `q0::Vector{Float64}`: Initial state vector with STM in column-major order [ndim]
-# """
-# function getStateTransitionMatrix(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64})
-#     n_STM::Int16 = getStateSize(dynamicsModel, MBD.STM)
-#     (Int16(length(q0)) < n_STM) && throw(ArgumentError("State vector length is $(length(q0)), but should be at least $n_STM"))
-#     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
-#     STM::Matrix{Float64} = zeros(Float64, (n_simple,n_simple))
-#     for r::Int16 in Int16(1):n_simple
-#         for c::Int16 in Int16(1):n_simple
-#             STM[r,c] = q0[n_simple+n_simple*(c-1)+r]
-#         end
-#     end
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `q0::Vector{Float64}`: Initial state vector with STM in column-major order [ndim]
+"""
+function getStateTransitionMatrix(dynamicsModel::BCR4BP12DynamicsModel, q0::Vector{Float64})
+    n_STM::Int16 = getStateSize(dynamicsModel, MBD.STM)
+    (Int16(length(q0)) < n_STM) && throw(ArgumentError("State vector length is $(length(q0)), but should be at least $n_STM"))
+    n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
+    STM::Matrix{Float64} = zeros(Float64, (n_simple,n_simple))
+    for r::Int16 in Int16(1):n_simple
+        for c::Int16 in Int16(1):n_simple
+            STM[r,c] = q0[n_simple+n_simple*(c-1)+r]
+        end
+    end
 
-#     return STM
-# end
+    return STM
+end
 
 # """
 #     getTidalAcceleration(dynamicsModel, primary, r)
@@ -401,6 +378,30 @@ end
 # end
 
 """
+    get12CharLength(dynamicsModel)
+
+Return BCR4BP P1-P2 characteristic length
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function getCharLength(dynamicsModel::BCR4BP12DynamicsModel)
+    return getCharLength(dynamicsModel.systemData)
+end
+
+"""
+    get12CharTime(dynamicsModel)
+
+Return BCR4BP P1-P2 characteristic time
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function getCharTime(dynamicsModel::BCR4BP12DynamicsModel)
+    return getCharTime(dynamicsModel.systemData)
+end
+
+"""
     get12MassRatio(dynamicsModel)
 
 Return BCR4BP P1-P2 system mass ratio
@@ -410,6 +411,29 @@ Return BCR4BP P1-P2 system mass ratio
 """
 function get12MassRatio(dynamicsModel::BCR4BP12DynamicsModel)
     return get12MassRatio(dynamicsModel.systemData)
+end
+
+"""
+    get2BApproximation(dynamicsModel, bodyData, primary, radius, theta4)
+
+Return states of 2BP approximation about primary
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `bodyData::BodyData`: Body data object
+- `primary::Int64`: Primary identifier
+- `radius::Float64`: Circular radius [ndim]
+- `theta4::Float64`: P4 angle [ndim]
+"""
+function get2BApproximation(dynamicsModel::BCR4BP12DynamicsModel, bodyData::MBD.BodyData, primary::Int64, radius::Float64, theta4::Float64)
+    lstar12::Float64 = get12CharLength(dynamicsModel)
+    tstar12::Float64 = get12CharTime(dynamicsModel)
+    radius_dim::Float64 = radius*lstar12
+    circularVelocity_dim::Float64 = sqrt(bodyData.gravParam/radius_dim)
+    v::Float64 = circularVelocity_dim*tstar12/lstar12
+    q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
+
+    return primaryInertial2Rotating12(dynamicsModel, primary, [q_primaryInertial], [0.0], theta4)[1]
 end
 
 """
@@ -436,33 +460,35 @@ function get4Mass(dynamicsModel::BCR4BP12DynamicsModel)
     return get4Mass(dynamicsModel.systemData)
 end
 
+"""
+    isEpochIndependent(dynamicsModel)
+
+Return true if dynamics model is epoch independent
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function isEpochIndependent(dynamicsModel::BCR4BP12DynamicsModel)
+    return false
+end
+
 # """
-#     isEpochIndependent(dynamicsModel)
+#     primaryInertial2Rotating12(dynamicsModel, primary, states_primaryInertial, times, theta40)
 
-# Return true if dynamics model is epoch independent
-
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# """
-# function isEpochIndependent(dynamicsModel::CR3BPDynamicsModel)
-#     return true
-# end
-
-# """
-#     primaryInertial2Rotating(dynamicsModel, primary, states_primaryInertial, times)
-
-# Return rotating frame states
+# Return BCR4BP P1-P2 rotating frame states
 
 # # Arguments
 # - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 # - `primary::Int64`: Primary identifier
 # - `states_primaryInertial::Vector{Vector{Float64}}`: Primary-centered inertial states [ndim]
 # - `times::Vector{Float64}`: Epochs [ndim]
+# - `theta40::Float64`: Initial P4 angle [ndim]
 # """
-# function primaryInertial2Rotating(dynamicsModel::CR3BPDynamicsModel, primary::Int64, states_primaryInertial::Vector{Vector{Float64}}, times::Vector{Float64})
+# function primaryInertial2Rotating12(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, states_primaryInertial::Vector{Vector{Float64}}, times::Vector{Float64}, theta40::Float64)
 #     (length(states_primaryInertial) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
 #     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
 #     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
+
 #     for i in 1:length(times)
 #         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
 #         Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])

@@ -3,17 +3,17 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 3/3/25
+U: 3/6/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
 import MBD: CR3BPDynamicsModel
 
-export appendExtraInitialConditions, checkSTM, evaluateEquations, get2BApproximation, getCharLength
-export getCharTime, getEpochDependencies, getEquationsOfMotion, getEquilibriumPoint, getExcursion
+export appendExtraInitialConditions, checkSTM, evaluateEquations, getCharLength, getCharTime
+export getEpochDependencies, getEquationsOfMotion, getEquilibriumPoint, getExcursion
 export getJacobiConstant, getLinearVariation, getMassRatio, getParameterDependencies
 export getPrimaryPosition, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
-export getTidalAcceleration, isEpochIndependent, primaryInertial2Rotating
+export getTidalAcceleration, get2BApproximation, isEpochIndependent, primaryInertial2Rotating
 export rotating2PrimaryEclipJ2000, rotating2PrimaryInertial, rotating2SunEclipJ2000
 export secondaryEclipJ20002Rotating
 
@@ -55,13 +55,13 @@ Return true if STM is accurate
 """
 function checkSTM(dynamicsModel::CR3BPDynamicsModel, relTol::Float64 = 2E-3)
     stepSize::Float64 = sqrt(eps(Float64))
-    numStates::Int16 = Int16(getStateSize(dynamicsModel, MBD.SIMPLE))
+    numStates::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
     propagator = MBD.Propagator()
     propagatorSTM = MBD.Propagator(equationType = MBD.STM)
     X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0]
     tau::Float64 = 0.1
     arc::MBD.CR3BPArc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
-    STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(reshape(getStateByIndex(arc, -1)[(numStates+1):(numStates+numStates^2)], (numStates,numStates)))
+    STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(getStateTransitionMatrix(dynamicsModel, getStateByIndex(arc, -1)))
     STMNumerical::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(zeros(Float64, (numStates, numStates)))
     for index::Int16 in Int16(1):numStates
         perturbedFreeVariables::Vector{Float64} = copy(X)
@@ -112,28 +112,6 @@ function evaluateEquations(dynamicsModel::CR3BPDynamicsModel, equationType::MBD.
 end
 
 """
-    get2BApproximation(dynamicsModel, bodyData, primary, radius)
-
-Return states of 2BP approximation about primary
-
-# Arguments
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-- `bodyData::BodyData`: Body data object
-- `primary::Int64`: Primary identifier
-- `radius::Float64`: Circular radius [ndim]
-"""
-function get2BApproximation(dynamicsModel::CR3BPDynamicsModel, bodyData::MBD.BodyData, primary::Int64, radius::Float64)
-    lstar::Float64 = getCharLength(dynamicsModel)
-    tstar::Float64 = getCharTime(dynamicsModel)
-    radius_dim::Float64 = radius*lstar
-    circularVelocity_dim::Float64 = sqrt(bodyData.gravParam/radius_dim)
-    v::Float64 = circularVelocity_dim*tstar/lstar
-    q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
-
-    return primaryInertial2Rotating(dynamicsModel, primary, [q_primaryInertial], [0.0])[1]
-end
-
-"""
     getCharLength(dynamicsModel)
 
 Return CR3BP characteristic length
@@ -168,7 +146,7 @@ Return derivative of state with respect to epoch
 """
 function getEpochDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})
     n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
-    (Int64(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
+    (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
     isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
@@ -341,7 +319,7 @@ function getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vec
     n_full::Int16 = getStateSize(dynamicsModel, MBD.FULL)
     (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
-    i0::Int16 = n_simple*(n_simple+1+(isEpochIndependent(dynamicsModel) ? 0 : 1))
+    i0::Int16 = n_simple*(n_simple+1)
     n::Int16 = n_full-i0
     (n == Int16(0)) && (return zeros(Float64, (n_simple,0)))
     n_params::Int16 = n/n_simple
@@ -458,6 +436,28 @@ function getTidalAcceleration(dynamicsModel::CR3BPDynamicsModel, primary::Int64,
     xDist::Float64 = (primary == 1) ? r[1]+mu : r[1]-1+mu
 
     return [aMultiplier*xDist+r[1], aMultiplier*r[2]+r[2], aMultiplier*r[3]]
+end
+
+"""
+    get2BApproximation(dynamicsModel, bodyData, primary, radius)
+
+Return states of 2BP approximation about primary
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `bodyData::BodyData`: Body data object
+- `primary::Int64`: Primary identifier
+- `radius::Float64`: Circular radius [ndim]
+"""
+function get2BApproximation(dynamicsModel::CR3BPDynamicsModel, bodyData::MBD.BodyData, primary::Int64, radius::Float64)
+    lstar::Float64 = getCharLength(dynamicsModel)
+    tstar::Float64 = getCharTime(dynamicsModel)
+    radius_dim::Float64 = radius*lstar
+    circularVelocity_dim::Float64 = sqrt(bodyData.gravParam/radius_dim)
+    v::Float64 = circularVelocity_dim*tstar/lstar
+    q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
+
+    return primaryInertial2Rotating(dynamicsModel, primary, [q_primaryInertial], [0.0])[1]
 end
 
 """
