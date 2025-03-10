@@ -138,8 +138,8 @@ Return next corresponding epoch time
 function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, initialEpochGuess::String, theta40::Float64)
     tstar12::Float64 = get12CharTime(dynamicsModel)
     epochTimeGuess::Float64 = SPICE.str2et(initialEpochGuess)
-    println(getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1][1:3])
-    R4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1:3]
+    R2::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1][1:3]
+    R4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1][1:3]
     r2::Float64 = LinearAlgebra.norm(R2)
     r4::Float64 = LinearAlgebra.norm(R4)
     theta4Guess::Float64 = acos(LinearAlgebra.dot(R2, R4)/r2/r4)
@@ -547,7 +547,7 @@ function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, pri
     initialEpoch::String = SPICE.et2utc(initialEpochTime, :C, 11)
     lstar12::Float64 = get12CharLength(dynamicsModel)
     tstar12::Float64 = get12CharTime(dynamicsModel)
-    P2InitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1]
+    P2InitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     P1::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     P2SPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(P2InitialStateDim[1], initialEpochTime, P1.gravParam))
     (dynamicsModel.systemData.primaryNames[1] == "Earth") && (P2SPICEElements[3] = 0.0)
