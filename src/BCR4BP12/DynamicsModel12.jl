@@ -534,12 +534,12 @@ Return primary-centered Ecliptic J2000 frame states [ndim]
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
-- `primary::String`: Primary identifier
+- `primary::Int64`: Primary identifier
 - `initialEpochGuess::String`: Initial epoch guess
 - `states::Vector{Vector{Float64}}`: Rotating states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
-function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, center::String, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
+function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
