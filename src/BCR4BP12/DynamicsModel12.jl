@@ -289,7 +289,7 @@ Return state of primary in rotating frame
 - `primary::Int64`: Primary identifier
 - `thea4::Float64`: P4 angle [ndim]
 """
-function getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64, theta4::Float64)
+function getPrimaryState(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, theta4::Float64)
     (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
     mu12::Float64 = get12MassRatio(dynamicsModel)
     a4::Float64 = get4Distance(dynamicsModel)
