@@ -294,7 +294,7 @@ function getPrimaryState(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, t
     mu12::Float64 = get12MassRatio(dynamicsModel)
     a4::Float64 = get4Distance(dynamicsModel)
     theta4dot::Float64 = evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.9, 0, 0, 0, -0.3, 0, 0])[7]
-    q::Vector{Float64} = push!(zeros(Float64, 7), theta4)
+    q::Vector{Float64} = push!(zeros(Float64, 6), theta4)
     if primary == 1
         q[1] = -mu12
     elseif primary == 2
