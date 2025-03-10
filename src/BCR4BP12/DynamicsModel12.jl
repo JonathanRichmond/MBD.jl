@@ -138,7 +138,7 @@ Return next corresponding epoch time
 function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, initialEpochGuess::String, theta40::Float64)
     tstar12::Float64 = get12CharTime(dynamicsModel)
     epochTimeGuess::Float64 = SPICE.str2et(initialEpochGuess)
-    R2::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1:3]
+    println(getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1])
     R4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1:3]
     r2::Float64 = LinearAlgebra.norm(R2)
     r4::Float64 = LinearAlgebra.norm(R4)
