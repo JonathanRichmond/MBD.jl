@@ -514,10 +514,10 @@ function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialE
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
+    bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam))
+    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
@@ -583,10 +583,10 @@ function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
+    bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     Sun = MBD.BodyData("Sun")
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, Sun.gravParam))
+    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, Sun.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
@@ -625,10 +625,10 @@ function secondaryEclipJ2000ToRotating(dynamicsModel::CR3BPDynamicsModel, initia
     (Int16(length(states_secondaryInertial)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
-    bodyInitialStateDim::Vector{Vector{Float64}} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
+    bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim[1], initialEpochTime, primary.gravParam))
+    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
