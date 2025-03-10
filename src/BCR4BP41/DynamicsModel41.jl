@@ -9,7 +9,7 @@ import StaticArrays
 import MBD: BCR4BP41DynamicsModel
 
 export getEquationsOfMotion, getStateSize, get12MassRatio, get4Distance, get4Mass, get41MassRatio
-export rotating412Rotating12
+export rotating41ToRotating12
 
 # """
 #     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -486,7 +486,7 @@ end
 # end
 
 """
-    rotating412Rotating12(dynamicsModel, states41, times41)
+    rotating41ToRotating12(dynamicsModel, states41, times41)
 
 Return BCR4BP P1-P2 rotating frame states and times [ndim]
 
@@ -495,7 +495,7 @@ Return BCR4BP P1-P2 rotating frame states and times [ndim]
 - `states41::Vector{Vector{Float64}}`: BCR4BP P4-B1 rotating frame states [ndim]
 - `times41::Vector{Float64}`: BCR4BP P4-B1 rotating frame times [ndim]
 """
-function rotating412Rotating12(dynamicsModel::BCR4BP41DynamicsModel, states41::Vector{Vector{Float64}}, times41::Vector{Float64})
+function rotating41ToRotating12(dynamicsModel::BCR4BP41DynamicsModel, states41::Vector{Vector{Float64}}, times41::Vector{Float64})
     numTimes::Int16 = Int16(length(times41))
     m4::Float64 = get4Mass(dynamicsModel.systemData)
     a4::Float64 = get4Distance(dynamicsModel.systemData)
