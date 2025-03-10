@@ -555,7 +555,7 @@ function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, pri
     theta12dotDim::Float64 = 1/tstar12
     states_primaryEclipJ2000::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
     for j in Int16(1):numTimes
-        state_P1::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states[j]-getPrimaryState(dynamicsModel, 1))
+        state_P1::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states[j]-getPrimaryState(dynamicsModel, 1, states[j][7]))
         stateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_P1[1:3].*lstar12, state_P1[4:6].*lstar12./tstar12))
         P2Elements::Vector{Float64} = append!([lstar12, 0.0], P2SPICEElements[3:5], [P2SPICEElements[6]+timesDim[j]/tstar12, initialEpochTime+timesDim[j]], [P2SPICEElements[8]])
         P2StateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(P2Elements, initialEpochTime+timesDim[j]))
