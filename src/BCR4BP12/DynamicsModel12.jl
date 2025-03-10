@@ -549,7 +549,7 @@ function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, pri
     tstar12::Float64 = get12CharTime(dynamicsModel)
     P2InitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     P1::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
-    P2SPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(P2InitialStateDim, initialEpochTime, P1.gravParam))
+    P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(P2InitialStateDim, initialEpochTime, P1.gravParam))
     (dynamicsModel.systemData.primaryNames[1] == "Earth") && (P2SPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar12
     theta12dotDim::Float64 = 1/tstar12

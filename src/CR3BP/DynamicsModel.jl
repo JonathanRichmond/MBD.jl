@@ -517,7 +517,7 @@ function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialE
     bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
+    bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
@@ -586,7 +586,7 @@ function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialEpoch
     bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     Sun = MBD.BodyData("Sun")
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, Sun.gravParam))
+    bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, Sun.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
@@ -628,7 +628,7 @@ function secondaryEclipJ2000ToRotating(dynamicsModel::CR3BPDynamicsModel, initia
     bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
-    bodySPICEElements::StaticArrays.SVector{20, Float64} = StaticArrays.SVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
+    bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
