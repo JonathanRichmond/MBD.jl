@@ -412,8 +412,8 @@ Return BCR4BP P1-P2 characteristic length
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
-function getCharLength(dynamicsModel::BCR4BP12DynamicsModel)
-    return getCharLength(dynamicsModel.systemData)
+function get12CharLength(dynamicsModel::BCR4BP12DynamicsModel)
+    return get12CharLength(dynamicsModel.systemData)
 end
 
 """
@@ -424,8 +424,8 @@ Return BCR4BP P1-P2 characteristic time
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
-function getCharTime(dynamicsModel::BCR4BP12DynamicsModel)
-    return getCharTime(dynamicsModel.systemData)
+function get12CharTime(dynamicsModel::BCR4BP12DynamicsModel)
+    return get12CharTime(dynamicsModel.systemData)
 end
 
 """
