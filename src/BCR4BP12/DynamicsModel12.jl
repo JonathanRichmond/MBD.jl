@@ -530,7 +530,7 @@ end
 """
     rotating12ToPrimaryEclipJ2000(dynamicsModel, primary, initialEpochGuess, states, times)
 
-Return primary-centered Ecliptic J2000 frame states [ndim]
+Return primary-centered Ecliptic J2000 frame states and times [ndim]
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
@@ -550,15 +550,13 @@ function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, pri
     P2InitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     P1::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(P2InitialStateDim, initialEpochTime, P1.gravParam))
-    println(P2SPICEElements[3])
-    (dynamicsModel.systemData.primaryNames[1] == "Earth") && (P2SPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar12
     theta12dotDim::Float64 = 1/tstar12
     states_primaryEclipJ2000::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
     for j in Int16(1):numTimes
         state_P1::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states[j]-getPrimaryState(dynamicsModel, 1, states[j][7]))
         stateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_P1[1:3].*lstar12, state_P1[4:6].*lstar12./tstar12))
-        P2Elements::Vector{Float64} = append!([lstar12, 0.0], P2SPICEElements[3:5], [P2SPICEElements[6]+timesDim[j]/tstar12, initialEpochTime+timesDim[j]], [P2SPICEElements[8]])
+        P2Elements::Vector{Float64} = append!([lstar12, 0.0, 0.0], P2SPICEElements[4:5], [P2SPICEElements[6]+timesDim[j]/tstar12, initialEpochTime+timesDim[j]], [P2SPICEElements[8]])
         P2StateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(P2Elements, initialEpochTime+timesDim[j]))
         xhat_EclipJ2000::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(P2StateDim[1:3]./lstar12)
         zhat_EclipJ2000::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(P2StateDim[1:3], P2StateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(P2StateDim[1:3], P2StateDim[4:6])))
@@ -574,7 +572,7 @@ function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, pri
         states_primaryEclipJ2000[j] = append!(stateDim_primaryEclipJ2000[1:3]./lstar12, stateDim_primaryEclipJ2000[4:6].*tstar12./lstar12)
     end
 
-    return states_primaryEclipJ2000
+    return (states_primaryEclipJ2000, initialEpochTime+timesDim)
 end
 
 """
