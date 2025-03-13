@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 3/10/25
+U: 3/12/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -573,7 +573,7 @@ function rotating12ToPrimaryEcliptic(dynamicsModel::BCR4BP12DynamicsModel, frame
         states_primaryEclipJ2000[j] = append!(stateDim_primaryEclipJ2000[1:3]./lstar12, stateDim_primaryEclipJ2000[4:6].*tstar12./lstar12)
     end
 
-    return (states_primaryEclipJ2000, initialEpochTime+timesDim)
+    return (states_primaryEclipJ2000, initialEpochTime.+timesDim)
 end
 
 """
