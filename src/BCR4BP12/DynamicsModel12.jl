@@ -13,7 +13,7 @@ export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDepend
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
 export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
 export get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance, get4Mass
-export isEpochIndependent, rotating12ToPrimaryEclipJ2000, rotating12ToRotating41
+export isEpochIndependent, rotating12ToPrimaryEcliptic, rotating12ToRotating41
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -528,18 +528,19 @@ end
 # end
 
 """
-    rotating12ToPrimaryEclipJ2000(dynamicsModel, primary, initialEpochGuess, states, times)
+    rotating12ToPrimaryEcliptic(dynamicsModel, frame, primary, initialEpochGuess, states, times)
 
-Return primary-centered Ecliptic J2000 frame states and times [ndim]
+Return primary-centered fixed frame states and times [ndim]
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `frame::String`: Fixed ecliptic frame
 - `primary::Int64`: Primary identifier
 - `initialEpochGuess::String`: Initial epoch guess
 - `states::Vector{Vector{Float64}}`: Rotating states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
-function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
+function rotating12ToPrimaryEcliptic(dynamicsModel::BCR4BP12DynamicsModel, frame::String, primary::Int64, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
@@ -547,7 +548,7 @@ function rotating12ToPrimaryEclipJ2000(dynamicsModel::BCR4BP12DynamicsModel, pri
     initialEpoch::String = SPICE.et2utc(initialEpochTime, :C, 11)
     lstar12::Float64 = get12CharLength(dynamicsModel)
     tstar12::Float64 = get12CharTime(dynamicsModel)
-    P2InitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
+    P2InitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], frame)[1][1]
     P1::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(P2InitialStateDim, initialEpochTime, P1.gravParam))
     timesDim::Vector{Float64} = times.*tstar12
