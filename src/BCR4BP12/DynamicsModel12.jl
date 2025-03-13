@@ -140,11 +140,14 @@ function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, frame::String, initi
     tstar12::Float64 = get12CharTime(dynamicsModel)
     epochTimeGuess::Float64 = SPICE.str2et(initialEpochGuess)
     Q2::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], frame)[1][1]
-    R4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], frame)[1][1][1:3]
+    Q4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], frame)[1][1][1:3]
     B1::MBD.BodyData = dynamicsModel.systemData.primaryData[4]
     P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(Q2, epochTimeGuess, B1.gravParam))
     P2SPICEElements[3] = 0.0
     R2::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P2SPICEElements[1:8], epochTimeGuess)[1:3])
+    P4SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(Q4, epochTimeGuess, B1.gravParam))
+    P4SPICEElements[3] = 0.0
+    R4::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P4SPICEElements[1:8], epochTimeGuess)[1:3])
     r2::Float64 = LinearAlgebra.norm(R2)
     r4::Float64 = LinearAlgebra.norm(R4)
     theta4Guess::Float64 = acos(LinearAlgebra.dot(R2, R4)/r2/r4)
