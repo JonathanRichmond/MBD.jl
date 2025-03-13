@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 3/12/25
+U: 3/13/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -127,19 +127,24 @@ function getEpochDependencies(dynamicsModel::BCR4BP12DynamicsModel, q_full::Vect
 end
 
 """
-    getEpochTime(dynamicsModel, initialEpochGuess, theta40)
+    getEpochTime(dynamicsModel, frame, initialEpochGuess, theta40)
 
 Return next corresponding epoch time
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `frame::String`: Fixed ecliptic frame
 - `initialEpochGuess::String`: Initial epoch guess
 - `theta40::Float64`: P4 angle [ndim]
 """
-function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, initialEpochGuess::String, theta40::Float64)
+function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, frame::String, initialEpochGuess::String, theta40::Float64)
     tstar12::Float64 = get12CharTime(dynamicsModel)
     epochTimeGuess::Float64 = SPICE.str2et(initialEpochGuess)
-    R2::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1][1:3]
-    R4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], "ECLIPJ2000")[1][1][1:3]
+    Q2::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], frame)[1][1]
+    R4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], frame)[1][1][1:3]
+    B1::MBD.BodyData = dynamicsModel.systemData.primaryData[4]
+    P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(Q2, epochTimeGuess, B1.gravParam))
+    P2SPICEElements[3] = 0.0
+    R2::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P2SPICEElements, epochTimeGuess)[1:3])
     r2::Float64 = LinearAlgebra.norm(R2)
     r4::Float64 = LinearAlgebra.norm(R4)
     theta4Guess::Float64 = acos(LinearAlgebra.dot(R2, R4)/r2/r4)
@@ -544,7 +549,7 @@ function rotating12ToPrimaryEcliptic(dynamicsModel::BCR4BP12DynamicsModel, frame
     (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
-    initialEpochTime::Float64 = getEpochTime(dynamicsModel, initialEpochGuess, states[1][7])
+    initialEpochTime::Float64 = getEpochTime(dynamicsModel, frame, initialEpochGuess, states[1][7])
     initialEpoch::String = SPICE.et2utc(initialEpochTime, :C, 11)
     lstar12::Float64 = get12CharLength(dynamicsModel)
     tstar12::Float64 = get12CharTime(dynamicsModel)
