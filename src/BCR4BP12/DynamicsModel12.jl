@@ -144,7 +144,7 @@ function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, frame::String, initi
     B1::MBD.BodyData = dynamicsModel.systemData.primaryData[4]
     P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(Q2, epochTimeGuess, B1.gravParam))
     P2SPICEElements[3] = 0.0
-    R2::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P2SPICEElements, epochTimeGuess)[1:3])
+    R2::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P2SPICEElements[1:8], epochTimeGuess)[1:3])
     r2::Float64 = LinearAlgebra.norm(R2)
     r4::Float64 = LinearAlgebra.norm(R4)
     theta4Guess::Float64 = acos(LinearAlgebra.dot(R2, R4)/r2/r4)
