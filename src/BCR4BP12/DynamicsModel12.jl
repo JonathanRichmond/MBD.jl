@@ -141,7 +141,7 @@ function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, frame::String, initi
     theta4dot::Float64 = evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.9, 0, 0, 0, -0.3, 0, 0])[7]
     epochTimeGuess::Float64 = SPICE.str2et(initialEpochGuess)
     theta4Diff::Float64 = pi
-    while abs(theta4Diff) > 1E-3
+    while abs(theta4Diff) > 1E-8
         Q2::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], frame)[1][1]
         Q4::Vector{Float64} = getEphemerides(initialEpochGuess, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], frame)[1][1]
         B1::MBD.BodyData = dynamicsModel.systemData.primaryData[4]
