@@ -54,7 +54,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
         pseudoPotentialJacobian[4] = 3*mu41*omm12*(q[1]-x1)*(q[2]-y1)/r_13_5+3*mu41*mu12*(q[1]-x2)*(q[2]-y2)/r_23_5+3*omm41*(q[1]+mu41)*q[2]/r_43_5
         pseudoPotentialJacobian[5] = 3*mu41*omm12*(q[1]-x1)*q[3]/r_13_5+3*mu41*mu12*(q[1]-x2)*q[3]/r_23_5+3*omm41*(q[1]+mu41)*q[3]/r_43_5
         pseudoPotentialJacobian[6] = 3*mu41*omm12*(q[2]-y1)*q[3]/r_13_5+3*mu41*mu12*(q[2]-y2)*q[3]/r_23_5+3*omm41*q[2]*q[3]/r_43_5
-        pseudoPotentialJacobian[7] = mu41*mu12*omm12*sin(q[7])/(a4*r_13_3)-mu41*mu12*omm12*sin(q[7])/(a4*r_23_3)-3*mu41*mu12*omm12*(q[1]-x1)*((q[1]-x1)*sin(q[7])-(q[2]-y1)*cos(q[7]))/(a4*r_13_5)+3*mu41*mu12*omm12*(q[1]-x2)*((q[1]-x2)*sin(q[7])-(q[2]-y2)*cos(q[7]))/(a4*r_23_5)
+        pseudoPotentialJacobian[7] = 5#mu41*mu12*omm12*sin(q[7])/(a4*r_13_3)-mu41*mu12*omm12*sin(q[7])/(a4*r_23_3)-3*mu41*mu12*omm12*(q[1]-x1)*((q[1]-x1)*sin(q[7])-(q[2]-y1)*cos(q[7]))/(a4*r_13_5)+3*mu41*mu12*omm12*(q[1]-x2)*((q[1]-x2)*sin(q[7])-(q[2]-y2)*cos(q[7]))/(a4*r_23_5)
         pseudoPotentialJacobian[8] = -mu41*mu12*omm12*cos(q[7])/(a4*r_13_3)+mu41*mu12*omm12*cos(q[7])/(a4*r_23_3)-3*mu41*mu12*omm12*(q[2]-y1)*((q[1]-x1)*sin(q[7])-(q[2]-y1)*cos(q[7]))/(a4*r_13_5)+3*mu41*mu12*omm12*(q[2]-y2)*((q[1]-x2)*sin(q[7])-(q[2]-y2)*cos(q[7]))/(a4*r_23_5)
         pseudoPotentialJacobian[9] = -3*mu41*mu12*omm12*q[3]*((q[1]-x1)*sin(q[7])-(q[2]-y1)*cos(q[7]))/(a4*r_13_5)+3*mu41*mu12*omm12*q[3]*((q[1]-x2)*sin(q[7])-(q[2]-y2)*cos(q[7]))/(a4*r_23_5)
         [qdot[7+7*(c-1)+r] = q[10+7*(c-1)+r] for r in 1:3 for c in 1:7]
