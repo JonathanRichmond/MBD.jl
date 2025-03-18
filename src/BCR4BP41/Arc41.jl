@@ -3,6 +3,7 @@ BCR4BP P4-B1 arc wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
+U: 3/18/25
 """
 
 import MBD: BCR4BP41Arc
@@ -24,18 +25,6 @@ function deleteStateAndTime!(arc::BCR4BP41Arc, index::Int64)
     deleteat!(arc.states, newIndex)
     deleteat!(arc.times, newIndex)
 end
-
-# """
-#     getMassRatio(arc)
-
-# Return CR3BP system mass ratio
-
-# # Arguments
-# - `arc::CR3BPArc`: CR3BP arc object
-# """
-# function getMassRatio(arc::CR3BPArc)
-#     return getMassRatio(arc.dynamicsModel)
-# end
 
 """
     getStateByIndex(arc, index)
