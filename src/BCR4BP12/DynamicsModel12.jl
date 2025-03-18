@@ -155,7 +155,6 @@ function getEpochTime(dynamicsModel::BCR4BP12DynamicsModel, frame::String, initi
         r4::Float64 = LinearAlgebra.norm(R4)
         theta4Guess::Float64 = acos(LinearAlgebra.dot(R2, R4)/r2/r4)
         theta4Diff = theta40-theta4Guess
-        println(theta4Diff)
         tDiff::Float64 = (theta4Diff/theta4dot)*tstar12
         epochTimeGuess += tDiff
         initialEpochGuess = SPICE.et2utc(epochTimeGuess, :C, 11)
