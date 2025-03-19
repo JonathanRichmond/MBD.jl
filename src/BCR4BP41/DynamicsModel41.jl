@@ -3,7 +3,7 @@ BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
-U: 3/18/25
+U: 3/19/25
 """
 
 import StaticArrays
@@ -13,7 +13,7 @@ export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDepend
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
 export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
 export get12MassRatio, get4Distance, get4Mass, get41CharLength, get41CharTime, get41MassRatio
-export isEpochIndependent, rotating41ToRotating12
+export isEpochIndependent, rotating41ToPrimaryEcliptic, rotating41ToRotating12
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -442,6 +442,26 @@ Return true if dynamics model is epoch independent
 """
 function isEpochIndependent(dynamicsModel::BCR4BP41DynamicsModel)
     return false
+end
+
+"""
+    rotating41ToPrimaryEcliptic(dynamicsModel, frame, primary, initialEpochGuess, states, times)
+
+Return primary-centered fixed frame states and times [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `primary::Int64`: Primary identifier
+- `initialEpochGuess::String`: Initial epoch guess
+- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
+- `times::Vector{Float64}`: Epochs [ndim]
+"""
+function rotating41ToPrimaryEcliptic(dynamicsModel::BCR4BP41DynamicsModel, frame::String, primary::Int64, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    (states12::Vector{Vector{Float64}}, times12::Vector{Float64}) = rotating41ToRotating12(dynamicsModel, states, times)
+    dynamicsModel12 = MBD.BCR4BP12DynamicsModel(dynamicsModel.systemData)
+    
+    return rotating12ToPrimaryEcliptic(dynamicsModel12, frame, primary, initialEpochGuess, states12, times12)
 end
 
 """
