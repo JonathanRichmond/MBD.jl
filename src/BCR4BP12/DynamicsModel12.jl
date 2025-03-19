@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 3/18/25
+U: 3/19/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -13,7 +13,7 @@ export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDepend
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
 export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
 export get12CharLength, get12CharTime, get12MassRatio, get4Distance, get4Mass, isEpochIndependent
-export rotating12ToPrimaryEcliptic, rotating12ToRotating41
+export primaryEclipticToRotating12, rotating12ToPrimaryEcliptic, rotating12ToRotating41
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -512,33 +512,36 @@ function isEpochIndependent(dynamicsModel::BCR4BP12DynamicsModel)
     return false
 end
 
-# """
-#     primaryInertial2Rotating12(dynamicsModel, primary, states_primaryInertial, times, theta40)
+"""
+    primaryEclipticToRotating12(dynamicsModel, frame, primary, states, times)
 
-# Return BCR4BP P1-P2 rotating frame states
+Return BCR4BP P1-P2 rotating frame states and times [ndim]
 
-# # Arguments
-# - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-# - `primary::Int64`: Primary identifier
-# - `states_primaryInertial::Vector{Vector{Float64}}`: Primary-centered inertial states [ndim]
-# - `times::Vector{Float64}`: Epochs [ndim]
-# - `theta40::Float64`: Initial P4 angle [ndim]
-# """
-# function primaryInertial2Rotating12(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, states_primaryInertial::Vector{Vector{Float64}}, times::Vector{Float64}, theta40::Float64)
-#     (length(states_primaryInertial) == length(times)) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
-#     (1 <= primary <= 2) || throw(ArgumentError("Invalid primary $primary"))
-#     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `primary::Int64`: Primary identifier
+- `states::Vector{Vector{Float64}}`: Primary-centered fixed states [ndim]
+- `times::Vector{Float64}`: Epoch times [s]
+"""
+function primaryEclipticToRotating12(dynamicsModel::BCR4BP12DynamicsModel, frame::String, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    initialEpoch::String = SPICE.et2utc(times[1], :C, 11)
+    lstar12::Float64 = get12CharLength(dynamicsModel)
+    tstar12::Float64 = get12CharTime(dynamicsModel)
+    P2InitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], frame)[1][1]
+    P1::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
+    P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(P2InitialStateDim, times[1], P1.gravParam))
+    theta12dotDim::Float64 = 1/tstar12
+    states_rotating::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for j in Int16(1):numTimes
+        stateDim_primaryEclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states[j][1:3].*lstar12, states[j][4:6].*lstar12./tstar12))
+    end
 
-#     for i in 1:length(times)
-#         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
-#         Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])
-#         N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6}([C zeros(Float64, (3,3)); Cdot C])
-#         state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6}(N\states_primaryInertial[i])
-#         states[i] = state_primary+push!(getPrimaryPosition(dynamicsModel, primary), 0, 0, 0)
-#     end
-
-#     return states
-# end
+    return (states_rotating, (times.-times[1])./tstar12)
+end
 
 """
     rotating12ToPrimaryEcliptic(dynamicsModel, frame, primary, initialEpochGuess, states, times)
@@ -551,7 +554,7 @@ Return primary-centered fixed frame states and times [ndim]
 - `primary::Int64`: Primary identifier
 - `initialEpochGuess::String`: Initial epoch guess
 - `states::Vector{Vector{Float64}}`: Rotating states [ndim]
-- `times::Vector{Float64}`: Epochs [ndim]
+- `times::Vector{Float64}`: Rotating times [ndim]
 """
 function rotating12ToPrimaryEcliptic(dynamicsModel::BCR4BP12DynamicsModel, frame::String, primary::Int64, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))

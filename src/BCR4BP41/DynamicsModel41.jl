@@ -455,7 +455,7 @@ Return primary-centered fixed frame states and times [ndim]
 - `primary::Int64`: Primary identifier
 - `initialEpochGuess::String`: Initial epoch guess
 - `states::Vector{Vector{Float64}}`: Rotating states [ndim]
-- `times::Vector{Float64}`: Epochs [ndim]
+- `times::Vector{Float64}`: Rotating times [ndim]
 """
 function rotating41ToPrimaryEcliptic(dynamicsModel::BCR4BP41DynamicsModel, frame::String, primary::Int64, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
     (states12::Vector{Vector{Float64}}, times12::Vector{Float64}) = rotating41ToRotating12(dynamicsModel, states, times)
