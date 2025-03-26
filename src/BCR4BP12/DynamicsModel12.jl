@@ -569,6 +569,7 @@ function primaryEclipticToRotating12(dynamicsModel::BCR4BP12DynamicsModel, frame
     theta4dot::Float64 = evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.9, 0, 0, 0, -0.3, 0, 0])[7]
     states_rotating::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
     for j in Int16(1):numTimes
+        theta4::Float64 = initialtheta4+timesNdim[j]*theta4dot
         stateDim_primaryEclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states[j][1:3].*lstar12, states[j][4:6].*lstar12./tstar12))
         P2Elements::Vector{Float64} = append!([lstar12, 0.0, 0.0], P2SPICEElements[4:5], [P2SPICEElements[6]+timesNdim[j], times[j]], [P2SPICEElements[8]])
         P2StateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(P2Elements, times[j]))
@@ -578,13 +579,13 @@ function primaryEclipticToRotating12(dynamicsModel::BCR4BP12DynamicsModel, frame
         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([xhat_EclipJ2000 yhat_EclipJ2000 zhat_EclipJ2000])
         Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([theta12dotDim.*yhat_EclipJ2000 -theta12dotDim.*xhat_EclipJ2000 zeros(Float64, 3)])
         N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
-        primaryState_P1::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(getPrimaryState(dynamicsModel, primary, states[j][7])-getPrimaryState(dynamicsModel, 1, states[j][7]))
+        primaryState_P1::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(getPrimaryState(dynamicsModel, primary, theta4)-getPrimaryState(dynamicsModel, 1, theta4))
         primaryStateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(primaryState_P1[1:3].*lstar12, primaryState_P1[4:6].*lstar12./tstar12))
         primaryStateDim_P1EclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*primaryStateDim_P1)
         stateDim_P1EclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(stateDim_primaryEclipJ2000+primaryStateDim_P1EclipJ2000)
         stateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N\stateDim_P1EclipJ2000)
         states_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(stateDim_P1[1:3]./lstar12, stateDim_P1[4:6].*tstar12./lstar12))
-        states_rotating[j] = push!(states_P1+getPrimaryState(dynamicsModel, 1, initialtheta4)[1:6], initialtheta4+timesNdim[j]*theta4dot)
+        states_rotating[j] = push!(states_P1+getPrimaryState(dynamicsModel, 1, initialtheta4)[1:6], theta4)
     end
 
     return (states_rotating, timesNdim)
