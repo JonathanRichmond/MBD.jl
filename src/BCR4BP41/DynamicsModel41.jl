@@ -130,6 +130,7 @@ end
     getEpochTime(dynamicsModel, frame, initialEpochGuess, theta20)
 
 Return next corresponding epoch time
+
 # Arguments
 - `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 - `frame::String`: Fixed ecliptic frame
