@@ -584,7 +584,7 @@ function primaryEclipticToRotating12(dynamicsModel::BCR4BP12DynamicsModel, frame
         primaryStateDim_P1EclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*primaryStateDim_P1)
         stateDim_P1EclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(stateDim_primaryEclipJ2000+primaryStateDim_P1EclipJ2000)
         stateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N\stateDim_P1EclipJ2000)
-        states_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(stateDim_P1[1:3]./lstar12, stateDim_P1[4:6].*tstar12./lstar12))
+        states_P1::Vector{Float64} = append!(stateDim_P1[1:3]./lstar12, stateDim_P1[4:6].*tstar12./lstar12)
         states_rotating[j] = push!(states_P1+getPrimaryState(dynamicsModel, 1, initialtheta4)[1:6], theta4)
     end
 
