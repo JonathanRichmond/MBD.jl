@@ -570,7 +570,7 @@ function primaryEclipticToRotating12(dynamicsModel::BCR4BP12DynamicsModel, frame
     states_rotating::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
     for j in Int16(1):numTimes
         stateDim_primaryEclipJ2000::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states[j][1:3].*lstar12, states[j][4:6].*lstar12./tstar12))
-        P2Elements::Vector{Float64} = append!([lstar12, 0.0, 0.0], P2SPICEElements[4:5], [P2SPICEElements[6]+timesDim[j]/tstar12, times[j]], [P2SPICEElements[8]])
+        P2Elements::Vector{Float64} = append!([lstar12, 0.0, 0.0], P2SPICEElements[4:5], [P2SPICEElements[6]+timesNdim, times[j]], [P2SPICEElements[8]])
         P2StateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(P2Elements, times[j]))
         xhat_EclipJ2000::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(P2StateDim[1:3]./lstar12)
         zhat_EclipJ2000::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(P2StateDim[1:3], P2StateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(P2StateDim[1:3], P2StateDim[4:6])))
