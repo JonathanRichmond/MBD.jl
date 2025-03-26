@@ -12,9 +12,9 @@ import MBD: BCR4BP41DynamicsModel
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
 export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
-export gettheta2, get12MassRatio, get4Distance, get4Mass, get41CharLength, get41CharTime
-export get41MassRatio, isEpochIndependent, primaryEclipticToRotating41, rotating41ToPrimaryEcliptic
-export rotating41ToRotating12
+export gettheta2, get12MassRatio, get2BApproximation, get4Distance, get4Mass, get41CharLength
+export get41CharTime, get41MassRatio, isEpochIndependent, primaryEclipticToRotating41
+export rotating41ToPrimaryEcliptic, rotating41ToRotating12
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -365,7 +365,7 @@ end
 """
     gettheta2(dynamicsModel, frame, initialEpoch)
 
-Return P2 angle
+Return P2 angle [ndim]
 
 # Arguments
 - `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
@@ -399,6 +399,31 @@ Return BCR4BP P1-P2 system mass ratio
 """
 function get12MassRatio(dynamicsModel::BCR4BP41DynamicsModel)
     return get12MassRatio(dynamicsModel.systemData)
+end
+
+"""
+    get2BApproximation(dynamicsModel, frame, primary, radius, initialEpochGuess, theta2)
+
+Return states of 2BP approximation about primary [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `primary::Int64`: Primary identifier
+- `radius::Float64`: Circular radius [ndim]
+- `initialEpochGuess::String`: Initial epoch guess
+- `theta2::Float64`: Desired P2 angle [ndim]
+"""
+function get2BApproximation(dynamicsModel::BCR4BP41DynamicsModel, frame::String, primary::Int64, radius::Float64, initialEpochGuess::String, theta2::Float64)
+    lstar41::Float64 = get41CharLength(dynamicsModel)
+    tstar41::Float64 = get41CharTime(dynamicsModel)
+    radiusDim::Float64 = radius*lstar41
+    vDim::Float64 = sqrt(bodyData.gravParam/radiusDim)
+    v::Float64 = vDim*tstar41/lstar41
+    q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
+    t::Float64 = getEpochTime(dynamicsModel, frame, initialEpochGuess, theta2)
+
+    return primaryEclipticToRotating41(dynamicsModel, frame, primary, [q_primaryInertial], [t])[1][1]
 end
 
 """

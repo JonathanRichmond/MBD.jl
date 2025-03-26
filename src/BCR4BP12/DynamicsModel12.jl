@@ -12,8 +12,8 @@ import MBD: BCR4BP12DynamicsModel
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
 export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
-export gettheta4, get12CharLength, get12CharTime, get12MassRatio, get4Distance, get4Mass
-export isEpochIndependent, primaryEclipticToRotating12, rotating12ToPrimaryEcliptic
+export gettheta4, get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance
+export get4Mass, isEpochIndependent, primaryEclipticToRotating12, rotating12ToPrimaryEcliptic
 export rotating12ToRotating41
 
 """
@@ -401,7 +401,7 @@ end
 """
     gettheta4(dynamicsModel, frame, initialEpoch)
 
-Return P4 angle
+Return P4 angle [ndim]
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
@@ -482,28 +482,30 @@ function get12MassRatio(dynamicsModel::BCR4BP12DynamicsModel)
     return get12MassRatio(dynamicsModel.systemData)
 end
 
-# """
-#     get2BApproximation(dynamicsModel, bodyData, primary, radius, theta4)
+"""
+    get2BApproximation(dynamicsModel, frame, primary, radius, initialEpochGuess, theta4)
 
-# Return states of 2BP approximation about primary
+Return states of 2BP approximation about primary [ndim]
 
-# # Arguments
-# - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
-# - `bodyData::BodyData`: Body data object
-# - `primary::Int64`: Primary identifier
-# - `radius::Float64`: Circular radius [ndim]
-# - `theta4::Float64`: P4 angle [ndim]
-# """
-# function get2BApproximation(dynamicsModel::BCR4BP12DynamicsModel, bodyData::MBD.BodyData, primary::Int64, radius::Float64, theta4::Float64)
-#     lstar12::Float64 = get12CharLength(dynamicsModel)
-#     tstar12::Float64 = get12CharTime(dynamicsModel)
-#     radius_dim::Float64 = radius*lstar12
-#     circularVelocity_dim::Float64 = sqrt(bodyData.gravParam/radius_dim)
-#     v::Float64 = circularVelocity_dim*tstar12/lstar12
-#     q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `primary::Int64`: Primary identifier
+- `radius::Float64`: Circular radius [ndim]
+- `initialEpochGuess::String`: Initial epoch guess
+- `theta4::Float64`: Desired P4 angle [ndim]
+"""
+function get2BApproximation(dynamicsModel::BCR4BP12DynamicsModel, frame::String, primary::Int64, radius::Float64, initialEpochGuess::String, theta4::Float64)
+    lstar12::Float64 = get12CharLength(dynamicsModel)
+    tstar12::Float64 = get12CharTime(dynamicsModel)
+    radiusDim::Float64 = radius*lstar12
+    vDim::Float64 = sqrt(bodyData.gravParam/radiusDim)
+    v::Float64 = vDim*tstar12/lstar12
+    q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
+    t::Float64 = getEpochTime(dynamicsModel, frame, initialEpochGuess, theta4)
 
-#     return primaryInertial2Rotating12(dynamicsModel, primary, [q_primaryInertial], [0.0], theta4)[1]
-# end
+    return primaryEclipticToRotating12(dynamicsModel, frame, primary, [q_primaryInertial], [t])[1][1]
+end
 
 """
     get4Distance(dynamicsModel)
