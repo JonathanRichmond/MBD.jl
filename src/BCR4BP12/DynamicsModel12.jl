@@ -401,7 +401,7 @@ end
 """
     gettheta4(dynamicsModel, frame, initialEpoch)
 
-Return theta4
+Return P4 angle
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object

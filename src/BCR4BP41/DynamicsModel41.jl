@@ -3,7 +3,7 @@ BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
-U: 3/19/25
+U: 3/26/25
 """
 
 import StaticArrays
@@ -12,8 +12,9 @@ import MBD: BCR4BP41DynamicsModel
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
 export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
-export get12MassRatio, get4Distance, get4Mass, get41CharLength, get41CharTime, get41MassRatio
-export isEpochIndependent, rotating41ToPrimaryEcliptic, rotating41ToRotating12
+export gettheta2, get12MassRatio, get4Distance, get4Mass, get41CharLength, get41CharTime
+export get41MassRatio, isEpochIndependent, primaryEclipticToRotating41, rotating41ToPrimaryEcliptic
+export rotating41ToRotating12
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -362,6 +363,33 @@ function getStateTransitionMatrix(dynamicsModel::BCR4BP41DynamicsModel, q0::Vect
 end
 
 """
+    gettheta2(dynamicsModel, frame, initialEpoch)
+
+Return P2 angle
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `initialEpoch::String`: Initial epoch
+"""
+function gettheta2(dynamicsModel::BCR4BP41DynamicsModel, frame::String, initialEpoch::String)
+    epochTime::Float64 = SPICE.str2et(initialEpochGuess)
+    Q2::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[4], frame)[1][1]
+    Q4::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4], frame)[1][1]
+    B1::MBD.BodyData = dynamicsModel.systemData.primaryData[4]
+    P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(Q2, epochTime, B1.gravParam))
+    P2SPICEElements[3] = 0.0
+    R2::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P2SPICEElements[1:8], epochTime)[1:3])
+    P4SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(Q4, epochTime, B1.gravParam))
+    P4SPICEElements[3] = 0.0
+    R4::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(SPICE.conics(P4SPICEElements[1:8], epochTime)[1:3])
+    r2::Float64 = LinearAlgebra.norm(R2)
+    r4::Float64 = LinearAlgebra.norm(R4)
+
+    return pi-acos(LinearAlgebra.dot(R2, R4)/r2/r4)
+end
+
+"""
     get12MassRatio(dynamicsModel)
 
 Return BCR4BP P1-P2 system mass ratio
@@ -443,6 +471,25 @@ Return true if dynamics model is epoch independent
 """
 function isEpochIndependent(dynamicsModel::BCR4BP41DynamicsModel)
     return false
+end
+
+"""
+    primaryEclipticToRotating41(dynamicsModel, frame, primary, states, times)
+
+Return BCR4BP P4-B1 rotating frame states and times [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `primary::Int64`: Primary identifier
+- `states::Vector{Vector{Float64}}`: Primary-centered fixed states [ndim]
+- `times::Vector{Float64}`: Epoch times [s]
+"""
+function primaryEclipticToRotating41(dynamicsModel::BCR4BP41DynamicsModel, frame::String, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    dynamicsModel12 = MBD.BCR4BP12DynamicsModel(dynamicsModel.systemData)
+    (states12::Vector{Vector{Float64}}, times12::Vector{Float64}) = primaryEclipticToRotating12(dynamicsModel12, frame, primary, states, times)
+
+    return rotating12ToRotating41(dynamicsModel12, states12, times12)
 end
 
 """
