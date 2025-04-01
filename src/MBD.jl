@@ -874,7 +874,7 @@ Multiple shooter continuation engine object
 - `solution1::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `paramName::String`: Natural parameter name
-- `paramIndex::Int64`: Natural parameter index to step in (default = 1)
+- `paramIndex::Int64`: Natural parameter index to step in
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-10)
@@ -888,7 +888,7 @@ mutable struct CR3BPMultipleShooterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPMultipleShooterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64 = 1, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+    function CR3BPMultipleShooterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
