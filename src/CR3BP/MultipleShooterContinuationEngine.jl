@@ -9,7 +9,7 @@ import StaticArrays
 import MBD: CR3BPMultipleShooterContinuationEngine
 
 export addEndCheck!, addJumpCheck!, computeStateStep, computeTimeStep, convergeInitialSolution
-export resetEngine!
+export endContinuation, resetEngine!
 
 """
     addEndCheck!(multipleShooterContinuationEngine, endCheck)
@@ -69,23 +69,6 @@ function computeTimeStep(multipleShooterContinuationEngine::CR3BPMultipleShooter
     return (time2-time1)/data.currentStepSize
 end
 
-# """
-#     constrainNextGuess!(jacobiConstantContinuationEngine, data)
-
-# Return Jacobi constant continuation engine object with updated constraints
-
-# # Arguments
-# - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-# - `data::CR3BPContinuationData`: CR3BP continuation data object
-# """
-# function constrainNextGuess!(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.CR3BPContinuationData)
-#     for constraint::MBD.AbstractConstraint in keys(data.nextGuess.constraintIndexMap)
-#         if typeof(constraint) == MBD.JacobiConstraint
-#             constraint.value += data.currentStepSize
-#         end
-#     end
-# end
-
 """
     convergeInitialSolution(multipleShooterContinuationEngine, initialGuess)
 
@@ -99,22 +82,22 @@ function convergeInitialSolution(multipleShooterContinuationEngine::CR3BPMultipl
     return solve!(multipleShooterContinuationEngine.corrector, initialGuess)
 end
 
-# """
-#     endContinuation(jacobiConstantContinuationEngine, data)
+"""
+    endContinuation(multipleShooterContinuationEngine, data)
 
-# Return true if continuation should end
+Return true if continuation should end
 
-# # Arguments
-# - `jacobiConstantContinuationEngine::JacobiConstantContinuationEngine`: Jacobi constant continuation engine object
-# - `data::CR3BPContinuationData`: CR3BP continuation data object
-# """
-# function endContinuation(jacobiConstantContinuationEngine::JacobiConstantContinuationEngine, data::MBD.CR3BPContinuationData)
-#     for endCheck::MBD.AbstractContinuationEndCheck in jacobiConstantContinuationEngine.endChecks
-#         isContinuationDone(endCheck, data) && (return true)
-#     end
+# Arguments
+- `multipleShooterContinuationEngine::CR3BPMultipleShooterContinuationEngine`:CR3BP multiple shooter continuation engine object
+- `data::CR3BPContinuationData`: CR3BP continuation data object
+"""
+function endContinuation(multipleShooterContinuationEngine::CR3BPMultipleShooterContinuationEngine, data::MBD.CR3BPContinuationData)
+    for endCheck::MBD.AbstractContinuationEndCheck in multipleShooterContinuationEngine.endChecks
+        isContinuationDone(endCheck, data) && (return true)
+    end
 
-#     return false
-# end
+    return false
+end
 
 """
     resetEngine!(multipleShooterContinuationEngine, solution1, solution2)
