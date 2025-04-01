@@ -132,7 +132,7 @@ function doContinuation!(jacobiConstantContinuationEngine::JacobiConstantContinu
     end
     if (!jacobiConstantContinuationEngine.storeIntermediateMembers && (getNumSteps(jacobiConstantContinuationEngine.dataInProgress) > 2))
         push!(jacobiConstantContinuationEngine.dataInProgress.family.nodes, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes[n]) for n = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.nodes)])
-            push!(jacobiConstantContinuationEngine.dataInProgress.family.segments, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments)])
+        push!(jacobiConstantContinuationEngine.dataInProgress.family.segments, [shallowClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments)])
     end
 
     return jacobiConstantContinuationEngine.dataInProgress.family

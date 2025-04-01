@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 3/3/25
+U: 4/1/25
 """
 module MBD
 
@@ -801,7 +801,7 @@ CR3BP natural parameter continuation engine object
 - `paramIndex::Int64`: Natural parameter index to step in
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
-- `tol::Float64`: Convergence tolerance (default = 1E-10)
+- `tol::Float64`: Convergence tolerance (default = 1E-11)
 """
 mutable struct CR3BPNaturalParameterContinuationEngine
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
@@ -812,7 +812,7 @@ mutable struct CR3BPNaturalParameterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
@@ -838,7 +838,7 @@ Jacobi constant continuation engine object
 - `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
-- `tol::Float64`: Convergence tolerance (default = 1E-10)
+- `tol::Float64`: Convergence tolerance (default = 1E-11)
 """
 mutable struct JacobiConstantContinuationEngine
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
@@ -849,7 +849,7 @@ mutable struct JacobiConstantContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
@@ -864,6 +864,45 @@ mutable struct JacobiConstantContinuationEngine
     end
 end
 Base.:(==)(jacobiConstantContinuationEngine1::JacobiConstantContinuationEngine, jacobiConstantContinuationEngine2::JacobiConstantContinuationEngine) = ((jacobiConstantContinuationEngine1.corrector == jacobiConstantContinuationEngine2.corrector) && (jacobiConstantContinuationEngine1.dataInProgress == jacobiConstantContinuationEngine2.dataInProgress) && (jacobiConstantContinuationEngine1.endChecks == jacobiConstantContinuationEngine2.endChecks) && (jacobiConstantContinuationEngine1.jumpChecks == jacobiConstantContinuationEngine2.jumpChecks) && (jacobiConstantContinuationEngine1.stepSizeGenerator == jacobiConstantContinuationEngine2.stepSizeGenerator))
+
+"""
+    CR3BPMultipleShooterContinuationEngine(solution1, solution2, paramName, paramIndex, initialParamStepSize, maxParamStepSize; tol)
+
+Multiple shooter continuation engine object
+
+# Arguments
+- `solution1::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
+- `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
+- `paramName::String`: Natural parameter name
+- `paramIndex::Int64`: Natural parameter index to step in (default = 1)
+- `initialParamStepSize::Float64`: Initial step size
+- `maxParamStepSize::Float64`: Maximum parameter step size
+- `tol::Float64`: Convergence tolerance (default = 1E-10)
+"""
+mutable struct CR3BPMultipleShooterContinuationEngine
+    corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
+    dataInProgress::CR3BPContinuationData                               # Continuation data
+    endChecks::Vector{AbstractContinuationEndCheck}                     # Continuation end checks
+    jumpChecks::Vector{AbstractContinuationJumpCheck}                   # Continuation jump checks
+    printProgress::Bool                                                 # Print progress?
+    stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
+    storeIntermediateMembers::Bool                                      # Store intermediate family members?
+
+    function CR3BPMultipleShooterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64 = 1, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+        this = new()
+
+        this.corrector = CR3BPMultipleShooter(tol)
+        this.dataInProgress = CR3BPContinuationData(solution1, solution2)
+        this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
+        this.jumpChecks = []
+        this.endChecks = []
+        this.storeIntermediateMembers = true
+        this.printProgress = true
+
+        return this
+    end
+end
+Base.:(==)(multipleShooterContinuationEngine1::CR3BPMultipleShooterContinuationEngine, multipleShooterContinuationEngine2::CR3BPMultipleShooterContinuationEngine) = ((multipleShooterContinuationEngine1.corrector == multipleShooterContinuationEngine2.corrector) && (multipleShooterContinuationEngine1.dataInProgress == multipleShooterContinuationEngine2.dataInProgress) && (multipleShooterContinuationEngine1.endChecks == multipleShooterContinuationEngine2.endChecks) && (multipleShooterContinuationEngine1.jumpChecks == multipleShooterContinuationEngine2.jumpChecks) && (multipleShooterContinuationEngine1.stepSizeGenerator == multipleShooterContinuationEngine2.stepSizeGenerator))
 
 # """
 #     Bifurcation(family, orbit, index, type, bifurcation)
@@ -1311,6 +1350,7 @@ include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/Manifold.jl")
 include("CR3BP/ManifoldArc.jl")
 include("CR3BP/MultipleShooter.jl")
+include("CR3BP/MultipleShooterContinuationEngine.jl")
 include("CR3BP/MultipleShooterProblem.jl")
 include("CR3BP/NaturalParameterContinuationEngine.jl")
 include("CR3BP/Node.jl")

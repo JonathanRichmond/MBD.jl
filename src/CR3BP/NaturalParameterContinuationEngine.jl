@@ -147,7 +147,7 @@ function doContinuation!(naturalParameterContinuationEngine::CR3BPNaturalParamet
     end
     if (!naturalParameterContinuationEngine.storeIntermediateMembers && (getNumSteps(naturalParameterContinuationEngine.dataInProgress) > 2))
         push!(naturalParameterContinuationEngine.dataInProgress.family.nodes, [shallowClone(naturalParameterContinuationEngine.dataInProgress.previousSolution.nodes[n]) for n = 1:length(naturalParameterContinuationEngine.dataInProgress.previousSolution.nodes)])
-            push!(naturalParameterContinuationEngine.dataInProgress.family.segments, [shallowClone(naturalParameterContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(naturalParameterContinuationEngine.dataInProgress.previousSolution.segments)])
+        push!(naturalParameterContinuationEngine.dataInProgress.family.segments, [shallowClone(naturalParameterContinuationEngine.dataInProgress.previousSolution.segments[s]) for s = 1:length(naturalParameterContinuationEngine.dataInProgress.previousSolution.segments)])
     end
 
     return naturalParameterContinuationEngine.dataInProgress.family
