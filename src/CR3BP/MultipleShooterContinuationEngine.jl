@@ -63,8 +63,14 @@ Return update step for final time
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
 function computeTimeStep(multipleShooterContinuationEngine::CR3BPMultipleShooterContinuationEngine, data::MBD.CR3BPContinuationData)
-    time1::Float64 = data.twoPreviousSolution.nodes[end].epoch.data[1]
-    time2::Float64 = data.previousSolution.nodes[end].epoch.data[1]
+    time1::Float64 = 0.0
+    time2::Float64 = 0.0
+    for s = 1:length(data.twoPreviousSolution.segments)
+        time1 += data.twoPreviousSolution.segments[s].TOF.data[1]
+        time2 += data.previousSolution.segments[s].TOF.data[1]
+    end
+    time1 *= 2
+    time2 *= 2
 
     return (time2-time1)/data.currentStepSize
 end
