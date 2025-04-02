@@ -20,7 +20,7 @@ Return true if continuation is done
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
 function isContinuationDone(numberStepsContinuationEndCheck::NumberStepsContinuationEndCheck, data::MBD.CR3BPContinuationData)
-    (getNumSteps(data) >= numberStepsContinuationEndCheck.maxSteps) && println("Number of continuation steps reached!")
+    (getNumSteps(data) >= numberStepsContinuationEndCheck.maxSteps) && println("\nNumber of continuation steps reached!")
 
     return (getNumSteps(data) >= numberStepsContinuationEndCheck.maxSteps)
 end

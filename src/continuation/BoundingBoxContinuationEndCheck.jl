@@ -51,7 +51,7 @@ function isContinuationDone(boundingBoxContinuationEndCheck::BoundingBoxContinua
             for (index2::Int16, value2::Vector{Float64}) in boundingBoxContinuationEndCheck.variableBounds
                 freeVariable::Float64 = freeVariableVector[index2]
                 if ((freeVariable < value2[1]) || (freeVariable > value2[2]))
-                    println("Continuation bounding box reached!")
+                    println("\nContinuation bounding box reached!")
                     return true
                 end
             end
