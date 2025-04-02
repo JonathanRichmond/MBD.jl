@@ -706,7 +706,7 @@ mutable struct AdaptiveStepSizeByElementGenerator
         this.elementName = elementName
         this.elementIndex = Int16(elementIndex)
         this.initialStepSize = initialStepSize
-        this.minStepSize = (initialStepSize < 0) ? -1E-10 : 1E-10
+        this.minStepSize = (initialStepSize < 0) ? -1E-8 : 1E-8
         this.maxStepSize = 1E-1
         this.maxElementStepSize = maxElementStepSize
         this.scaleFactor = 2.0
