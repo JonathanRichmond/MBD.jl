@@ -41,7 +41,6 @@ function getFullUpdate(minimumNormUpdateGenerator::MinimumNormUpdateGenerator, m
     (length(FX) <= numFreeVariables) || throw(ErrorException("Cannot generate update: Number of constraints is greater than number of free variables"))
     solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
     dX::Vector{Float64} = solver\FX
-    any(isnan, dX) && (dX = LinearAlgebra.pinv(jacobian)*FX)
 
     return dX
 end
