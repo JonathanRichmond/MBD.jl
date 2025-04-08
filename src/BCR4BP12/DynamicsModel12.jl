@@ -235,7 +235,7 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
     omm12::Float64 = 1-mu12
     m4::Float64 = get4Mass(dynamicsModel)
     a4::Float64 = get4Distance(dynamicsModel)
-    CR3BPSystemData = MBD.CR3BPSystemData(dynamicsModel.primaryNames[1], dynamicsModel.primaryNames[2])
+    CR3BPSystemData = MBD.CR3BPSystemData(dynamicsModel.systemData.primaryNames[1], dynamicsModel.systemData.primaryNames[2])
     CR3BPDynamicsModel = MBD.CR3BPDynamicsModel(CR3BPSystemData)
     pos::Vector{Float64} = zeros(Float64, 3)
     theta4::Float64 = 0.0
