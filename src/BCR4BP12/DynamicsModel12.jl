@@ -251,8 +251,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
     r_23_5::Float64 = r_23_3*r_23^2
     r_43_5::Float64 = r_43_3*r_43^2
     F::Vector{Float64} = [X[1]-omm12*(X[1]+mu12)/r_13_3-mu12*(X[1]-omm12)/r_23_3-m4*(X[1]-a4*cos(theta4))/r_43_3-m4*cos(theta4)/a4^2, X[2]-omm12*X[2]/r_13_3-mu12*X[2]/r_23_3-m4*(X[2]-a4*sin(theta4))/r_43_3-m4*sin(theta4)/a4^2]
-    println("Solving for instantaneous equilibrium point location:")
-    println("\tP4 angle: $theta4")
     count::Int16 = 0
     maxCount::Int16 = 20
     isDone::Bool = false
@@ -282,7 +280,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
         end
         (count >= maxCount) && throw(ErrorException("Could not converge on instantaneous equilibrium point location for P4 angle $theta4"))
         theta4 = (abs(theta4f-theta4) > 0.1) ? theta4-0.1 : theta4f
-        println("\tP4 angle: $theta4")
         r_43 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
         r_43_3 = r_43^3
         r_43_5 = r_43_3*r_43^2
