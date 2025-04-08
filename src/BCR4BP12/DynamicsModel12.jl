@@ -289,6 +289,7 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
         count = 0
     end
     pos[1:2] = X
+    println("Pos: $(pos[1:2])")
 
     return pos
 end
