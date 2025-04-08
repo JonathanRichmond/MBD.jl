@@ -241,7 +241,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
     pos::Vector{Float64} = zeros(Float64, 3)
     theta4::Float64 = 0.0
     X::Vector{Float64} = getEquilibriumPoint(CR3BPDynamicsModel, point)[1:2]
-    println("\tX: $X")
     r_13::Float64 = sqrt((X[1]+mu12)^2+X[2]^2)
     r_23::Float64 = sqrt((X[1]-omm12)^2+X[2]^2)
     r_43::Float64 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
@@ -263,15 +262,10 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
             jacobian[1,2] = 3*omm12*(X[1]+mu12)*X[2]/r_13_5+3*mu12*(X[1]-omm12)*X[2]/r_23_5+3*m4*(X[1]-a4*cos(theta4))*(X[2]-a4*sin(theta4))/r_43_5
             jacobian[2,1] = jacobian[1,2]
             jacobian[2,2] = 1-omm12/r_13_3-mu12/r_23_3-m4/r_43_3+3*omm12*X[2]^2/r_13_5+3*mu12*X[2]^2/r_23_5+3*m4*(X[2]-a4*sin(theta4))^2/r_43_5
-            println("\tDF: $jacobian")
             FX::Vector{Float64} = -1.0.*F
-            println("\tFX: $FX")
             solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
             dX::Vector{Float64} = solver\FX
-            any(isnan, dX) && (dX = LinearAlgebra.pinv(jacobian)*FX)
-            println("\tdX: $dX")
             X = X+dX
-            println("\tX: $X")
             r_13 = sqrt((X[1]+mu12)^2+X[2]^2)
             r_23 = sqrt((X[1]-omm12)^2+X[2]^2)
             r_43 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
@@ -293,7 +287,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
         count = 0
     end
     pos[1:2] = X
-    println("Pos: $(pos[1:2])")
 
     return pos
 end
