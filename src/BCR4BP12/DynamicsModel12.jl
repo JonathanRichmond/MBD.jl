@@ -241,6 +241,7 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
     pos::Vector{Float64} = zeros(Float64, 3)
     theta4::Float64 = 0.0
     X::Vector{Float64} = getEquilibriumPoint(CR3BPDynamicsModel, point)[1:2]
+    println("\tX: $X")
     r_13::Float64 = sqrt((X[1]+mu12)^2+X[2]^2)
     r_23::Float64 = sqrt((X[1]-omm12)^2+X[2]^2)
     r_43::Float64 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
@@ -266,6 +267,7 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
             solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
             dX::Vector{Float64} = solver\FX
             X = X+dX
+            println("\tX: $X")
             r_13 = sqrt((X[1]+mu12)^2+X[2]^2)
             r_23 = sqrt((X[1]-omm12)^2+X[2]^2)
             r_43 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
