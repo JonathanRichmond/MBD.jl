@@ -253,12 +253,11 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
     F::Vector{Float64} = [X[1]-omm12*(X[1]+mu12)/r_13_3-mu12*(X[1]-omm12)/r_23_3-m4*(X[1]-a4*cos(theta4))/r_43_3-m4*cos(theta4)/a4^2, X[2]-omm12*X[2]/r_13_3-mu12*X[2]/r_23_3-m4*(X[2]-a4*sin(theta4))/r_43_3-m4*sin(theta4)/a4^2]
     println("Solving for instantaneous equilibrium point location:")
     println("\tP4 angle: $theta4")
-    println("\t\t$F")
     count::Int16 = 0
     maxCount::Int16 = 20
     isDone::Bool = false
     while !isDone
-        (theta4 == theta4f) && (isDone = true)
+        (abs(theta4f-theta4) <= tol) && (isDone = true)
         while (LinearAlgebra.norm(F) > tol) && (count < maxCount)
             jacobian::Matrix{Float64} = Matrix{Float64}(undef, 2, 2)
             jacobian[1,1] = 1-omm12/r_13_3-mu12/r_23_3-m4/r_43_3+3*omm12*(X[1]+mu12)^2/r_13_5+3*mu12*(X[1]-omm12)^2/r_23_5+3*m4*(X[1]-a4*cos(theta4))^2/r_43_5
@@ -269,7 +268,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
             solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
             dX::Vector{Float64} = solver\FX
             X = X+dX
-            println("\t\tX: $X")
             r_13 = sqrt((X[1]+mu12)^2+X[2]^2)
             r_23 = sqrt((X[1]-omm12)^2+X[2]^2)
             r_43 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
@@ -280,7 +278,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
             r_23_5 = r_23_3*r_23^2
             r_43_5 = r_43_3*r_43^2
             F = [X[1]-omm12*(X[1]+mu12)/r_13_3-mu12*(X[1]-omm12)/r_23_3-m4*(X[1]-a4*cos(theta4))/r_43_3-m4*cos(theta4)/a4^2, X[2]-omm12*X[2]/r_13_3-mu12*X[2]/r_23_3-m4*(X[2]-a4*sin(theta4))/r_43_3-m4*sin(theta4)/a4^2]
-            println("\t$F")
             count += 1
         end
         (count >= maxCount) && throw(ErrorException("Could not converge on instantaneous equilibrium point location for P4 angle $theta4"))
@@ -290,7 +287,6 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
         r_43_3 = r_43^3
         r_43_5 = r_43_3*r_43^2
         F = [X[1]-omm12*(X[1]+mu12)/r_13_3-mu12*(X[1]-omm12)/r_23_3-m4*(X[1]-a4*cos(theta4))/r_43_3-m4*cos(theta4)/a4^2, X[2]-omm12*X[2]/r_13_3-mu12*X[2]/r_23_3-m4*(X[2]-a4*sin(theta4))/r_43_3-m4*sin(theta4)/a4^2]
-        println("\t\t$F")
         count = 0
     end
     pos[1:2] = X
