@@ -266,6 +266,7 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
             FX::Vector{Float64} = -1.0.*F
             solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
             dX::Vector{Float64} = solver\FX
+            println("\tdX: $dX")
             X = X+dX
             println("\tX: $X")
             r_13 = sqrt((X[1]+mu12)^2+X[2]^2)
