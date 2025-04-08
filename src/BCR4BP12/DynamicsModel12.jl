@@ -231,6 +231,7 @@ Return location of BCR4BP P1-P2 instantaneous equilibrium point in rotating fram
 function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, point::Int64, theta4f::Float64)
     tol::Float64 = 1E-12
     (1 <= point <= 2) || throw(ArgumentError("(Currently) Invalid equilibrium point $point"))
+    theta4f = (theta4f < 0) ? theta4f : theta4F-2*pi
     mu12::Float64 = get12MassRatio(dynamicsModel)
     omm12::Float64 = 1-mu12
     m4::Float64 = get4Mass(dynamicsModel)
@@ -255,7 +256,9 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
     println("\t\t$F")
     count::Int16 = 0
     maxCount::Int16 = 20
-    while theta4 <= theta4f
+    isDone::Bool = false
+    while !isDone
+        (theta4 == theta4f) && (isDone = true)
         while (LinearAlgebra.norm(F) > tol) && (count < maxCount)
             jacobian::Matrix{Float64} = Matrix{Float64}(undef, 2, 2)
             jacobian[1,1] = 1-omm12/r_13_3-mu12/r_23_3-m4/r_43_3+3*omm12*(X[1]+mu12)^2/r_13_5+3*mu12*(X[1]-omm12)^2/r_23_5+3*m4*(X[1]-a4*cos(theta4))^2/r_43_5
@@ -281,7 +284,7 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP12DynamicsModel, 
             count += 1
         end
         (count >= maxCount) && throw(ErrorException("Could not converge on instantaneous equilibrium point location for P4 angle $theta4"))
-        theta4 += (theta4f-theta4 > 0.1) ? 0.1 : theta4f-theta4f
+        theta4 += (abs(theta4f-theta4) > 0.1) ? -0.1 : theta4f-theta4f
         println("\tP4 angle: $theta4")
         r_43 = sqrt((X[1]-a4*cos(theta4))^2+(X[2]-a4*sin(theta4))^2)
         r_43_3 = r_43^3
