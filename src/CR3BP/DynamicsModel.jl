@@ -168,7 +168,7 @@ end
 """
     getEquilibriumPoint(dynamicsModel, point)
 
-Return location of CR3BP equilibirum point in rotating frame
+Return location of CR3BP equilibrium point in rotating frame
 
 # Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
@@ -178,7 +178,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)
     tol::Float64 = 1E-14
     (1 <= point <= 5) || throw(ArgumentError("Invalid equilibrium point $point"))
     mu::Float64 = getMassRatio(dynamicsModel)
-    pos::StaticArrays.MVector{3, Float64} = StaticArrays.MVector{3}(zeros(Float64, 3))
+    pos::Vector{Float64} = zeros(Float64, 3)
     gamma::Float64 = 0.0
     gamma_prev::Float64 = -999.0
     count::Int16 = 0
@@ -212,7 +212,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)
         pos[2] = (point == 4 ? sin(pi/3) : -sin(pi/3))
     end
 
-    (count >= maxCount) ? throw(ErrorException("Could not converge on equilibrium pointlocation")) : (return pos)
+    (count >= maxCount) ? throw(ErrorException("Could not converge on equilibrium point location")) : (return pos)
 end
 
 """

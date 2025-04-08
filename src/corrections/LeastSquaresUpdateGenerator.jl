@@ -37,7 +37,7 @@ function getFullUpdate(leastSquaresUpdateGenerator::LeastSquaresUpdateGenerator,
     numConstraints::Int64 = getNumConstraints(multipleShooterProblem)
     numFreeVariables::Int64 = getNumFreeVariables!(multipleShooterProblem)
     jacobian::Matrix{Float64} = getJacobian!(multipleShooterProblem)
-    FX::StaticArrays.SVector{numConstraints, Float64} = -1 .*getConstraintVector!(multipleShooterProblem)
+    FX::StaticArrays.SVector{numConstraints, Float64} = -1.0.*getConstraintVector!(multipleShooterProblem)
     (length(FX) > numFreeVariables) || throw(ErrorException("Cannot generate update: Number of constraints is not greater than number of free variables"))
     solver = LinearAlgebra.qr(jacobian'*jacobian)
     X::Vector{Float64} = solver\(jacobian'*FX)
