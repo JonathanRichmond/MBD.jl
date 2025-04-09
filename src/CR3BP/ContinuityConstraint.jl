@@ -3,7 +3,7 @@ CR3BP continuity constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
-U: 1/16/25
+U: 4/9/25
 """
 
 import StaticArrays
@@ -77,14 +77,15 @@ function getPartials_ConstraintWRTVariables(continuityConstraint::CR3BPContinuit
 end
 
 """
-    shallowClone(continuityConstraint)
+    shallowClone(continuityConstraint, dynamicsModel)
 
 Return copy of continuity constraint object
 
 # Arguments
 - `continuityConstraint::CR3BPContinuityConstraint`: CR3BP continuity constraint object
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-function shallowClone(continuityConstraint::CR3BPContinuityConstraint)
+function shallowClone(continuityConstraint::CR3BPContinuityConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
     object = CR3BPContinuityConstraint(continuityConstraint.segment)
     object.constrainedIndices = continuityConstraint.constrainedIndices
     object.segment = continuityConstraint.segment

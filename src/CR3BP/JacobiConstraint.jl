@@ -3,7 +3,7 @@ Jacobi constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/23/22
-U: 1/16/25
+U: 4/9/25
 """
 
 import MBD: JacobiConstraint
@@ -62,14 +62,15 @@ function getPartials_ConstraintWRTVariables(jacobiConstraint::JacobiConstraint, 
 end
 
 """
-    shallowClone(jacobiConstraint)
+    shallowClone(jacobiConstraint, dynamicsModel)
 
 Return copy of Jacobi constraint object
 
 # Arguments
 - `jacobiConstraint::JacobiConstraint`: Jacobi constraint object
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-function shallowClone(jacobiConstraint::JacobiConstraint)
+function shallowClone(jacobiConstraint::JacobiConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
     node = MBD.CR3BPNode(jacobiConstraint.epoch.data[1], jacobiConstraint.state.data, jacobiConstraint.dynamicsModel)
     object = JacobiConstraint(node, jacobiConstraint.value)
     object.epoch = jacobiConstraint.epoch

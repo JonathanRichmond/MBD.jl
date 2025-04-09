@@ -261,7 +261,7 @@ function deepClone(multipleShooterProblem::CR3BPMultipleShooterProblem)
     end
     object.constraintIndexMap = Dict{MBD.AbstractConstraint, Int16}()
     for (index::MBD.AbstractConstraint, value::Int16) in multipleShooterProblem.constraintIndexMap
-        constraint::MBD.AbstractConstraint = MBD.shallowClone(index)
+        constraint::MBD.AbstractConstraint = MBD.shallowClone(index, multipleShooterProblem.nodes[1].dynamicsModel)
         updatePointers!(constraint, copiedObjectMap)
         object.constraintIndexMap[constraint] = value
     end

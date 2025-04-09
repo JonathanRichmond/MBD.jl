@@ -64,7 +64,7 @@ Return copy of state constraint object
 - `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-function shallowClone(stateConstraint::CR3BPStateConstraint, dynamicsModel::CR3BPDynamicsModel)
+function shallowClone(stateConstraint::CR3BPStateConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
     node = MBD.CR3BPNode(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
     object = CR3BPStateConstraint(node, [Int64(i) for i in stateConstraint.constrainedIndices], stateConstraint.values)
     object.constrainedIndices = stateConstraint.constrainedIndices

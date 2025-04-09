@@ -58,14 +58,15 @@ function getPartials_ConstraintWRTVariables(stateMatchConstraint::StateMatchCons
 end
 
 """
-    shallowClone(stateMatchConstraint)
+    shallowClone(stateMatchConstraint, dynamicsModel)
 
 Return copy of state match constraint object
 
 # Arguments
 - `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
-function shallowClone(stateMatchConstraint::StateMatchConstraint)
+function shallowClone(stateMatchConstraint::StateMatchConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
     return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
 end
 
