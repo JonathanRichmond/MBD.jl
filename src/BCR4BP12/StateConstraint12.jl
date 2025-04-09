@@ -64,7 +64,7 @@ Return copy of state constraint object
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
 function shallowClone(stateConstraint::BCR4BP12StateConstraint, dynamicsModel::BCR4BP12DynamicsModel)
-    node = MBD.BCR4BP12Node(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
+    node = MBD.BCR4BP12Node(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
     object = BCR4BP12StateConstraint(node, [Int64(i) for i in stateConstraint.constrainedIndices], stateConstraint.values)
     object.constrainedIndices = stateConstraint.constrainedIndices
     object.values = stateConstraint.values
