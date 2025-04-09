@@ -18,6 +18,19 @@ Return true if problem is converged
 
 # Arguments
 - `constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck`: Constraint vector L2 norm convergence check object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
+"""
+function isConverged(constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck, multipleShooterProblem::MBD.BCR4BP12MultipleShooterProblem)
+    return LinearAlgebra.norm(getConstraintVector!(multipleShooterProblem)) <= constraintVectorL2NormConvergenceCheck.maxVectorNorm
+end
+
+"""
+    isConverged(constraintVectorL2NormConvergenceCheck, mulitpleShooterProblem)
+
+Return true if problem is converged
+
+# Arguments
+- `constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck`: Constraint vector L2 norm convergence check object
 - `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 """
 function isConverged(constraintVectorL2NormConvergenceCheck::ConstraintVectorL2NormConvergenceCheck, multipleShooterProblem::MBD.CR3BPMultipleShooterProblem)
