@@ -76,14 +76,15 @@ function getPartials_ConstraintWRTVariables(continuityConstraint::BCR4BP12Contin
 end
 
 """
-    shallowClone(continuityConstraint)
+    shallowClone(continuityConstraint, dynamicsModel)
 
 Return copy of continuity constraint object
 
 # Arguments
 - `continuityConstraint::BCR4BP12ContinuityConstraint`: BCR4BP P1-P2 continuity constraint object
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
-function shallowClone(continuityConstraint::BCR4BP12ContinuityConstraint)
+function shallowClone(continuityConstraint::BCR4BP12ContinuityConstraint, dynamicsModel::BCR4BP12DynamicsModel)
     object = BCR4BP12ContinuityConstraint(continuityConstraint.segment)
     object.constrainedIndices = continuityConstraint.constrainedIndices
     object.segment = continuityConstraint.segment
