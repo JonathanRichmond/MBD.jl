@@ -1,13 +1,12 @@
 """
-CR3BP multiple shooter problem wrapper
+BCR4BP P1-P2 multiple shooter problem wrapper
 
 Author: Jonathan Richmond
-C: 9/7/22
-U: 3/4/25
+C: 4/9/25
 """
 
 import StaticArrays
-import MBD: CR3BPMultipleShooterProblem, UNINITIALIZED_INDEX
+import MBD: BCR4BP12MultipleShooterProblem, UNINITIALIZED_INDEX
 
 export addConstraint!, addSegment!, addVariable!, buildAdjacencyMatrix, buildProblem!
 export checkJacobian, checkValidGraph, getConstraints, getConstraintVector!
@@ -21,10 +20,10 @@ export setFreeVariableVector!, updateConstraintIndexMap!, updateFreeVariableInde
 Return multiple shooter problem object with constraint
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 - `constraint::AbstractConstraint`: Constraint
 """
-function addConstraint!(multipleShooterProblem::CR3BPMultipleShooterProblem, constraint::MBD.AbstractConstraint)
+function addConstraint!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, constraint::MBD.AbstractConstraint)
     multipleShooterProblem.constraintIndexMap[constraint] = UNINITIALIZED_INDEX
     updateConstraintIndexMap!(multipleShooterProblem)
 end
@@ -35,10 +34,10 @@ end
 Return multiple shooter problem object with segment
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
-- `segment::CR3BPSegment`: CR3BP segment object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
+- `segment::BCR4BP12Segment`: BCR4BP P1-P2 segment object
 """
-function addSegment!(multipleShooterProblem::CR3BPMultipleShooterProblem, segment::MBD.CR3BPSegment)
+function addSegment!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, segment::MBD.BCR4BP12Segment)
     push!(multipleShooterProblem.segments, segment)
     multipleShooterProblem.hasBeenBuilt = false
 end
@@ -49,10 +48,10 @@ end
 Return multiple shooter problem object with variable
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 - `variable::Variable`: Variable
 """
-function addVariable!(multipleShooterProblem::CR3BPMultipleShooterProblem, variable::MBD.Variable)
+function addVariable!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, variable::MBD.Variable)
     multipleShooterProblem.freeVariableIndexMap[variable] = UNINITIALIZED_INDEX
     updateFreeVariableIndexMap!(multipleShooterProblem)
     resetPropagatedArcs!(multipleShooterProblem)
@@ -64,15 +63,15 @@ end
 Return node and segment adjacency matrix
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function buildAdjacencyMatrix(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function buildAdjacencyMatrix(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     numNodes::Int16 = length(multipleShooterProblem.nodes)
     adjacencyMatrix::Matrix{Int16} = zeros(Int16, (numNodes,numNodes))
     for segmentIndex::Int16 in Int16(1):Int16(length(multipleShooterProblem.segments))
-        segment::MBD.CR3BPSegment = multipleShooterProblem.segments[segmentIndex]
-        node0::MBD.CR3BPNode = segment.originNode
-        nodef::MBD.CR3BPNode = segment.terminalNode
+        segment::MBD.BCR4BP12Segment = multipleShooterProblem.segments[segmentIndex]
+        node0::MBD.BCR4BP12Node = segment.originNode
+        nodef::MBD.BCR4BP12Node = segment.terminalNode
         index0::Int16 = Int16(0)
         indexf::Int16 = Int16(0)
         for nodeIndex::Int16 in Int16(1):numNodes
@@ -93,17 +92,17 @@ end
 Return built multiple shooter problem object
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function buildProblem!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function buildProblem!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     empty!(multipleShooterProblem.freeVariableIndexMap)
     empty!(multipleShooterProblem.nodes)
-    for segment::MBD.CR3BPSegment in multipleShooterProblem.segments
-        node0::MBD.CR3BPNode = segment.originNode
-        nodef::MBD.CR3BPNode = segment.terminalNode
+    for segment::MBD.BCR4BP12Segment in multipleShooterProblem.segments
+        node0::MBD.BCR4BP12Node = segment.originNode
+        nodef::MBD.BCR4BP12Node = segment.terminalNode
         node0Exists::Bool = false
         nodefExists::Bool = false
-        for node::MBD.CR3BPNode in multipleShooterProblem.nodes
+        for node::MBD.BCR4BP12Node in multipleShooterProblem.nodes
             (hash(node) == hash(node0)) && (node0Exists = true)
             (hash(node) == hash(nodef)) && (nodefExists = true)
         end
@@ -132,12 +131,12 @@ end
 Return true if Jacobian is accurate
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 - `relTol::Float64`: Relative tolerance (default = 2E-3)
 """
-function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relTol::Float64 = 1E-2)
+function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem, relTol::Float64 = 1E-2)
     stepSize::Float64 = sqrt(eps(Float64))
-    problem::CR3BPMultipleShooterProblem = shallowClone(multipleShooterProblem)
+    problem::BCR4BP12MultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
     numFreeVariables::Int64 = getNumFreeVariables!(problem)
     jacobianNumerical::StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64}(zeros(Float64, (numConstraints, numFreeVariables)))
@@ -188,10 +187,10 @@ end
 Return any graph errors
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 - `adjacencyMatrix::Matrix{Int16}`: Adjacency matrix
 """
-function checkValidGraph(multipleShooterProblem::CR3BPMultipleShooterProblem, adjacencyMatrix::Matrix{Int16})
+function checkValidGraph(multipleShooterProblem::BCR4BP12MultipleShooterProblem, adjacencyMatrix::Matrix{Int16})
     errors::Vector{String} = []
     s_adjacency::StaticArrays.SVector{2, Int16} = StaticArrays.SVector(Int16(size(adjacencyMatrix, 1)), Int16(size(adjacencyMatrix, 2)))
     nodeIsLinked::Vector{Bool} = Vector{Bool}(undef, s_adjacency[1])
@@ -234,10 +233,10 @@ end
 Return deep copy of multiple shooter problem object
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function deepClone(multipleShooterProblem::CR3BPMultipleShooterProblem)
-    object = CR3BPMultipleShooterProblem()
+function deepClone(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
+    object = BCR4BP12MultipleShooterProblem()
     copiedObjectMap::Dict = Dict()
     object.freeVariableIndexMap = Dict{MBD.Variable, Int16}()
     for (index::MBD.Variable, value::Int16) in multipleShooterProblem.freeVariableIndexMap
@@ -246,15 +245,15 @@ function deepClone(multipleShooterProblem::CR3BPMultipleShooterProblem)
         object.freeVariableIndexMap[variable] = value
     end
     object.nodes = []
-    for node::MBD.CR3BPNode in multipleShooterProblem.nodes
-        newNode::MBD.CR3BPNode = MBD.shallowClone(node)
+    for node::MBD.BCR4BP12Node in multipleShooterProblem.nodes
+        newNode::MBD.BCR4BP12Node = MBD.shallowClone(node)
         updatePointers!(newNode, copiedObjectMap)
         copiedObjectMap[hash(node)] = newNode
         push!(object.nodes, newNode)
     end
     object.segments = []
-    for segment::MBD.CR3BPSegment in multipleShooterProblem.segments
-        newSegment::MBD.CR3BPSegment = MBD.shallowClone(segment)
+    for segment::MBD.BCR4BP12Segment in multipleShooterProblem.segments
+        newSegment::MBD.BCR4BP12Segment = MBD.shallowClone(segment)
         updatePointers!(newSegment, copiedObjectMap)
         copiedObjectMap[hash(segment)] = newSegment
         push!(object.segments, newSegment)
@@ -277,9 +276,9 @@ end
 Return constraints
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getConstraints(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getConstraints(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     return keys(multipleShooterProblem.constraintIndexMap)
 end
 
@@ -289,9 +288,9 @@ end
 Return constraint vector
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getConstraintVector!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getConstraintVector!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     multipleShooterProblem.constraintVector = Vector{Float64}(undef, getNumConstraints(multipleShooterProblem))
     for (index::MBD.AbstractConstraint, value::Int16) in multipleShooterProblem.constraintIndexMap
         data::Vector{Float64} = evaluateConstraint(index, multipleShooterProblem.freeVariableIndexMap, multipleShooterProblem.freeVariableVector)
@@ -307,9 +306,9 @@ end
 Return free variable index map
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getFreeVariableIndexMap!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getFreeVariableIndexMap!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     
     return multipleShooterProblem.freeVariableIndexMap
@@ -321,9 +320,9 @@ end
 Return free variable vector
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getFreeVariableVector!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getFreeVariableVector!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     multipleShooterProblem.freeVariableVector = Vector{Float64}(undef, getNumFreeVariables!(multipleShooterProblem))
     for (index::MBD.Variable, value::Int16) in multipleShooterProblem.freeVariableIndexMap
@@ -340,9 +339,9 @@ end
 Return Jacobian matrix
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getJacobian!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getJacobian!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     jacobian::Matrix{Float64} = zeros(Float64, (getNumConstraints(multipleShooterProblem),getNumFreeVariables!(multipleShooterProblem)))
     for (index::MBD.AbstractConstraint, value::Int16) in multipleShooterProblem.constraintIndexMap
@@ -362,9 +361,9 @@ end
 Return number of constraints
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getNumConstraints(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getNumConstraints(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     numRows::Int64 = 0
     [numRows += getNumConstraintRows(constraint) for constraint in keys(multipleShooterProblem.constraintIndexMap)]
 
@@ -377,9 +376,9 @@ end
 Return number of free variables
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function getNumFreeVariables!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function getNumFreeVariables!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     multipleShooterProblem.hasBeenBuilt || buildProblem!(multipleShooterProblem)
     numRows::Int64 = 0
     [numRows += getNumFreeVariables(variable) for variable in keys(multipleShooterProblem.freeVariableIndexMap)]
@@ -393,10 +392,10 @@ end
 Return multiple shooter problem object with imported node free variables
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
-- `node::CR3BPNode`: CR3BP node object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
+- `node::BCR4BP12Node`: BCR4BP P1-P2 node object
 """
-function importFreeVariables!(multipleShooterProblem::CR3BPMultipleShooterProblem, node::MBD.CR3BPNode)
+function importFreeVariables!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, node::MBD.BCR4BP12Node)
     map(var -> addVariable!(multipleShooterProblem, var), getVariables(node))
 end
 
@@ -406,10 +405,10 @@ end
 Return multiple shooter problem object with imported segment free variables
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
-- `node::CR3BPSegment`: CR3BP segment object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
+- `node::BCR4BP12Segment`: BCR4BP P1-P2 segment object
 """
-function importFreeVariables!(multipleShooterProblem::CR3BPMultipleShooterProblem, segment::MBD.CR3BPSegment)
+function importFreeVariables!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, segment::MBD.BCR4BP12Segment)
     map(var -> addVariable!(multipleShooterProblem, var), getVariables(segment))
 end
 
@@ -419,10 +418,10 @@ end
 Return multiple shooter problem object with constraint removed
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 - `constraint::AbstractConstraint`: Constraint
 """
-function removeConstraint!(multipleShooterProblem::CR3BPMultipleShooterProblem, constraint::MBD.AbstractConstraint)
+function removeConstraint!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, constraint::MBD.AbstractConstraint)
     delete!(multipleShooterProblem.constraintIndexMap, constraint)
     updateConstraintIndexMap!(multipleShooterProblem)
 end
@@ -433,9 +432,9 @@ end
 Return multiple shooter problem object with empty arcs
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function resetPropagatedArcs!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function resetPropagatedArcs!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     map(seg -> resetPropagatedArc!(seg), multipleShooterProblem.segments)
 end
 
@@ -445,10 +444,10 @@ end
 Return multiple shooter problem object with updated free variable vector
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
-function setFreeVariableVector!(multipleShooterProblem::CR3BPMultipleShooterProblem, freeVariableVector::Vector{Float64})
+function setFreeVariableVector!(multipleShooterProblem::BCR4BP12MultipleShooterProblem, freeVariableVector::Vector{Float64})
     multipleShooterProblem.freeVariableVector = freeVariableVector
     for (index::MBD.Variable, value::Int16) in multipleShooterProblem.freeVariableIndexMap
         numRows::Int16 = Int16(getNumFreeVariables(index))
@@ -466,10 +465,10 @@ end
 Return copy of multiple shooter problem object
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function shallowClone(multipleShooterProblem::CR3BPMultipleShooterProblem)
-    object = CR3BPMultipleShooterProblem()
+function shallowClone(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
+    object = BCR4BP12MultipleShooterProblem()
     object.constraintIndexMap = copy(multipleShooterProblem.constraintIndexMap)
     object.freeVariableIndexMap = copy(multipleShooterProblem.freeVariableIndexMap)
     object.freeVariableVector = copy(multipleShooterProblem.freeVariableVector)
@@ -486,9 +485,9 @@ end
 Return multiple shooter problem object with updated constraint indices
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function updateConstraintIndexMap!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function updateConstraintIndexMap!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     numConstraintRows::Int16 = 1
     for constraint::MBD.AbstractConstraint in keys(multipleShooterProblem.constraintIndexMap)
         multipleShooterProblem.constraintIndexMap[constraint] = numConstraintRows
@@ -502,9 +501,9 @@ end
 Return multiple shooter problem object with updated free variable indices
 
 # Arguments
-- `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
 """
-function updateFreeVariableIndexMap!(multipleShooterProblem::CR3BPMultipleShooterProblem)
+function updateFreeVariableIndexMap!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     numFreeVariableRows::Int16 = 1
     for variable::MBD.Variable in keys(multipleShooterProblem.freeVariableIndexMap)
         multipleShooterProblem.freeVariableIndexMap[variable] = numFreeVariableRows

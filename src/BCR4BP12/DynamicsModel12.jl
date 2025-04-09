@@ -125,7 +125,7 @@ function getEpochDependencies(dynamicsModel::BCR4BP12DynamicsModel, q_full::Vect
     (Int16(length(q_full)) < n_full) && throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
     n_simple::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
 
-    isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple^2+1:n_simple^2+n_simple])
+    isEpochIndependent(dynamicsModel) ? (return zeros(Float64, n_simple)) : (return q_full[n_simple*(n_simple+1)+1:n_simple*(n_simple+1)+n_simple])
 end
 
 """
@@ -578,7 +578,7 @@ Return true if dynamics model is epoch independent
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
 function isEpochIndependent(dynamicsModel::BCR4BP12DynamicsModel)
-    return false
+    return true
 end
 
 """

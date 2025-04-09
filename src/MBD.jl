@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 4/1/25
+U: 4/9/25
 """
 module MBD
 
@@ -1157,6 +1157,194 @@ end
 Base.:(==)(arc1::BCR4BP12Arc, arc2::BCR4BP12Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
 
 """
+    BCR4BP12Node(epoch, state, dynamicsModel)
+
+BCR4BP P1-P2 node object
+
+# Arguments
+- `epoch::Float64`: Epoch [ndim]
+- `state::Vector{Float64}`: State vector [ndim]
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+mutable struct BCR4BP12Node
+    dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model object
+    epoch::Variable                                                     # Epoch variable
+    state::Variable                                                     # State variable
+
+    function BCR4BP12Node(epoch::Float64, state::Vector{Float64}, dynamicsModel::BCR4BP12DynamicsModel)
+        this = new()
+
+        if isEpochIndependent(dynamicsModel)
+            this.epoch = Variable([epoch], [false])
+        else
+            this.epoch = Variable([epoch], [true])
+        end
+        this.epoch.name = "Node Epoch"
+        n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+        (length(state) < n_simple) && throw(ArgumentError("State vector length is $(length(state)), but should be $n_simple"))
+        this.state = Variable(((length(state) > n_simple) ? copy(state[1:n_simple]) : copy(state)), [true for n in 1:length(state)])
+        this.state.name = "Node State"
+        this.dynamicsModel = dynamicsModel
+
+        return this
+    end
+end
+Base.:(==)(node1::BCR4BP12Node, node2::BCR4BP12Node) = ((node1.dynamicsModel == node2.dynamicsModel) && (node1.epoch == node2.epoch) && (node1.state == node2.state))
+
+"""
+    BCR4BP12Segment(TOF, originNode, terminalNode)
+
+BCR4BP P1-P2 segment object
+
+# Arguments
+- `TOF::Float64`: Time-of-flight
+- `originNode::BCR4BP12Node`: Origin node
+- `terminalNode::BCR4BP12Node`: Terminal node
+"""
+mutable struct BCR4BP12Segment
+    originNode::BCR4BP12Node                                            # Origin BCR4BP P1-P2 node object
+    propArc::BCR4BP12Arc                                                # Propagation BCR4BP P1-P2 arc object
+    propagator::Propagator                                              # Propagator object
+    terminalNode::BCR4BP12Node                                          # Terminal BCR4BP P1-P2 node object
+    TOF::Variable                                                       # Time-of-flight variable
+
+    function BCR4BP12Segment(TOF::Float64, originNode::BCR4BP12Node, terminalNode::BCR4BP12Node)
+        this = new()
+
+        (originNode == terminalNode) && throw(ArgumentError("Origin and terminal nodes cannot be identical"))
+        this.TOF = Variable([TOF], [true])
+        this.TOF.name = "Segment Time-of-Flight"
+        this.originNode = originNode
+        this.propArc = BCR4BP12Arc(originNode.dynamicsModel)
+        this.terminalNode = terminalNode
+        this.propagator = Propagator()
+
+        return this
+    end
+end
+Base.:(==)(segment1::BCR4BP12Segment, segment2::BCR4BP12Segment) = ((segment1.originNode == segment2.originNode) && (segment1.terminalNode == segment2.terminalNode) && (segment1.TOF == segment2.TOF))
+
+"""
+    BCR4BP12MultipleShooterProblem()
+
+BCR4BP P1-P2 multiple shooter problem object
+"""
+mutable struct BCR4BP12MultipleShooterProblem
+    constraintIndexMap::Dict{AbstractConstraint, Int16}                 # Map between constraints and first index of contraint equation in constraint vector
+    constraintVector::Vector{Float64}                                   # Constraints
+    freeVariableIndexMap::Dict{Variable, Int16}                         # Map between free variables and first index of free variables in free variable vector
+    freeVariableVector::Vector{Float64}                                 # Free variables
+    hasBeenBuilt::Bool                                                  # Has been built?
+    jacobian::Vector{Vector{Float64}}                                   # Jacobian matrix
+    nodes::Vector{BCR4BP12Node}                                         # BCR4BP P1-P2 node objects
+    segments::Vector{BCR4BP12Segment}                                   # BCR4BP P1-P2 segment objects
+
+    function BCR4BP12MultipleShooterProblem()
+        this = new()
+
+        this.nodes = []
+        this.segments = []
+        this.freeVariableVector = []
+        this.freeVariableIndexMap = Dict{Variable, Int16}()
+        this.constraintVector = []
+        this.constraintIndexMap = Dict{AbstractConstraint, Int16}()
+        this.jacobian = []
+        this.hasBeenBuilt = false
+
+        return this
+    end
+end
+Base.:(==)(problem1::BCR4BP12MultipleShooterProblem, problem2::BCR4BP12MultipleShooterProblem) = ((problem1.constraintVector == problem2.constraintVector) && (problem1.freeVariableVector == problem2.freeVariableVector)  && (problem1.jacobian == problem2.jacobian) && (problem1.nodes == problem2.nodes) && (problem1.segments == problem2.segments))
+
+"""
+    BCR4BP12ContinuityConstraint(segment)
+
+BCR4BP P1-P2 continuity constraint object
+
+# Arguments
+- `segment::BCR4BP12Segment`: BCR4BP P1-P2 segment object
+"""
+mutable struct BCR4BP12ContinuityConstraint <: AbstractConstraint
+    constrainedIndices::Vector{Int16}                                   # Constrained state indices
+    segment::BCR4BP12Segment                                            # BCR4BP P1-P2 segment object
+
+    function BCR4BP12ContinuityConstraint(segment::BCR4BP12Segment)
+        this = new()
+
+        this.segment = segment
+        this.constrainedIndices = Int16(1):Int16(length(segment.originNode.state.data))
+
+        return this
+    end
+end
+Base.:(==)(continuityConstraint1::BCR4BP12ContinuityConstraint, continuityConstraint2::BCR4BP12ContinuityConstraint) = ((continuityConstraint1.constrainedIndices == continuityConstraint2.constrainedIndices) && (continuityConstraint1.segment == continuityConstraint2.segment))
+
+"""
+    BCR4BP12StateConstraint(node, indices, values)
+
+BCR4BP P1-P2 state constraint object
+
+# Arguments
+- `node::BCR4BP12Node`: BCR4BP P1-P2 node object
+- `indices::Vector{Int64}`: Constrained state indices
+- `values::Vector{Float64}`: Constraint values
+"""
+mutable struct BCR4BP12StateConstraint <: AbstractConstraint
+    constrainedIndices::Vector{Int16}                                   # Constrained state indices
+    values::Vector{Float64}                                             # Constraint values
+    variable::Variable                                                  # Constrained variable
+
+    function BCR4BP12StateConstraint(node::BCR4BP12Node, indices::Vector{Int64}, values::Vector{Float64})
+        this = new()
+
+        (length(indices) == length(values)) || throw(ArgumentError("Number of indices, $(length(indices)), must match number of values, $(length(values))"))
+        this.variable = node.state
+        checkIndices(indices, length(this.variable.data))
+        this.constrainedIndices = convert(Vector{Int16}, indices)
+        this.values = copy(values)
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        for index::Int64 in this.constrainedIndices
+            freeVariableMask[index] || throw(ArgumentError("Variable element $index is constrained but not free to vary"))
+        end
+
+        return this
+    end
+end
+Base.:(==)(stateConstraint1::BCR4BP12StateConstraint, stateConstraint2::BCR4BP12StateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
+
+"""
+    BCR4BP12MultipleShooter(tol)
+
+BCR4BP P1-P2 multiple shooter object
+
+# Arguments
+- `tol::Float64`: Convergence tolerance (default = 1E-10)
+"""
+mutable struct BCR4BP12MultipleShooter
+    convergenceCheck::ConstraintVectorL2NormConvergenceCheck            # Convergence check object
+    maxIterations::Int16                                                # Maximum number of solver iterations
+    printProgress::Bool                                                 # Print progress?
+    recentIterationCount::Int16                                         # Number of iterations during last solve
+    solutionInProgress::BCR4BP12MultipleShooterProblem                  # BCR4BP P1-P2 multiple shooter problem object being solved
+    updateGenerators::StaticArrays.SVector{2, AbstractUpdateGenerator}  # Update generator objects
+
+    function BCR4BP12MultipleShooter(tol::Float64 = 1E-10)
+        this = new()
+
+        this.recentIterationCount = Int16(0)
+        this.solutionInProgress = BCR4BP12MultipleShooterProblem()
+        this.convergenceCheck = ConstraintVectorL2NormConvergenceCheck(tol)
+        this.updateGenerators = StaticArrays.SVector(MinimumNormUpdateGenerator(), LeastSquaresUpdateGenerator())
+        this.maxIterations = Int16(25)
+        this.printProgress = false
+
+
+        return this
+    end
+end
+Base.:(==)(multipleShooter1::BCR4BP12MultipleShooter, multipleShooter2::BCR4BP12MultipleShooter) = ((multipleShooter1.convergenceCheck == multipleShooter2.convergenceCheck) && (multipleShooter1.maxIterations == multipleShooter2.maxIterations) && (multipleShooter1.recentIterationCount == multipleShooter2.recentIterationCount) && (multipleShooter1.solutionInProgress == multipleShooter2.solutionInProgress))
+
+"""
     BCR4BP41DynamicsModel(systemData)
 
 BCR4BP P4-B1 dynamics model object
@@ -1324,8 +1512,14 @@ Base.:(==)(arc1::BCR4BP41Arc, arc2::BCR4BP41Arc) = ((arc1.dynamicsModel == arc2.
 
 # include("bifurcation/Bifurcation.jl")
 include("BCR4BP12/Arc12.jl")
+include("BCR4BP12/ContinuityConstraint12.jl")
 include("BCR4BP12/DynamicsModel12.jl")
 include("BCR4BP12/EquationsOfMotion12.jl")
+include("BCR4BP12/MultipleShooter12.jl")
+include("BCR4BP12/MultipleShooterProblem12.jl")
+include("BCR4BP12/Node12.jl")
+include("BCR4BP12/Segment12.jl")
+include("BCR4BP12/StateConstraint12.jl")
 include("BCR4BP12/SystemData.jl")
 include("BCR4BP41/Arc41.jl")
 include("BCR4BP41/DynamicsModel41.jl")

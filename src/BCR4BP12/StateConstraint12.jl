@@ -1,12 +1,11 @@
 """
-CR3BP state constraint wrapper
+BCR4BP P1-P2 state constraint wrapper
 
 Author: Jonathan Richmond
-C: 9/8/22
-U: 4/9/25
+C: 4/9/25
 """
 
-import MBD: CR3BPStateConstraint
+import MBD: BCR4BP12StateConstraint
 
 export evaluateConstraint, getNumConstraintRows, getPartials_ConstraintWRTVariables
 
@@ -16,11 +15,11 @@ export evaluateConstraint, getNumConstraintRows, getPartials_ConstraintWRTVariab
 Return constraint error
 
 # Arguments
-- `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
+- `stateConstraint::BCR4BP12StateConstraint`: BCR4BP P1-P2 state constraint object
 - `freeVariableIndexMap::Dict{Variable, Int64}`: Free variable index map
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
-function evaluateConstraint(stateConstraint::CR3BPStateConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
+function evaluateConstraint(stateConstraint::BCR4BP12StateConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
     return getData(stateConstraint.variable)[stateConstraint.constrainedIndices]-stateConstraint.values
 end
 
@@ -30,9 +29,9 @@ end
 Return number of constraints
 
 # Arguments
-- `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
+- `stateConstraint::BCR4BP12StateConstraint`: BCR4BP P1-P2 state constraint object
 """
-function getNumConstraintRows(stateConstraint::CR3BPStateConstraint)
+function getNumConstraintRows(stateConstraint::BCR4BP12StateConstraint)
     return length(stateConstraint.constrainedIndices)
 end
 
@@ -42,11 +41,11 @@ end
 Return partial derivatives of constraint with respect to free variables
 
 # Arguments
-- `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
+- `stateConstraint::BCR4BP12StateConstraint`: BCR4BP P1-P2 state constraint object
 - `freeVariableIndexMap::Dict{Variable, Int64}`: Free variable index map
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
-function getPartials_ConstraintWRTVariables(stateConstraint::CR3BPStateConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
+function getPartials_ConstraintWRTVariables(stateConstraint::BCR4BP12StateConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
     numConstraints::Int16 = Int16(getNumConstraintRows(stateConstraint))
     partials::Matrix{Float64} = zeros(Float64, (numConstraints,length(stateConstraint.variable.data)))
     [(partials[r,stateConstraint.constrainedIndices[r]] = 1) for r in Int16(1):numConstraints]
@@ -61,12 +60,12 @@ end
 Return copy of state constraint object
 
 # Arguments
-- `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `stateConstraint::BCR4BP12StateConstraint`: BCR4BP P1-P2 state constraint object
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
-function shallowClone(stateConstraint::CR3BPStateConstraint, dynamicsModel::CR3BPDynamicsModel)
-    node = MBD.CR3BPNode(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
-    object = CR3BPStateConstraint(node, [Int64(i) for i in stateConstraint.constrainedIndices], stateConstraint.values)
+function shallowClone(stateConstraint::BCR4BP12StateConstraint, dynamicsModel::BCR4BP12DynamicsModel)
+    node = MBD.BCR4BP12Node(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
+    object = BCR4BP12StateConstraint(node, [Int64(i) for i in stateConstraint.constrainedIndices], stateConstraint.values)
     object.constrainedIndices = stateConstraint.constrainedIndices
     object.values = stateConstraint.values
     object.variable = stateConstraint.variable
@@ -80,9 +79,9 @@ end
 Update pointers for state constraint object
 
 # Arguments
-- `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
+- `stateConstraint::BCR4BP12StateConstraint`: BCR4BP P1-P2 state constraint object
 - `copiedObjectMap::Dict`: Map between old and new objects
 """
-function updatePointers!(stateConstraint::CR3BPStateConstraint, copiedObjectMap::Dict)
+function updatePointers!(stateConstraint::BCR4BP12StateConstraint, copiedObjectMap::Dict)
     stateConstraint.variable = updatePointer(stateConstraint.variable, copiedObjectMap, true)
 end
