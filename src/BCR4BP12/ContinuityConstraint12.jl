@@ -54,7 +54,7 @@ function getPartials_ConstraintWRTVariables(continuityConstraint::BCR4BP12Contin
     STM::StaticArrays.SMatrix{7, 7, Float64} = StaticArrays.SMatrix{7, 7, Float64}(getPartials_FinalStateWRTInitialState!(continuityConstraint.segment))
     propStateRate::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(getFinalStateRate!(continuityConstraint.segment))
     finalStateWRTTime::Matrix{Float64} = zeros(Float64, (numConstraints,1))
-    finalStateWRTInitialState::Matrix{Float64} = zeros(Float64, (numConstraints,6))
+    finalStateWRTInitialState::Matrix{Float64} = zeros(Float64, (numConstraints,7))
     finalStateWRTTargetState::Matrix{Float64} = copy(finalStateWRTInitialState)
     for index::Int16 in Int16(1):numConstraints
         finalStateWRTTime[index,1] = propStateRate[continuityConstraint.constrainedIndices[index]]
