@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 4/8/25
+U: 4/9/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -12,9 +12,9 @@ import MBD: BCR4BP12DynamicsModel
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian
 export getInstantaneousEquilibriumPoint, getParameterDependencies, getPrimaryState
-export getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix, gettheta4
-export get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance, get4Mass
-export isEpochIndependent, primaryEclipticToRotating12, rotating12ToPrimaryEcliptic
+export getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix, getSynodicPeriod
+export gettheta4, get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance
+export get4Mass, isEpochIndependent, primaryEclipticToRotating12, rotating12ToPrimaryEcliptic
 export rotating12ToRotating41
 
 """
@@ -420,6 +420,20 @@ function getStateTransitionMatrix(dynamicsModel::BCR4BP12DynamicsModel, q0::Vect
     end
 
     return STM
+end
+
+"""
+    getSynodicPeriod(dynamicsModel)
+
+Return BCR4BP P1-P2 synodic period [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function getSynodicPeriod(dynamicsModel::BCR4BP12DynamicsModel)
+    theta4dot::Float64 = evaluateEquations(dynamicsModel, MBD.SIMPLE, 0.0, [0.9, 0, 0, 0, -0.3, 0, 0])[7]
+
+    return -2*pi/theta4dot
 end
 
 """
