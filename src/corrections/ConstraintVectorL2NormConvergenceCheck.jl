@@ -3,7 +3,7 @@ Constraint vector L2 norm convergence check wrapper
 
 Author: Jonathan Richmond
 C: 9/9/22
-U: 1/16/25
+U: 4/9/25
 """
 
 import LinearAlgebra

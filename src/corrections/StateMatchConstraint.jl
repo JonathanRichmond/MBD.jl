@@ -3,7 +3,7 @@ State match constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/23/22
-U: 1/16/25
+U: 4/9/25
 """
 
 import MBD: StateMatchConstraint
