@@ -22,7 +22,7 @@ Return constraint error
 """
 function evaluateConstraint(continuityConstraint::BCR4BP12ContinuityConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
     propState::Vector{Float64} = getFinalState!(continuityConstraint.segment)
-    terminalNodeState::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(getData(continuityConstraint.segment.terminalNode.state))
+    terminalNodeState::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(getData(continuityConstraint.segment.terminalNode.state))
     
     return [propState[continuityConstraint.constrainedIndices[index]]-terminalNodeState[continuityConstraint.constrainedIndices[index]] for index in 1:getNumConstraintRows(continuityConstraint)]
 end
