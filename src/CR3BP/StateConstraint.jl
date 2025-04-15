@@ -3,7 +3,7 @@ CR3BP state constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
-U: 4/9/25
+U: 4/15/25
 """
 
 import MBD: CR3BPStateConstraint
@@ -81,8 +81,8 @@ Update pointers for state constraint object
 
 # Arguments
 - `stateConstraint::CR3BPStateConstraint`: CR3BP state constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(stateConstraint::CR3BPStateConstraint, copiedObjectMap::Dict)
+function updatePointers!(stateConstraint::CR3BPStateConstraint, copiedObjectMap::IdDict{Any, Any})
     stateConstraint.variable = updatePointer(stateConstraint.variable, copiedObjectMap, true)
 end

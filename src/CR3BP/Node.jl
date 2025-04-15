@@ -3,7 +3,7 @@ CR3BP node wrapper
 
 Author: Jonathan Richmond
 C: 9/5/22
-U: 1/15/25
+U: 4/15/25
 """
 
 import MBD: CR3BPNode
@@ -46,9 +46,9 @@ Update pointers for node object
 
 # Arguments
 - `node::CR3BPNode`: CR3BP node object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(node::CR3BPNode, copiedObjectMap::Dict)
+function updatePointers!(node::CR3BPNode, copiedObjectMap::IdDict{Any, Any})
     node.state = updatePointer(node.state, copiedObjectMap, true)
     node.epoch = updatePointer(node.epoch, copiedObjectMap, true)
 end

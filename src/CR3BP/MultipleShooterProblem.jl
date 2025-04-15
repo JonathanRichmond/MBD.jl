@@ -3,7 +3,7 @@ CR3BP multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 3/4/25
+U: 4/15/25
 """
 
 import StaticArrays
@@ -238,25 +238,25 @@ Return deep copy of multiple shooter problem object
 """
 function deepClone(multipleShooterProblem::CR3BPMultipleShooterProblem)
     object = CR3BPMultipleShooterProblem()
-    copiedObjectMap::Dict = Dict()
+    copiedObjectMap::IdDict{Any, Any} = IdDict{Any, Any}()
     object.freeVariableIndexMap = Dict{MBD.Variable, Int16}()
     for (index::MBD.Variable, value::Int16) in multipleShooterProblem.freeVariableIndexMap
         variable::MBD.Variable = MBD.deepClone(index)
-        copiedObjectMap[hash(index)] = variable
+        copiedObjectMap[index] = variable
         object.freeVariableIndexMap[variable] = value
     end
     object.nodes = []
     for node::MBD.CR3BPNode in multipleShooterProblem.nodes
         newNode::MBD.CR3BPNode = MBD.shallowClone(node)
         updatePointers!(newNode, copiedObjectMap)
-        copiedObjectMap[hash(node)] = newNode
+        copiedObjectMap[node] = newNode
         push!(object.nodes, newNode)
     end
     object.segments = []
     for segment::MBD.CR3BPSegment in multipleShooterProblem.segments
         newSegment::MBD.CR3BPSegment = MBD.shallowClone(segment)
         updatePointers!(newSegment, copiedObjectMap)
-        copiedObjectMap[hash(segment)] = newSegment
+        copiedObjectMap[segment] = newSegment
         push!(object.segments, newSegment)
     end
     object.constraintIndexMap = Dict{MBD.AbstractConstraint, Int16}()

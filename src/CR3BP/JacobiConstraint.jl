@@ -3,7 +3,7 @@ Jacobi constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/23/22
-U: 4/9/25
+U: 4/15/25
 """
 
 import MBD: JacobiConstraint
@@ -87,9 +87,9 @@ Update pointers for Jacobi constraint object
 
 # Arguments
 - `jacobiConstraint::JacobiConstraint`: Jacobi constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(jacobiConstraint::JacobiConstraint, copiedObjectMap::Dict)
+function updatePointers!(jacobiConstraint::JacobiConstraint, copiedObjectMap::IdDict{Any, Any})
     jacobiConstraint.epoch = updatePointer(jacobiConstraint.epoch, copiedObjectMap, true)
     jacobiConstraint.state = updatePointer(jacobiConstraint.state, copiedObjectMap, true)
 end

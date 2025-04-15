@@ -3,7 +3,7 @@ CR3BP continuity constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
-U: 4/9/25
+U: 4/15/25
 """
 
 import StaticArrays
@@ -100,8 +100,8 @@ Update pointers for continuity constraint object
 
 # Arguments
 - `continuityConstraint::CR3BPContinuityConstraint`: CR3BP continuity constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(continuityConstraint::CR3BPContinuityConstraint, copiedObjectMap::Dict)
+function updatePointers!(continuityConstraint::CR3BPContinuityConstraint, copiedObjectMap::IdDict{Any, Any})
     continuityConstraint.segment = updatePointer(continuityConstraint.segment, copiedObjectMap, true)
 end

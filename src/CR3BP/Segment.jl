@@ -3,7 +3,7 @@ Segment wrapper
 
 Author: Jonathan Richmond
 C: 9/8/22
-U: 1/15/25
+U: 4/15/25
 """
 
 import MBD: CR3BPSegment
@@ -155,9 +155,9 @@ Update pointers for segment object
 
 # Arguments
 - `segment::CR3BPSegment`: CR3BP segment object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(segment::CR3BPSegment, copiedObjectMap::Dict)
+function updatePointers!(segment::CR3BPSegment, copiedObjectMap::IdDict{Any, Any})
     segment.TOF = updatePointer(segment.TOF, copiedObjectMap, true)
     segment.originNode = updatePointer(segment.originNode, copiedObjectMap, true)
     segment.terminalNode = updatePointer(segment.terminalNode, copiedObjectMap, true)
