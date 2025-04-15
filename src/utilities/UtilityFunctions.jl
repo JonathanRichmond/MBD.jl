@@ -99,5 +99,5 @@ Update pointer
 - `forceMatch::Bool`: Force match?
 """
 function updatePointer(original::Any, copiedObjectMap::IdDict{Any, Any}, forceMatch::Bool)
-    haskey(copiedObjectMap, hash(original)) ? (return copiedObjectMap[hash(original)]) : (forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original))
+    haskey(copiedObjectMap, original) ? (return copiedObjectMap[original]) : (forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original))
 end
