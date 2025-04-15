@@ -3,6 +3,7 @@ Segment wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
+U: 4/15/25
 """
 
 import MBD: BCR4BP12Segment
@@ -154,9 +155,9 @@ Update pointers for segment object
 
 # Arguments
 - `segment::BCR4BP12Segment`: BCR4BP P1-P2 segment object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(segment::BCR4BP12Segment, copiedObjectMap::Dict)
+function updatePointers!(segment::BCR4BP12Segment, copiedObjectMap::IdDict{Any, Any})
     segment.TOF = updatePointer(segment.TOF, copiedObjectMap, true)
     segment.originNode = updatePointer(segment.originNode, copiedObjectMap, true)
     segment.terminalNode = updatePointer(segment.terminalNode, copiedObjectMap, true)

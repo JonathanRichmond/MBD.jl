@@ -3,7 +3,7 @@ Utility functions
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 1/25/25
+U: 4/15/25
 """
 
 export Cartesian2Cylindrical, checkIndices, isApproxSigFigs, maskData, updatePointer
@@ -95,20 +95,9 @@ Update pointer
 
 # Arguments
 - `original::Any`: Object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 - `forceMatch::Bool`: Force match?
 """
-function updatePointer(original::Any, copiedObjectMap::Dict, forceMatch::Bool)
-    contains::Bool = false
-    for key in keys(copiedObjectMap)
-        if key == hash(original)
-            contains = true
-            break
-        end
-    end
-    if contains
-        return copiedObjectMap[hash(original)]
-    else
-        forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original)
-    end
+function updatePointer(original::Any, copiedObjectMap::IdDict{Any, Any}, forceMatch::Bool)
+    haskey(copiedObjectMap, hash(original)) ? (return copiedObjectMap[hash(original)]) : (forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original))
 end

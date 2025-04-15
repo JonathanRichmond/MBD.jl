@@ -3,6 +3,7 @@ BCR4BP P1-P2 continuity constraint wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
+U: 4/15/25
 """
 
 import StaticArrays
@@ -99,8 +100,8 @@ Update pointers for continuity constraint object
 
 # Arguments
 - `continuityConstraint::BCR4BP12ContinuityConstraint`: BCR4BP P1-P2 continuity constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(continuityConstraint::BCR4BP12ContinuityConstraint, copiedObjectMap::Dict)
+function updatePointers!(continuityConstraint::BCR4BP12ContinuityConstraint, copiedObjectMap::IdDict{Any, Any})
     continuityConstraint.segment = updatePointer(continuityConstraint.segment, copiedObjectMap, true)
 end

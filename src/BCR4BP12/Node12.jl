@@ -3,6 +3,7 @@ BCR4BP P1-P2 node wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
+U: 4/15/25
 """
 
 import MBD: BCR4BP12Node
@@ -45,9 +46,9 @@ Update pointers for node object
 
 # Arguments
 - `node::BCR4BP12Node`: BCR4BP P1-P2 node object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(node::BCR4BP12Node, copiedObjectMap::Dict)
+function updatePointers!(node::BCR4BP12Node, copiedObjectMap::IdDict{Any, Any})
     node.state = updatePointer(node.state, copiedObjectMap, true)
     node.epoch = updatePointer(node.epoch, copiedObjectMap, true)
 end

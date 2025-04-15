@@ -3,6 +3,7 @@ BCR4BP P1-P2 state constraint wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
+U: 4/15/25
 """
 
 import MBD: BCR4BP12StateConstraint
@@ -80,8 +81,8 @@ Update pointers for state constraint object
 
 # Arguments
 - `stateConstraint::BCR4BP12StateConstraint`: BCR4BP P1-P2 state constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(stateConstraint::BCR4BP12StateConstraint, copiedObjectMap::Dict)
+function updatePointers!(stateConstraint::BCR4BP12StateConstraint, copiedObjectMap::IdDict{Any, Any})
     stateConstraint.variable = updatePointer(stateConstraint.variable, copiedObjectMap, true)
 end

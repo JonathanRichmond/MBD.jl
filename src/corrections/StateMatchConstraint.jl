@@ -3,7 +3,7 @@ State match constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/23/22
-U: 4/9/25
+U: 4/15/25
 """
 
 import MBD: StateMatchConstraint
@@ -77,9 +77,9 @@ Update pointers for state match constraint object
 
 # Arguments
 - `stateMatchConstraint::StateMatchConstraint`: State match constraint object
-- `copiedObjectMap::Dict`: Map between old and new objects
+- `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(stateMatchConstraint::StateMatchConstraint, copiedObjectMap::Dict)
+function updatePointers!(stateMatchConstraint::StateMatchConstraint, copiedObjectMap::IdDict{Any, Any})
     stateMatchConstraint.variable1 = updatePointer(stateMatchConstraint.variable1, copiedObjectMap, true)
     stateMatchConstraint.variable2 = updatePointer(stateMatchConstraint.variable2, copiedObjectMap, true)
 end
