@@ -120,13 +120,17 @@ version = "1.11.0"
 
 [[deps.BandedMatrices]]
 deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "PrecompileTools"]
-git-tree-sha1 = "614c6aba1d562191d9832df2af24f594aa7ebf61"
+git-tree-sha1 = "e35c672b239c5105f597963c33e740eeb46cf0ab"
 uuid = "aae01518-5342-5314-be14-df237901396f"
-version = "1.9.3"
-weakdeps = ["SparseArrays"]
+version = "1.9.4"
 
     [deps.BandedMatrices.extensions]
     BandedMatricesSparseArraysExt = "SparseArrays"
+    CliqueTreesExt = "CliqueTrees"
+
+    [deps.BandedMatrices.weakdeps]
+    CliqueTrees = "60701a23-6482-424a-84db-faee86b9b1f8"
+    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
