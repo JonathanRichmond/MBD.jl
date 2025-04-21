@@ -1103,7 +1103,7 @@ struct BCR4BP12DynamicsModel
     function BCR4BP12DynamicsModel(systemData::BCR4BPSystemData)
         this = new(systemData)
 
-        checkSTM(this)
+        checkSTM(this, 1E-5)
 
         return this
     end
