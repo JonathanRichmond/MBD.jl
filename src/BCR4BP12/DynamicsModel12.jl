@@ -58,7 +58,7 @@ function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 2E-3)
     numStates::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
     propagator = MBD.Propagator()
     propagatorSTM = MBD.Propagator(equationType = MBD.STM)
-    X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0, 0]
+    X::Vector{Float64} = [0.9, 0, 0, 0, -0.7, 0, pi/4]
     tau::Float64 = 0.1
     arc::MBD.BCR4BP12Arc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
     STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(getStateTransitionMatrix(dynamicsModel, getStateByIndex(arc, -1)))
