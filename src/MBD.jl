@@ -540,12 +540,12 @@ Base.:(==)(jacobiConstraint1::JacobiConstraint, jacobiConstraint2::JacobiConstra
 Constraint vector L2 norm convergence check object
 
 # Arguments
-- `tol::Float64`: Convergence tolerance (default = 1E-10)
+- `tol::Float64`: Convergence tolerance (default = 1E-11)
 """
 struct ConstraintVectorL2NormConvergenceCheck
     maxVectorNorm::Float64                                              # Maximum allowable vector norm
 
-    function ConstraintVectorL2NormConvergenceCheck(tol::Float64 = 1E-10)
+    function ConstraintVectorL2NormConvergenceCheck(tol::Float64 = 1E-11)
         this = new(tol)
 
         return this
@@ -585,7 +585,7 @@ end
 CR3BP multiple shooter object
 
 # Arguments
-- `tol::Float64`: Convergence tolerance (default = 1E-10)
+- `tol::Float64`: Convergence tolerance (default = 1E-11)
 """
 mutable struct CR3BPMultipleShooter
     convergenceCheck::ConstraintVectorL2NormConvergenceCheck            # Convergence check object
@@ -595,7 +595,7 @@ mutable struct CR3BPMultipleShooter
     solutionInProgress::CR3BPMultipleShooterProblem                     # CR3BP multiple shooter problem object being solved
     updateGenerators::StaticArrays.SVector{2, AbstractUpdateGenerator}  # Update generator objects
 
-    function CR3BPMultipleShooter(tol::Float64 = 1E-10)
+    function CR3BPMultipleShooter(tol::Float64 = 1E-11)
         this = new()
 
         this.recentIterationCount = Int16(0)
@@ -877,7 +877,7 @@ Multiple shooter continuation engine object
 - `paramIndex::Int64`: Natural parameter index to step in
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
-- `tol::Float64`: Convergence tolerance (default = 1E-10)
+- `tol::Float64`: Convergence tolerance (default = 1E-11)
 """
 mutable struct CR3BPMultipleShooterContinuationEngine
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
@@ -888,7 +888,7 @@ mutable struct CR3BPMultipleShooterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPMultipleShooterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-10)
+    function CR3BPMultipleShooterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
