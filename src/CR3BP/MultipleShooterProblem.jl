@@ -163,10 +163,10 @@ function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relT
         numEntries::Int16 = Int16(getNumConstraintRows(index))
         [reverseConstraintIndexMap[value+i-1] = index for i in 1:numEntries]
     end
-    absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = STMNumerical.-STMAnalytical
+    absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = jacobianNumerical.-jacobianAnalytical
     for r::Int16 in Int16(1):numStates, c::Int16 in Int16(1):numStates
-        analytical::Float64 = STMAnalytical[r,c]
-        numerical::Float64 = STMNumerical[r,c]
+        analytical::Float64 = jacobianAnalytical[r,c]
+        numerical::Float64 = jacobianNumerical[r,c]
         diff::Float64 = absDiff[r,c]
         useAbs::Bool = ((abs(analytical) < stepSize*1E3) || (abs(numerical) < 1E-12))
         relDiff::Float64 = useAbs ? diff : (diff/abs(numerical))
