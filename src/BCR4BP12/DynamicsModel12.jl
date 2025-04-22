@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 4/9/25
+U: 4/22/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays

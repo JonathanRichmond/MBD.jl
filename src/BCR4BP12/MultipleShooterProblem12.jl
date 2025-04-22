@@ -3,7 +3,7 @@ BCR4BP P1-P2 multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
-U: 4/15/25
+U: 4/22/25
 """
 
 import StaticArrays
@@ -163,19 +163,16 @@ function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem, r
         numEntries::Int16 = Int16(getNumConstraintRows(index))
         [reverseConstraintIndexMap[value+i-1] = index for i in 1:numEntries]
     end
-    absDiff::StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64}(jacobianNumerical-jacobianAnalytical)
-    relDiff::StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64} = StaticArrays.MMatrix{numConstraints, numFreeVariables, Float64}(copy(absDiff))
-    for r::Int16 in Int16(1):Int16(numConstraints)
-        for c::Int16 in Int16(1):Int16(numFreeVariables)
-            if abs(jacobianAnalytical[r,c]) < stepSize*1E4
-                relDiff[r,c] = absDiff[r,c]
-            elseif abs(jacobianNumerical[r,c]) > 1E-11
-                relDiff[r,c] = absDiff[r,c]/jacobianNumerical[r,c]
-            end
-            if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(jacobianNumerical[r,c]); Actual = $(jacobianAnalytical[r,c]) (Relative error = $(relDiff[r,c])); Constraint (sub-index: $(r-problem.constraintIndexMap[reverseConstraintIndexMap[r]]+1)) = $(typeof(reverseConstraintIndexMap[r])), Free Variable (sub-index: $(c-freeVariableIndexMap[reverseFreeVariableIndexMap[c]]+1)) = $(reverseFreeVariableIndexMap[c].name)"))
-                return false
-            end
+    absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = STMNumerical.-STMAnalytical
+    for r::Int16 in Int16(1):numStates, c::Int16 in Int16(1):numStates
+        analytical::Float64 = STMAnalytical[r,c]
+        numerical::Float64 = STMNumerical[r,c]
+        diff::Float64 = absDiff[r,c]
+        useAbs::Bool = ((abs(analytical) < stepSize*1E3) || (abs(numerical) < 1E-12))
+        relDiff::Float64 = useAbs ? diff : (diff/abs(numerical))
+        errorType::String = useAbs ? "Absolute" : "Relative"
+        if relDiff > relTol
+            throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $numerical; Actual = $analytical; Difference = $diff; Error = $relDiff ($errorType); Constraint (sub-index: $(r-problem.constraintIndexMap[reverseConstraintIndexMap[r]]+1)) = $(typeof(reverseConstraintIndexMap[r])); Free Variable (sub-index: $(c-freeVariableIndexMap[reverseFreeVariableIndexMap[c]]+1)) = $(reverseFreeVariableIndexMap[c].name)"))
         end
     end
 

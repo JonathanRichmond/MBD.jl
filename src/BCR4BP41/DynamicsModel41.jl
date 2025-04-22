@@ -3,7 +3,7 @@ BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
-U: 3/26/25
+U: 4/22/25
 """
 
 import StaticArrays
@@ -72,19 +72,16 @@ function checkSTM(dynamicsModel::BCR4BP41DynamicsModel, relTol::Float64 = 2E-3)
         constraintVectorPlus::StaticArrays.SVector{Int64(numStates), Float64} = StaticArrays.SVector{Int64(numStates), Float64}(getStateByIndex(arcPlus, -1))
         STMNumerical[:,index] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
     end
-    absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(STMNumerical-STMAnalytical)
-    relDiff::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(copy(absDiff))
-    for r::Int16 in Int16(1):numStates
-        for c::Int16 in Int16(1):numStates
-            if abs(STMAnalytical[r,c]) < stepSize*1E3
-                relDiff[r,c] = absDiff[r,c]
-            elseif abs(STMNumerical[r,c]) > 1E-11
-                relDiff[r,c] = absDiff[r,c]/STMNumerical[r,c]
-            end
-            if abs(relDiff[r,c]) > relTol
-                throw(ErrorException("Jacobian error in entry ($r, $c): Expected = $(STMNumerical[r,c]); Actual = $(STMAnalytical[r,c]) (Relative error = $(relDiff[r,c]))"))
-                return false
-            end
+    absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = STMNumerical.-STMAnalytical
+    for r::Int16 in Int16(1):numStates, c::Int16 in Int16(1):numStates
+        analytical::Float64 = STMAnalytical[r,c]
+        numerical::Float64 = STMNumerical[r,c]
+        diff::Float64 = absDiff[r,c]
+        useAbs::Bool = ((abs(analytical) < stepSize*1E3) || (abs(numerical) < 1E-12))
+        relDiff::Float64 = useAbs ? diff : (diff/abs(numerical))
+        errorType::String = useAbs ? "Absolute" : "Relative"
+        if relDiff > relTol
+            throw(ErrorException("STM error in entry ($r, $c): Expected = $numerical; Actual = $analytical; Difference = $diff; Error = $relDiff ($errorType)"))
         end
     end
 
