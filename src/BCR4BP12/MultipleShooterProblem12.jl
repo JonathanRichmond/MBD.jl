@@ -163,8 +163,8 @@ function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem, r
         numEntries::Int16 = Int16(getNumConstraintRows(index))
         [reverseConstraintIndexMap[value+i-1] = index for i in 1:numEntries]
     end
-    absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = jacobianNumerical.-jacobianAnalytical
-    for r::Int16 in Int16(1):numStates, c::Int16 in Int16(1):numStates
+    absDiff::StaticArrays.SMatrix{numConstraints, numFreeVariables, Float64} = jacobianNumerical.-jacobianAnalytical
+    for r::Int16 in Int16(1):Int16(numConstraints), c::Int16 in Int16(1):Int16(numFreeVariables)
         analytical::Float64 = jacobianAnalytical[r,c]
         numerical::Float64 = jacobianNumerical[r,c]
         diff::Float64 = absDiff[r,c]
