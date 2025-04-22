@@ -73,6 +73,9 @@ function checkSTM(dynamicsModel::BCR4BP12DynamicsModel, relTol::Float64 = 2E-3)
         constraintVectorPlus::StaticArrays.SVector{Int64(numStates), Float64} = StaticArrays.SVector{Int64(numStates), Float64}(getStateByIndex(arcPlus, -1))
         STMNumerical[:,index] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
     end
+    println(STMNumerical)
+    println()
+    println(STMAnalytical)
     absDiff::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(STMNumerical-STMAnalytical)
     relDiff::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(copy(absDiff))
     for r::Int16 in Int16(1):numStates
