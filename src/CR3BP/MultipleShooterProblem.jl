@@ -135,7 +135,7 @@ Return true if Jacobian is accurate
 - `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 - `relTol::Float64`: Relative tolerance (default = 2E-3)
 """
-function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relTol::Float64 = 1E-2)
+function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relTol::Float64 = 2E-3)
     stepSize::Float64 = sqrt(eps(Float64))
     problem::CR3BPMultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
