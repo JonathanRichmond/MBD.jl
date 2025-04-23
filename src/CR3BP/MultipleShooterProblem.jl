@@ -3,7 +3,7 @@ CR3BP multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 4/22/25
+U: 4/23/25
 """
 
 import StaticArrays
@@ -127,16 +127,16 @@ function buildProblem!(multipleShooterProblem::CR3BPMultipleShooterProblem)
 end
 
 """
-    checkJacobian(multipleShooterProblem; relTol)
+    checkJacobian(multipleShooterProblem; stepSize, relTol)
 
 Return true if Jacobian is accurate
 
 # Arguments
 - `multipleShooterProblem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
+- `stepSize::Float64`: Central differencing step size (default = sqrt(eps))
 - `relTol::Float64`: Relative tolerance (default = 2E-3)
 """
-function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem, relTol::Float64 = 2E-3)
-    stepSize::Float64 = sqrt(eps(Float64))
+function checkJacobian(multipleShooterProblem::CR3BPMultipleShooterProblem; stepSize::Float64 = sqrt(eps(Float64)), relTol::Float64 = 2E-3)
     problem::CR3BPMultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
     numFreeVariables::Int64 = getNumFreeVariables!(problem)

@@ -3,7 +3,7 @@ BCR4BP P1-P2 multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
-U: 4/22/25
+U: 4/23/25
 """
 
 import StaticArrays
@@ -127,16 +127,16 @@ function buildProblem!(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
 end
 
 """
-    checkJacobian(multipleShooterProblem; relTol)
+    checkJacobian(multipleShooterProblem; stepSize, relTol)
 
 Return true if Jacobian is accurate
 
 # Arguments
 - `multipleShooterProblem::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem object
+- `stepSize::Float64`: Central differencing step size (default = sqrt(eps))
 - `relTol::Float64`: Relative tolerance (default = 2E-3)
 """
-function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem, relTol::Float64 = 2E-3)
-    stepSize::Float64 = 1E-9
+function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem; stepSize::Float64 = sqrt(eps(Float64)), relTol::Float64 = 2E-3)
     problem::BCR4BP12MultipleShooterProblem = shallowClone(multipleShooterProblem)
     numConstraints::Int64 = getNumConstraints(problem)
     numFreeVariables::Int64 = getNumFreeVariables!(problem)
