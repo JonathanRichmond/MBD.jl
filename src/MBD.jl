@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 4/21/25
+U: 5/1/25
 """
 module MBD
 
@@ -26,7 +26,7 @@ Enumerated type for EOMs
 """
 Enumerated type for integrators
 """
-@enum IntegratorType AB5 ABM54 BS5 DP5 DP8
+@enum IntegratorType AB5 ABM54 BS5 DP5 DP8 VERN9
 
 """
 Abstract type for constraints
@@ -223,6 +223,8 @@ mutable struct IntegratorFactory
             this.integrator = DifferentialEquations.BS5()
         elseif integratorSolver == DP5
             this.integrator = DifferentialEquations.DP5()
+        elseif integratorSolver == VERN9
+            this.integrator = DifferentialEquations.Vern9()
         else
             throw(ArgumentError("Invalid integrator type"))
         end
@@ -249,7 +251,7 @@ mutable struct Propagator
     maxStep::Int64                                                      # Maximum step size
     relTol::Float64                                                     # Relative tolerance
 
-    function Propagator(; integratorSolver::IntegratorType = DP8, equationType::EquationType = SIMPLE)
+    function Propagator(; integratorSolver::IntegratorType = VERN9, equationType::EquationType = SIMPLE)
         this = new()
 
         this.integratorFactory = IntegratorFactory(integratorSolver)
