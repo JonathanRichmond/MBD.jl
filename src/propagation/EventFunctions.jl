@@ -3,14 +3,13 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 1/15/25
+U: 5/28/25
 """
 
-import DifferentialEquations
+import DifferentialEquations, LinearAlgebra
 
-export arclengthCondition, momentumDifferenceCondition, p1DistanceCondition
-export p2DistanceCondition, terminateAffect!, xzPlaneCrossingCondition
-export zValueCondition
+export arclengthCondition, momentumDifferenceCondition, p1DistanceCondition, p2DistanceCondition
+export renormalize!, terminateAffect!, xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -69,6 +68,23 @@ Return event condition for specified distance from P2
 function p2DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
     mu::Float64 = getMassRatio(integrator.p[1])
     sqrt((state[1]-1+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
+end
+
+"""
+    renormalize!(integrator)
+
+Return event effect of STM renormalization
+
+# Arguments
+- `integrator`: Integrator object with params: [Rs]
+"""
+function renormalize!(integrator)
+    n_simple::Int16 = getStateSize(integrator.p[1], MBD.SIMPLE)
+    n_STM::Int16 = getStateSize(integrator.p[1], MBD.STM)
+    Phi::Matrix{Float64} = reshape(integrator.u[(n_simple+1):n_STM], n_simple, n_simple)
+    F = LinearAlgebra.qr(Phi)
+    integrator.u[(n_simple+1):n_STM] = vec(Matrix(F.Q))
+    push!(integrator.p[2], F.R)
 end
 
 """
