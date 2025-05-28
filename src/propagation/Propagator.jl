@@ -140,13 +140,13 @@ Return propagated arc
 
 # Arguments
 - `propagator::Propagator`: Propagator object
-- `callbackEvent::PeriodicCallback`: Propagation callback
+- `callbackEvent::DiscreteCallback`: Propagation callback
 - `q0::Vector{Float64}`: Initial state vector [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP Dynamics model object
 - `params::Vector{Float64}`: Propagation parameters (optional)
 """
-function propagateWithPeriodicEvent(propagator::Propagator, callbackEvent::DifferentialEquations.PeriodicCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.CR3BPDynamicsModel, params = [])
+function propagateWithPeriodicEvent(propagator::Propagator, callbackEvent::DifferentialEquations.DiscreteCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.CR3BPDynamicsModel, params = [])
     arcOut = MBD.CR3BPArc(dynamicsModel)
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
