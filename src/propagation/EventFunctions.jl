@@ -84,7 +84,7 @@ function renormalize!(integrator)
     Phi::Matrix{Float64} = reshape(integrator.u[(n_simple+1):n_STM], n_simple, n_simple)
     F = LinearAlgebra.qr(Phi)
     integrator.u[(n_simple+1):n_STM] = vec(Matrix(F.Q))
-    push!(integrator.p[2], F.R)
+    push!(integrator.p[2], Matrix(F.R))
 end
 
 """
