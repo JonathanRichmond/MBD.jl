@@ -116,7 +116,7 @@ Return event effect of STM renormalization
 function renormalize!(integrator)
     n_simple::Int16 = getStateSize(integrator.p[2], MBD.SIMPLE)
     n_STM::Int16 = getStateSize(integrator.p[2], MBD.STM)
-    Phi::Matrix{Float64} = reshape(integrator.u[(n_simple+1):n_STM], (n_simple, n_simple))
+    Phi::Matrix{Float64} = reshape(integrator.u[(n_simple+1):n_STM], (n_simple,n_simple))
     F = LinearAlgebra.qr(Phi)
     integrator.u[(n_simple+1):n_STM] = vec(Matrix(F.Q))
     push!(integrator.p[3], Matrix(F.R))
