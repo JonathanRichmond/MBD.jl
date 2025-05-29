@@ -8,8 +8,9 @@ U: 5/28/25
 
 import DifferentialEquations, LinearAlgebra
 
-export arclengthCondition, momentumDifferenceCondition, p1DistanceCondition, p2DistanceCondition
-export renormalize!, terminateAffect!, xzPlaneCrossingCondition, zValueCondition
+export arclengthCondition, momentumDifferenceConditionBCR4BP12, momentumDifferenceConditionBCR4BP41
+export momentumDifferenceConditionCR3BP, p1DistanceCondition, p2DistanceCondition, renormalize!
+export terminateAffect!, xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -19,14 +20,15 @@ Return event condition for specified arclength
 # Arguments
 - `state::Vector{Float64}`: State vector with arclength [ndim]
 - `time::Float64`: Time [ndim]
-- `integrator`: Integrator object with params: [arclength]
+- `integrator`: Integrator object with params: [dynamicsModel, arclength]
 """
 function arclengthCondition(state::Vector{Float64}, time::Float64, integrator)
-    state[43]-integrator.p[2]
+    n_arclength::Int16 = getStateSize(integrator.p[2], MBD.ARCLENGTH)
+    state[n_arclength]-integrator.p[3]
 end
 
 """
-    momentumDifferenceCondition(state, time, integrator)
+    momentumDifferenceConditionBCR4BP12(state, time, integrator)
 
 Return event condition for specified momentum integral difference
 
@@ -35,9 +37,42 @@ Return event condition for specified momentum integral difference
 - `time::Float64`: Time [ndim]
 - `integrator`: Integrator object with params: [propagator, dynamicsModel, q0, momentumDifference]
 """
-function momentumDifferenceCondition(state::Vector{Float64}, time::Float64, integrator)
+function momentumDifferenceConditionBCR4BP12(state::Vector{Float64}, time::Float64, integrator)
+    n_momentum::Int16 = getStateSize(integrator.p[3], MBD.MOMENTUM)
+    orbitArc::MBD.BCR4BP12Arc = propagate(integrator.p[2], appendExtraInitialConditions(integrator.p[3], integrator.p[4], MBD.MOMENTUM), [0, time], integrator.p[3])
+    abs(state[n_momentum]-getStateByIndex(orbitArc, -1)[n_momentum])-integrator.p[5]
+end
+
+"""
+    momentumDifferenceConditionBCR4BP41(state, time, integrator)
+
+Return event condition for specified momentum integral difference
+
+# Arguments
+- `state::Vector{Float64}`: State vector with momentum integral [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object with params: [propagator, dynamicsModel, q0, momentumDifference]
+"""
+function momentumDifferenceConditionBCR4BP41(state::Vector{Float64}, time::Float64, integrator)
+    n_momentum::Int16 = getStateSize(integrator.p[3], MBD.MOMENTUM)
+    orbitArc::MBD.BCR4BP41Arc = propagate(integrator.p[2], appendExtraInitialConditions(integrator.p[3], integrator.p[4], MBD.MOMENTUM), [0, time], integrator.p[3])
+    abs(state[n_momentum]-getStateByIndex(orbitArc, -1)[n_momentum])-integrator.p[5]
+end
+
+"""
+    momentumDifferenceConditionCR3BP(state, time, integrator)
+
+Return event condition for specified momentum integral difference
+
+# Arguments
+- `state::Vector{Float64}`: State vector with momentum integral [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object with params: [propagator, dynamicsModel, q0, momentumDifference]
+"""
+function momentumDifferenceConditionCR3BP(state::Vector{Float64}, time::Float64, integrator)
+    n_momentum::Int16 = getStateSize(integrator.p[3], MBD.MOMENTUM)
     orbitArc::MBD.CR3BPArc = propagate(integrator.p[2], appendExtraInitialConditions(integrator.p[3], integrator.p[4], MBD.MOMENTUM), [0, time], integrator.p[3])
-    abs(state[43]-getStateByIndex(orbitArc, -1)[43])-integrator.p[5]
+    abs(state[n_momentum]-getStateByIndex(orbitArc, -1)[n_momentum])-integrator.p[5]
 end
 
 """
