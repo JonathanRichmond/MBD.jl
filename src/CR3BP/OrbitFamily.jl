@@ -3,13 +3,13 @@ CR3BP orbit family wrapper
 
 Author: Jonathan Richmond
 C: 1/17/23
-U: 2/4/25
+U: 6/3/25
 """
 
-import Combinatorics, CSV, DataFrames, LinearAlgebra, StaticArrays
+import Combinatorics, LinearAlgebra, StaticArrays
 import MBD: CR3BPOrbitFamily
 
-export eigenSort!, exportData, getAlternateIndices, getNumMembers
+export eigenSort!, getAlternateIndices, getNumMembers
 
 """
     eigenSort!(orbitFamily)
@@ -72,45 +72,6 @@ function eigenSort!(orbitFamily::CR3BPOrbitFamily)
     orbitFamily.eigenvalues = sortedEigenvalues
     orbitFamily.eigenvectors = sortedEigenvectors
     orbitFamily.hasBeenSorted = true
-end
-
-"""
-    exportData(orbitFamily, filename)
-
-Export family data to .csv file
-
-# Arguments
-- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
-- `filename::String`: Export file name
-"""
-function exportData(orbitFamily::CR3BPOrbitFamily, filename::String)
-    orbitFamily.hasBeenSorted || eigenSort!(orbitFamily)
-    println("\nExporting family data to file '$filename'...")
-    nMem::Int16 = Int16(getNumMembers(orbitFamily))
-    x::Vector{Float64} = Vector{Float64}(undef, nMem)
-    y::Vector{Float64} = Vector{Float64}(undef, nMem)
-    z::Vector{Float64} = Vector{Float64}(undef, nMem)
-    xdot::Vector{Float64} = Vector{Float64}(undef, nMem)
-    ydot::Vector{Float64} = Vector{Float64}(undef, nMem)
-    zdot::Vector{Float64} = Vector{Float64}(undef, nMem)
-    p::Vector{Float64} = Vector{Float64}(undef, nMem)
-    JC::Vector{Float64} = Vector{Float64}(undef, nMem)
-    nu::Vector{Float64} = Vector{Float64}(undef, nMem)
-    tau::Vector{Float64} = Vector{Float64}(undef, nMem)
-    for m::Int16 in Int16(1):nMem
-        x[m] = orbitFamily.initialConditions[m][1]
-        y[m] = orbitFamily.initialConditions[m][2]
-        z[m] = orbitFamily.initialConditions[m][3]
-        xdot[m] = orbitFamily.initialConditions[m][4]
-        ydot[m] = orbitFamily.initialConditions[m][5]
-        zdot[m] = orbitFamily.initialConditions[m][6]
-        p[m] = orbitFamily.periods[m]
-        JC[m] = getJacobiConstant(orbitFamily.dynamicsModel, orbitFamily.initialConditions[m])
-        nu[m] = LinearAlgebra.norm(orbitFamily.eigenvalues[m], Inf)
-        tau[m] = orbitFamily.periods[m]/log(LinearAlgebra.norm(orbitFamily.eigenvalues[m], Inf))
-    end
-    familyData::DataFrames.DataFrame = DataFrames.DataFrame("x" => x, "y" => y, "z" => z, "xdot" => xdot, "ydot" => ydot, "zdot" => zdot, "Period" => p, "JC" => JC, "Stability Index" => nu, "Time Constant" => tau)
-    CSV.write(filename, familyData)
 end
 
 """
