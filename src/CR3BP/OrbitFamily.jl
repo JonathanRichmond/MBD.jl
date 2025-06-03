@@ -9,7 +9,7 @@ U: 6/3/25
 import Combinatorics, LinearAlgebra, StaticArrays
 import MBD: CR3BPOrbitFamily
 
-export eigenSort!, getAlternateIndices, getNumMembers
+export eigenSort!, getAlternateIndices, getMember, getNumMembers
 
 """
     eigenSort!(orbitFamily)
@@ -93,6 +93,19 @@ function getAlternateIndices(orbitFamily::CR3BPOrbitFamily)
     end
 
     return (standardStabilityIndices, alternateStabilityIndices)
+end
+
+"""
+    getMember(orbitFamily, orbit)
+
+Return periodic orbit member object
+
+# Arguments
+- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+- `orbit::Int64`: Orbit identifier
+"""
+function getMember(orbitFamily::CR3BPOrbitFamily, orbit::Int64)
+    return MBD.CR3BPPeriodicOrbit(orbitFamily.dynamicsModel, orbitFamily.initialConditions[orbit], orbitFamily.periods[orbit], orbitFamily.monodromies[orbit])
 end
 
 """
