@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 5/1/25
+U: 6/4/25
 """
 module MBD
 
@@ -823,7 +823,7 @@ mutable struct CR3BPNaturalParameterContinuationEngine
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
-        this.printProgress = true
+        this.printProgress = false
 
         return this
     end
@@ -860,7 +860,7 @@ mutable struct JacobiConstantContinuationEngine
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
-        this.printProgress = true
+        this.printProgress = false
 
         return this
     end
@@ -899,7 +899,7 @@ mutable struct CR3BPMultipleShooterContinuationEngine
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
-        this.printProgress = true
+        this.printProgress = false
 
         return this
     end
