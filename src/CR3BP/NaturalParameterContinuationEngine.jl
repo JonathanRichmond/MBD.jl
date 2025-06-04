@@ -3,7 +3,7 @@ CR3BP natural parameter continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/4/23
-U: 1/27/25
+U: 6/4/25
 """
 
 import MBD: CR3BPNaturalParameterContinuationEngine
@@ -224,6 +224,6 @@ function tryConverging!(naturalParameterContinuationEngine::CR3BPNaturalParamete
         end
     catch
         naturalParameterContinuationEngine.dataInProgress.converging = false
-        println("Failed to converge")
+        naturalParameterContinuationEngine.printProgress && println("Failed to converge")
     end
 end
