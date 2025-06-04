@@ -3,7 +3,7 @@ Jacobi constant continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/11/23
-U: 6/4/25
+U: 1/26/25
 """
 
 import MBD: JacobiConstantContinuationEngine
@@ -209,6 +209,6 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         end
     catch
         jacobiConstantContinuationEngine.dataInProgress.converging = false
-        jacobiConstantContinuationEngine.printProgress && println("Failed to converge")
+        println("Failed to converge")
     end
 end
