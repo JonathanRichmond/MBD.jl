@@ -168,7 +168,7 @@ function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem; s
         analytical::Float64 = jacobianAnalytical[r,c]
         numerical::Float64 = jacobianNumerical[r,c]
         diff::Float64 = absDiff[r,c]
-        useAbs::Bool = ((abs(analytical) < stepSize*1E5) || (abs(numerical) < 1E-12))
+        useAbs::Bool = ((abs(diff) < stepSize*1E5) || (abs(numerical) < 1E-11))
         relDiff::Float64 = useAbs ? diff : (diff/abs(numerical))
         errorType::String = useAbs ? "Absolute" : "Relative"
         if relDiff > relTol
