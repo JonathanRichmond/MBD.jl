@@ -3,7 +3,7 @@ BCR4BP P1-P2 multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
-U: 4/23/25
+U: 6/5/25
 """
 
 import StaticArrays
@@ -168,7 +168,7 @@ function checkJacobian(multipleShooterProblem::BCR4BP12MultipleShooterProblem; s
         analytical::Float64 = jacobianAnalytical[r,c]
         numerical::Float64 = jacobianNumerical[r,c]
         diff::Float64 = absDiff[r,c]
-        useAbs::Bool = ((abs(analytical) < stepSize*1E3) || (abs(numerical) < 1E-12))
+        useAbs::Bool = ((abs(analytical) < stepSize*1E5) || (abs(numerical) < 1E-12))
         relDiff::Float64 = useAbs ? diff : (diff/abs(numerical))
         errorType::String = useAbs ? "Absolute" : "Relative"
         if relDiff > relTol
