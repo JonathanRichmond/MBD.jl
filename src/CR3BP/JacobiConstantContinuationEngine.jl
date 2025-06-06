@@ -3,9 +3,10 @@ Jacobi constant continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/11/23
-U: 1/26/25
+U: 6/6/25
 """
 
+import LinearAlgebra
 import MBD: JacobiConstantContinuationEngine
 
 export addEndCheck!, addJumpCheck!, computeFullStep, constrainNextGuess!, convergeInitialSolution
@@ -189,6 +190,10 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution)
         jacobiConstantContinuationEngine.dataInProgress.previousSolution = solve!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.dataInProgress.nextGuess)
         jacobiConstantContinuationEngine.dataInProgress.converging = true
+        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > 1E-7
+            jacobiConstantContinuationEngine.dataInProgress.converging = false
+            println("Solution outside of trust region")
+        end
         for jumpCheck::MBD.AbstractContinuationJumpCheck in jacobiConstantContinuationEngine.jumpChecks
             if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
                 for (index::MBD.Variable, value::Int16) in jacobiConstantContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap

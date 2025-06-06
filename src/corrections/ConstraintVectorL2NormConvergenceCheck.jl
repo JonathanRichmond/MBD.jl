@@ -12,7 +12,7 @@ import MBD: ConstraintVectorL2NormConvergenceCheck
 export isConverged
 
 """
-    isConverged(constraintVectorL2NormConvergenceCheck, mulitpleShooterProblem)
+    isConverged(constraintVectorL2NormConvergenceCheck, multipleShooterProblem)
 
 Return true if problem is converged
 
@@ -25,7 +25,7 @@ function isConverged(constraintVectorL2NormConvergenceCheck::ConstraintVectorL2N
 end
 
 """
-    isConverged(constraintVectorL2NormConvergenceCheck, mulitpleShooterProblem)
+    isConverged(constraintVectorL2NormConvergenceCheck, multipleShooterProblem)
 
 Return true if problem is converged
 
