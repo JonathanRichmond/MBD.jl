@@ -193,17 +193,20 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > 1E-7
             jacobiConstantContinuationEngine.dataInProgress.converging = false
             println("Solution outside of trust region")
-        end
-        for jumpCheck::MBD.AbstractContinuationJumpCheck in jacobiConstantContinuationEngine.jumpChecks
-            if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
-                for (index::MBD.Variable, value::Int16) in jacobiConstantContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
-                    if index.name == jumpCheck.paramName
-                        addBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
-                        jacobiConstantContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, jacobiConstantContinuationEngine.dataInProgress)
-                        !jacobiConstantContinuationEngine.dataInProgress.converging && println("Solution jumped")
-                        removeBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index)
+        else
+            for jumpCheck::MBD.AbstractContinuationJumpCheck in jacobiConstantContinuationEngine.jumpChecks
+                if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
+                    for (index::MBD.Variable, value::Int16) in jacobiConstantContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
+                        if index.name == jumpCheck.paramName
+                            addBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
+                            jacobiConstantContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, jacobiConstantContinuationEngine.dataInProgress)
+                            !jacobiConstantContinuationEngine.dataInProgress.converging && println("Solution jumped")
+                            removeBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index)
+                            break
+                        end
                     end
                 end
+                !jacobiConstantContinuationEngine.dataInProgress.converging && break
             end
         end
         if jacobiConstantContinuationEngine.dataInProgress.converging
