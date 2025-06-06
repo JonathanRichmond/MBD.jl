@@ -190,7 +190,7 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution)
         jacobiConstantContinuationEngine.dataInProgress.previousSolution = solve!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.dataInProgress.nextGuess)
         jacobiConstantContinuationEngine.dataInProgress.converging = true
-        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > 1E-7
+        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > jacobiConstantContinuationEngine.dataInProgress.currentStepSize*1E2
             jacobiConstantContinuationEngine.dataInProgress.converging = false
             println("Solution outside of trust region")
         else
