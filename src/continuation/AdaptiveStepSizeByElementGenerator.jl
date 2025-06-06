@@ -30,27 +30,27 @@ function updateStepSize!(generator::AdaptiveStepSizeByElementGenerator, data::MB
     if data.converging
         if data.numIterations < generator.maxIterations
             absStep *= generator.scaleFactor
-            absStep = min(absStep, generator.maxStepSize)
+            absStep = min(absStep, abs(generator.maxStepSize))
             Logging.@debug "Increasing step size to $absStep (scaled up)"
         elseif data.numIterations > generator.minIterations
             absStep /= generator.scaleFactor
-            absStep = max(absStep, generator.minStepSize)
+            absStep = max(absStep, abs(generator.minStepSize))
             Logging.@debug "Decreasing step size to $absStep (scaled down)"
         else
             Logging.@debug "Step size unchanged: $absStep (iterations within target range)"
         end
-        if absStep > generator.maxElementStepSize
-            Logging.@warn "Step size $absStep exceeds maximum element step size $(generator.maxElementStepSize); clipping"
-            absStep = generator.maxElementStepSize
+        if absStep > abs(generator.maxElementStepSize)
+            Logging.@warn "Step size $absStep exceeds maximum element step size $(abs(generator.maxElementStepSize)); clipping"
+            absStep = abs(generator.maxElementStepSize)
         end
         data.currentStepSize = signFactor*absStep
     else
-        relTol::Float64 = abs(absStep-generator.minStepSize)/generator.minStepSize
+        relTol::Float64 = abs((absStep-abs(generator.minStepSize))/generator.minStepSize)
         if relTol < 1E-4
             data.forceEndContinuation = true
-            Logging.@info "Terminating continuation: step size $absStep near minimum step size $(generator.minStepSize)"
+            Logging.@info "Terminating continuation: step size $absStep near minimum step size $(abs(generator.minStepSize))"
         else
-            absStep = max(generator.minStepSize, absStep/generator.scaleFactor)
+            absStep = max(abs(generator.minStepSize), absStep/generator.scaleFactor)
             data.currentStepSize = signFactor*absStep
             Logging.@debug "Non-convergent case: reduced step size to $absStep"
         end
