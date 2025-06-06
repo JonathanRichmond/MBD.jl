@@ -190,9 +190,9 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution)
         jacobiConstantContinuationEngine.dataInProgress.previousSolution = solve!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.dataInProgress.nextGuess)
         jacobiConstantContinuationEngine.dataInProgress.converging = true
-        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > jacobiConstantContinuationEngine.dataInProgress.currentStepSize*1E2
+        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > abs(jacobiConstantContinuationEngine.dataInProgress.currentStepSize)*10
             println(abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))))
-            println(jacobiConstantContinuationEngine.dataInProgress.currentStepSize*1E2)
+            println(abs(jacobiConstantContinuationEngine.dataInProgress.currentStepSize)*10)
             jacobiConstantContinuationEngine.dataInProgress.converging = false
             jacobiConstantContinuationEngine.printProgress && println("Solution outside of trust region")
         else
