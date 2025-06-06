@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/4/25
+U: 6/6/25
 """
 module MBD
 
@@ -42,11 +42,6 @@ abstract type AbstractContinuationEndCheck end
 Abstract type for continuation jump checks
 """
 abstract type AbstractContinuationJumpCheck end
-
-"""
-Abstract type for targeters
-"""
-abstract type AbstractTargeter end
 
 """
 Abstract type for update generators
