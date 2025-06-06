@@ -28,7 +28,7 @@ function updateStepSize!(generator::AdaptiveStepSizeByElementGenerator, data::MB
     Logging.@debug "Starting updateStepSize! - Step: $step, Converging: $(data.converging), Iterations: $(data.numIterations)"
 
     if data.converging
-        if data.numIterations < generator.maxIterations
+        if (data.numIterations < generator.maxIterations) && (data.numIterations > 0)
             absStep *= generator.scaleFactor
             absStep = min(absStep, abs(generator.maxStepSize))
             Logging.@debug "Increasing step size to $absStep (scaled up)"
