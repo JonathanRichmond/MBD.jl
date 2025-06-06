@@ -191,8 +191,10 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         jacobiConstantContinuationEngine.dataInProgress.previousSolution = solve!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.dataInProgress.nextGuess)
         jacobiConstantContinuationEngine.dataInProgress.converging = true
         if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > jacobiConstantContinuationEngine.dataInProgress.currentStepSize*1E2
+            println(abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))))
+            println(jacobiConstantContinuationEngine.dataInProgress.currentStepSize*1E2)
             jacobiConstantContinuationEngine.dataInProgress.converging = false
-            println("Solution outside of trust region")
+            jacobiConstantContinuationEngine.printProgress && println("Solution outside of trust region")
         else
             for jumpCheck::MBD.AbstractContinuationJumpCheck in jacobiConstantContinuationEngine.jumpChecks
                 if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
@@ -200,7 +202,7 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
                         if index.name == jumpCheck.paramName
                             addBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
                             jacobiConstantContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, jacobiConstantContinuationEngine.dataInProgress)
-                            !jacobiConstantContinuationEngine.dataInProgress.converging && println("Solution jumped")
+                            (!jacobiConstantContinuationEngine.dataInProgress.converging && jacobiConstantContinuationEngine.printProgress) && println("Solution jumped")
                             removeBounds!(jumpCheck, jacobiConstantContinuationEngine.dataInProgress.previousSolution, index)
                             break
                         end
@@ -217,6 +219,6 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         end
     catch
         jacobiConstantContinuationEngine.dataInProgress.converging = false
-        println("Failed to converge")
+        jacobiConstantContinuationEngine.printProgress && println("Failed to converge")
     end
 end
