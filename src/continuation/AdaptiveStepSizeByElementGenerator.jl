@@ -3,9 +3,10 @@ Adaptive step size by element generator wrapper
 
 Author: Jonathan Richmond
 C: 1/5/23
-U: 1/26/25
+U: 6/6/25
 """
 
+import Logging
 import MBD: AdaptiveStepSizeByElementGenerator
 
 export updateStepSize!
@@ -19,20 +20,41 @@ Return continuation data with updated step size
 - `adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator`: Adaptive step size by element generator object
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function updateStepSize!(adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator, data::MBD.CR3BPContinuationData)
-    signFactor = (data.currentStepSize < 0) ? -1 : 1
+function updateStepSize!(generator::AdaptiveStepSizeByElementGenerator, data::MBD.CR3BPContinuationData)
+    step::Float64 = data.currentStepSize
+    signFactor::Int64 = (step < 0) ? -1 : 1
+    absStep::Float64 = abs(step)
+
+    Logging.@debug "Starting updateStepSize! - Step: $step, Converging: $(data.converging), Iterations: $(data.numIterations)"
+
     if data.converging
-        if data.numIterations < adaptiveStepSizeByElementGenerator.maxIterations
-            data.currentStepSize = signFactor*min(abs(adaptiveStepSizeByElementGenerator.maxStepSize), abs(data.currentStepSize*adaptiveStepSizeByElementGenerator.scaleFactor))
-        elseif data.numIterations > adaptiveStepSizeByElementGenerator.minIterations
-            data.currentStepSize = signFactor*max(abs(adaptiveStepSizeByElementGenerator.minStepSize), abs(data.currentStepSize/adaptiveStepSizeByElementGenerator.scaleFactor))
-        end
-        (abs(data.currentStepSize) > abs(adaptiveStepSizeByElementGenerator.maxElementStepSize)) && (data.currentStepSize = adaptiveStepSizeByElementGenerator.maxElementStepSize)
-    else
-        if abs(data.currentStepSize-adaptiveStepSizeByElementGenerator.minStepSize)/abs(adaptiveStepSizeByElementGenerator.minStepSize) < 1E-4
-            data.forceEndContinuation = true
+        if data.numIterations < generator.maxIterations
+            absStep *= generator.scaleFactor
+            absStep = min(absStep, generator.maxStepSize)
+            Logging.@debug "Increasing step size to $absStep (scaled up)"
+        elseif data.numIterations > generator.minIterations
+            absStep /= generator.scaleFactor
+            absStep = max(absStep, generator.minStepSize)
+            Logging.@debug "Decreasing step size to $absStep (scaled down)"
         else
-            data.currentStepSize = signFactor*max(abs(adaptiveStepSizeByElementGenerator.minStepSize), abs(data.currentStepSize/adaptiveStepSizeByElementGenerator.scaleFactor))
+            Logging.@debug "Step size unchanged: $absStep (iterations within target range)"
+        end
+        if absStep > generator.maxElementStepSize
+            Logging.@warn "Step size $absStep exceeds maximum element step size $(generator.maxElementStepSize); clipping"
+            absStep = generator.maxElementStepSize
+        end
+        data.currentStepSize = signFactor*absStep
+    else
+        relTol::Float64 = abs(absStep-generator.minStepSize)/generator.minStepSize
+        if relTol < 1E-4
+            data.forceEndContinuation = true
+            Logging.@info "Terminating continuation: step size $absStep near minimum step size $(generator.minStepSize)"
+        else
+            absStep = max(generator.minStepSize, absStep/generator.scaleFactor)
+            data.currentStepSize = signFactor*absStep
+            Logging.@debug "Non-convergent case: reduced step size to $absStep"
         end
     end
+
+    Logging.@debug "Final step size set to: $(data.currentStepSize)"
 end
