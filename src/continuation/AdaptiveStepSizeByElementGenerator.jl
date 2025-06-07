@@ -12,12 +12,12 @@ import MBD: AdaptiveStepSizeByElementGenerator
 export updateStepSize!
 
 """
-    updateStepSize!(adaptiveStepSizeByElementGenerator, data)
+    updateStepSize!(generator, data)
 
 Return continuation data with updated step size
 
 # Arguments
-- `adaptiveStepSizeByElementGenerator::AdaptiveStepSizeByElementGenerator`: Adaptive step size by element generator object
+- `generator::AdaptiveStepSizeByElementGenerator`: Adaptive step size by element generator object
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
 function updateStepSize!(generator::AdaptiveStepSizeByElementGenerator, data::MBD.CR3BPContinuationData)

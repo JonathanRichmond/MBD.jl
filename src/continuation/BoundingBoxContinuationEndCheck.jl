@@ -3,59 +3,90 @@ Bounding box continuation end check wrapper
 
 Author: Jonathan Richmond
 C: 1/9/23
-U: 1/26/25
+U: 6/7/25
 """
 
+import Logging
 import MBD: BoundingBoxContinuationEndCheck
 
 export checkBounds, isContinuationDone
 
 """
-    checkBounds(boundingBoxContinuationEndCheck, variable)
+    checkBounds(boundsCheck, variable)
 
 Return error if bounds are invalid
 
 # Arguments
-- `boundingBoxContinuationEndCheck::BoundingBoxContinuationEndCheck`: Bounding box continuation end check object
+- `boundsCheck::BoundingBoxContinuationEndCheck`: Bounding box continuation end check object
 - `variable::Variable`: Bounded free variable
 """
-function checkBounds(boundingBoxContinuationEndCheck::BoundingBoxContinuationEndCheck, variable::MBD.Variable)
-    (size(boundingBoxContinuationEndCheck.paramBounds, 1) == getNumFreeVariables(variable)) || throw(ArgumentError("There are $(size(boundingBoxContinuationEndCheck.paramBounds, 1)) boundary entries but there are $(getNumFreeVariables(variable)) free variables"))
-    for i::Int16 in Int16(1):Int16(size(boundingBoxContinuationEndCheck.paramBounds, 1))
-        (length(boundingBoxContinuationEndCheck.paramBounds[i,:]) == 2) || throw(ArgumentError("There are $(length(boundingBoxContinuationEndCheck.paramBounds[i,:])) boundary values in row $i but there should be 2"))
-        if (!isnan(boundingBoxContinuationEndCheck.paramBounds[i,1]) && !isnan(boundingBoxContinuationEndCheck.paramBounds[i,2]) && (boundingBoxContinuationEndCheck.paramBounds[i,1] > boundingBoxContinuationEndCheck.paramBounds[i,2]))
-            throw(ArgumentError("Maximum bound must be greater than minimum bound (row $i)"))
-        end
+function checkBounds(boundsCheck::BoundingBoxContinuationEndCheck, variable::MBD.Variable)
+    bounds::Matrix{Float64} = boundsCheck.paramBounds
+    numBounds::Int64 = size(bounds, 1)
+    numFreeVars::Int64 = getNumFreeVariables(variable)
+
+    Logging.@debug "Checking parameter bounds: $numBounds bounds vs. $numFreeVars free variables"
+
+    if numBounds != numFreeVars
+        err::String = "Expected $numFreeVars bound rows, found $numBounds"
+        Logging.@error err
+        throw(ArgumentError(err))
     end
+    for j in 1:numBounds
+        row::Vector{Float64} = bounds[j,:]
+        if length(row) != 2
+            err::String = "Row $j has length $(length(row)); expected 2"
+            Logging.@error err
+            throw(ArgumentError(err))
+        end
+        minBound::Float64, maxBound::Float64 = row[1], row[2]
+        if !isnan(min_bound) && !isnan(maxBound) && (minBound > maxBound)
+            err::String = "In row $j: minimum bound $minBound > maximum bound $maxBound"
+            Logging.@error err
+            throw(ArgumentError(err))
+        end
+        Logging.@debug "Row $j bounds OK: [$minBound, $maxBound]"
+    end
+
+    Logging.@info "All parameter bounds passed validation"
 end
 
 """
-    isContinuationDone(boundingBoxContinuationEndCheck, data)
+    isContinuationDone(boundsCheck, data)
 
 Return true if continuation is done
 
 # Arguments
-- `boundingBoxContinuationEndCheck::BoundingBoxContinuationEndCheck`: Bounding box continuation end check object
+- `boundsCheck::BoundingBoxContinuationEndCheck`: Bounding box continuation end check object
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function isContinuationDone(boundingBoxContinuationEndCheck::BoundingBoxContinuationEndCheck, data::MBD.CR3BPContinuationData)
-    for (index1::MBD.Variable, value1::Int16) in getFreeVariableIndexMap!(data.previousSolution)
-        if index1.name == boundingBoxContinuationEndCheck.paramName
-            checkBounds(boundingBoxContinuationEndCheck, index1)
-            for i::Int16 in Int16(1):Int16(getNumFreeVariables(index1))
-                if (!isnan(boundingBoxContinuationEndCheck.paramBounds[i,1]) && !isnan(boundingBoxContinuationEndCheck.paramBounds[i,2]))
-                    boundingBoxContinuationEndCheck.variableBounds[value1+i-1] = copy(boundingBoxContinuationEndCheck.paramBounds[i,:])
+function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::MBD.CR3BPContinuationData)
+    Logging.@debug "Bounding box continuation end check"
+
+    for (var::MBD.Variable, index::Int16) in getFreeVariableIndexMap!(data.previousSolution)
+        if var.name == boundsCheck.paramName
+            Logging.@debug "Checking bounds for variable $(var.name)"
+            checkBounds(boundsCheck, var)
+            numFreeVars::Int64 = getNumFreeVariables(var)
+            bounds::Vector{Float64} = boundsCheck.paramBounds
+            for j in 1:numFreeVars
+                minBounds::Float64, maxBounds::Float64 = bounds[j,1], bounds[j,2]
+                if !isnan(minBounds) && !isnan(maxBounds)
+                    boundsCheck.variableBounds[Int16(index+j-1)] = copy(bounds[j,:])
+                    Logging.@debug "Set bounds for index $(index+j-1): [$minBounds, $maxBounds]"
                 end
             end
-            freeVariableVector::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
-            for (index2::Int16, value2::Vector{Float64}) in boundingBoxContinuationEndCheck.variableBounds
-                freeVariable::Float64 = freeVariableVector[index2]
-                if ((freeVariable < value2[1]) || (freeVariable > value2[2]))
-                    println("\nContinuation bounding box reached!")
+            freeVars::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
+            for (index2::Int16, bounds2::Vector{Float64}) in boundsCheck.variableBounds
+                value::Float64 = freeVars[index2]
+                if (value < bounds2[1]) || (value > bounds2[2])
+                    Logging.@info "Continuation bounding box reached at index $index2: $value ∉ [$(bounds2[1]), $(bounds2[2])]"
+                    println("Continuation bounding box reached!")
+                    
                     return true
                 end
             end
-            [delete!(boundingBoxContinuationEndCheck.variableBounds, value1+i-1) for i in 1:getNumFreeVariables(index1)]
+            [delete!(boundsCheck.variableBounds, index+j-1) for j in 1:numFreeVars]
         end
     end
 
