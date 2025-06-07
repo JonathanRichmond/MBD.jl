@@ -3,7 +3,7 @@ Bounding box continuation end check wrapper
 
 Author: Jonathan Richmond
 C: 1/9/23
-U: 6/8/25
+U: 6/7/25
 """
 
 import Logging
@@ -25,7 +25,7 @@ function checkBounds(boundsCheck::BoundingBoxContinuationEndCheck, variable::MBD
     numBounds::Int64 = size(bounds, 1)
     numFreeVars::Int64 = getNumFreeVariables(variable)
 
-    Logging.@debug "Checking parameter bounds: $numBounds bounds vs. $numFreeVars free variables"
+    Logging.@debug "Checking bounds for variable $(variable.name): $numBounds bounds vs. $numFreeVars free variables"
 
     if numBounds != numFreeVars
         err1::String = "Expected $numFreeVars bound rows, found $numBounds"
@@ -48,7 +48,7 @@ function checkBounds(boundsCheck::BoundingBoxContinuationEndCheck, variable::MBD
         Logging.@debug "Row $j bounds OK: [$minBound, $maxBound]"
     end
 
-    Logging.@info "All parameter bounds passed validation"
+    Logging.@info "All bounds for variable $(variable.name) passed validation"
 end
 
 """
@@ -61,9 +61,9 @@ Return true if continuation is done
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
 function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::MBD.CR3BPContinuationData)
-    Logging.@debug "Bounding box continuation end check"
+    Logging.@debug "Checking if continuation bounding box is reached"
 
-    for (var::MBD.Variable, index::Int16) in getFreeVariableIndexMap!(data.previousSolution)
+    for (var::MBD.Variable, index0::Int16) in getFreeVariableIndexMap!(data.previousSolution)
         if var.name == boundsCheck.paramName
             Logging.@debug "Checking bounds for variable $(var.name)"
             checkBounds(boundsCheck, var)
@@ -72,21 +72,23 @@ function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::
             for j in 1:numFreeVars
                 minBound::Float64, maxBound::Float64 = bounds[j,1], bounds[j,2]
                 if !isnan(minBound) && !isnan(maxBound)
-                    boundsCheck.variableBounds[Int16(index+j-1)] = copy(bounds[j,:])
-                    Logging.@debug "Set bounds for index $(index+j-1): [$minBound, $maxBound]"
+                    boundsCheck.variableBounds[Int16(index0+j-1)] = copy(bounds[j,:])
+                    Logging.@debug "Set bounds for index $(index0+j-1): [$minBound, $maxBound]"
                 end
             end
             freeVars::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
-            for (index2::Int16, bounds2::Vector{Float64}) in boundsCheck.variableBounds
-                value::Float64 = freeVars[index2]
-                if (value < bounds2[1]) || (value > bounds2[2])
-                    Logging.@info "Continuation bounding box reached at index $index2: $value ∉ [$(bounds2[1]), $(bounds2[2])]"
+            for (index::Int16, varBounds::Vector{Float64}) in boundsCheck.variableBounds
+                value::Float64 = freeVars[index]
+                minBound::Float64, maxBound::Float64 = varBounds[1], varBounds[2]
+                Logging.@debug "Index $index: value = $value, bounds = [$minBound, $maxBound]"
+                if (value < minBound) || (value > maxBound)
+                    Logging.@info "Continuation bounding box reached at index $index: $value ∉ [$(varBounds[1]), $(varBounds[2])]"
                     println("Continuation bounding box reached!")
                     
                     return true
                 end
             end
-            [delete!(boundsCheck.variableBounds, index+j-1) for j in 1:numFreeVars]
+            [delete!(boundsCheck.variableBounds, index0+j-1) for j in 1:numFreeVars]
         end
     end
 

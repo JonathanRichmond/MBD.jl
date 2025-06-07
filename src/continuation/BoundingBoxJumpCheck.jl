@@ -3,86 +3,146 @@ Bounding box jump check wrapper
 
 Author: Jonathan Richmond
 C: 1/8/23
-U: 1/26/25
+U: 6/7/25
 """
 
+import Logging
 import MBD: BoundingBoxJumpCheck
 
 export addBounds!, checkBounds, isFamilyMember, removeBounds!
 
 """
-    addBounds!(boundingBoxJumpCheck, problem, variable, bounds)
+    addBounds!(jumpCheck, problem, variable, bounds)
 
 Return bounding box jump check object with updated bounds
 
 # Arguments
-- `boundingBoxJumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
+- `jumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
 - `problem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 - `variable::Variable`: Bounded free variable
 - `bounds::Matrix{Float64}`: Minimum/maximum values for each free variable
 """
-function addBounds!(boundingBoxJumpCheck::BoundingBoxJumpCheck, problem::MBD.CR3BPMultipleShooterProblem, variable::MBD.Variable, bounds::Matrix{Float64})
-    index0::Int16 = Int16(get(getFreeVariableIndexMap!(problem), variable, ArgumentError("Variable is not part of problem")))
-    checkBounds(boundingBoxJumpCheck, variable, bounds)
-    for i::Int16 in Int16(1):Int16(getNumFreeVariables(variable))
-        if (!isnan(bounds[i,1]) && !isnan(bounds[i,2]))
-            boundingBoxJumpCheck.variableBounds[index0+i-1] = copy(bounds[i,:])
+function addBounds!(jumpCheck::BoundingBoxJumpCheck, problem::MBD.CR3BPMultipleShooterProblem, variable::MBD.Variable, bounds::Matrix{Float64})
+    index0::Int16 = get(getFreeVariableIndexMap!(problem), variable) do
+        err::String = "Variable $(variable.name) is not part of the problem"
+        Logging.@error err
+        throw(ArgumentError(err))
+    end
+    numFreeVars::Int64 = getNumFreeVariables(variable)
+
+    Logging.@debug "Adding bounds for variable $(variable.name), indices $index0 to $(index0+numFreeVars-1)"
+
+    checkBounds(jumpCheck, variable, bounds)
+    for j in 1:numFreeVars
+        minBound::Float64, maxBound::Float64 = bounds[j,1], bounds[j,2]
+        if !isnan(minBound) && !isnan(maxBound)
+            index::Int16 = index0+j-1
+            jumpCheck.variableBounds[index] = copy(bounds[j,:])
+            Logging.@debug "Set bounds for index $index: [$minBound, $maxBound]"
         end
     end
+
+    Logging.@debug "Variable $(variable.name) bounds added"
 end
 
 """
-    checkBounds(boundingBoxJumpCheck, variable, bounds)
+    checkBounds(jumpCheck, variable, bounds)
 
 Return error if bounds are invalid
 
 # Arguments
-- `boundingBoxJumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
+- `jumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
 - `variable::Variable`: Bounded free variable
 - `bounds::Matrix{Float64}`: Minimum/maximum values for each free variable
 """
-function checkBounds(boundingBoxJumpCheck::BoundingBoxJumpCheck, variable::MBD.Variable, bounds::Matrix{Float64})
-    (size(bounds, 1) == getNumFreeVariables(variable)) || throw(ArgumentError("There are $(size(bounds, 1)) boundary entries but there are $(getNumFreeVariables(variable)) free variables"))
-    for i::Int16 in Int16(1):Int16(size(bounds, 1))
-        (length(bounds[i,:]) == 2) || throw(ArgumentError("There are $(length(bounds[i,:])) boundary values in row $i but there should be 2"))
-        if (!isnan(bounds[i,1]) && !isnan(bounds[i,2]) && (bounds[i,1] > bounds[i,2]))
-            throw(ArgumentError("Maximum bound must be greater than minimum bound (row $i)"))
-        end
+function checkBounds(jumpCheck::BoundingBoxJumpCheck, variable::MBD.Variable, bounds::Matrix{Float64})
+    numBounds::Int64 = size(bounds, 1)
+    numFreeVars::Int64 = getNumFreeVariables(variable)
+
+    Logging.@debug "Checking bounds for variable $(variable.name): $numBounds bounds vs. $numFreeVars free variables"
+
+    if numBounds != numFreeVars
+        err1::String = "Expected $numFreeVars bound rows, found $numBounds"
+        Logging.@error err1
+        throw(ArgumentError(err1))
     end
+    for j in 1:numBounds
+        row::Vector{Float64} = bounds[j,:]
+        if length(row) != 2
+            err2::String = "Row $j has length $(length(row)); expected 2"
+            Logging.@error err2
+            throw(ArgumentError(err2))
+        end
+        minBound::Float64, maxBound::Float64 = row[1], row[2]
+        if !isnan(minBound) && !isnan(maxBound) && (minBound > maxBound)
+            err3::String = "In row $j: minimum bound $minBound > maximum bound $maxBound"
+            Logging.@error err3
+            throw(ArgumentError(err3))
+        end
+        Logging.@debug "Row $j bounds OK: [$minBound, $maxBound]"
+    end
+
+    Logging.@info "All bounds for variable $(variable.name) passed validation"
 end
 
 """
-    isFamilyMember(boundingBoxJumpCheck, data)
+    isFamilyMember(jumpCheck, data)
 
 Return true if converged solution is family member
 
 # Arguments
-- `boundingBoxJumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
+- `jumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
-function isFamilyMember(boundingBoxJumpCheck::BoundingBoxJumpCheck, data::MBD.CR3BPContinuationData)
-    freeVariables::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
-    for (index::Int16, value::Vector{Float64}) in boundingBoxJumpCheck.variableBounds
-        freeVariableEntry::Float64 = freeVariables[index]
-        if ((freeVariableEntry < value[1]) || (freeVariableEntry > value[2]))
+function isFamilyMember(jumpCheck::BoundingBoxJumpCheck, data::MBD.CR3BPContinuationData)
+    freeVars::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
+
+    Logging.@debug "Checking if current solution is within family bounding box"
+
+    for (index::Int16, varBounds::Vector{Float64}) in jumpCheck.variableBounds
+        value::Float64 = freeVars[index]
+        minBound::Float64, maxBound::Float64 = varBounds[1], varBounds[2]
+        Logging.@debug "Index $index: value = $value, bounds = [$minBound, $maxBound]"
+        if (value < minBound) || (value > maxBound)
+            Logging.@info "Bounding box exceeded at index $index: $value ∉ [$(varBounds[1]), $(varBounds[2])]"
+            
             return false
         end
     end
 
+    Logging.@info "All free variables are within family bounding box"
     return true
 end
 
 """
-    removeBounds!(boundingBoxJumpcheck, problem, variable)
+    removeBounds!(jumpcheck, problem, variable)
 
 Return bounding box jump check object with updated bounds
 
 # Arguments
-- `boundingBoxJumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
+- `jumpCheck::BoundingBoxJumpCheck`: Bounding box jump check object
 - `problem::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem object
 - `variable::Variable`: Bounded free variable
 """
-function removeBounds!(boundingBoxJumpCheck::BoundingBoxJumpCheck, problem::MBD.CR3BPMultipleShooterProblem, variable::MBD.Variable)
-    index0::Int16 = Int16(get(getFreeVariableIndexMap!(problem), variable, ArgumentError("Variable is not part of problem")))
-    [delete!(boundingBoxJumpCheck.variableBounds, index0+i-1) for i in 1:getNumFreeVariables(variable)]
+function removeBounds!(jumpCheck::BoundingBoxJumpCheck, problem::MBD.CR3BPMultipleShooterProblem, variable::MBD.Variable)
+    index0::Int16 = get(getFreeVariableIndexMap!(problem), variable) do
+        err::String = "Variable $(variable.name) is not part of the problem"
+        Logging.@error err
+        throw(ArgumentError(err))
+    end
+    numFreeVars::Int64 = getNumFreeVariables(variable)
+
+    Logging.@debug "Removing bounds for variable $(variable.name), indices $index0 to $(index0+numFreeVars-1)"
+
+    for j in 1:numFreeVars
+        index::Int16 = index0+j-1
+        if haskey(jumpCheck.variableBounds, index)
+            delete!(jumpCheck.variableBounds, index)
+            Logging.@debug "Deleted bounds at index $index"
+        else
+            Logging.@debug "No bounds to delete at index $index"
+        end
+    end
+
+    Logging.@debug "Variable $(variable.name) bounds removed"
 end
