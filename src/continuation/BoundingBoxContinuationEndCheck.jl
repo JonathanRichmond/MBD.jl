@@ -3,7 +3,7 @@ Bounding box continuation end check wrapper
 
 Author: Jonathan Richmond
 C: 1/9/23
-U: 6/7/25
+U: 6/8/25
 """
 
 import Logging
@@ -28,22 +28,22 @@ function checkBounds(boundsCheck::BoundingBoxContinuationEndCheck, variable::MBD
     Logging.@debug "Checking parameter bounds: $numBounds bounds vs. $numFreeVars free variables"
 
     if numBounds != numFreeVars
-        err::String = "Expected $numFreeVars bound rows, found $numBounds"
-        Logging.@error err
-        throw(ArgumentError(err))
+        err1::String = "Expected $numFreeVars bound rows, found $numBounds"
+        Logging.@error err1
+        throw(ArgumentError(err1))
     end
     for j in 1:numBounds
         row::Vector{Float64} = bounds[j,:]
         if length(row) != 2
-            err::String = "Row $j has length $(length(row)); expected 2"
-            Logging.@error err
-            throw(ArgumentError(err))
+            err2::String = "Row $j has length $(length(row)); expected 2"
+            Logging.@error err2
+            throw(ArgumentError(err2))
         end
         minBound::Float64, maxBound::Float64 = row[1], row[2]
         if !isnan(min_bound) && !isnan(maxBound) && (minBound > maxBound)
-            err::String = "In row $j: minimum bound $minBound > maximum bound $maxBound"
-            Logging.@error err
-            throw(ArgumentError(err))
+            err3::String = "In row $j: minimum bound $minBound > maximum bound $maxBound"
+            Logging.@error err3
+            throw(ArgumentError(err3))
         end
         Logging.@debug "Row $j bounds OK: [$minBound, $maxBound]"
     end
