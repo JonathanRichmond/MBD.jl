@@ -40,7 +40,7 @@ function checkBounds(boundsCheck::BoundingBoxContinuationEndCheck, variable::MBD
             throw(ArgumentError(err2))
         end
         minBound::Float64, maxBound::Float64 = row[1], row[2]
-        if !isnan(min_bound) && !isnan(maxBound) && (minBound > maxBound)
+        if !isnan(minBound) && !isnan(maxBound) && (minBound > maxBound)
             err3::String = "In row $j: minimum bound $minBound > maximum bound $maxBound"
             Logging.@error err3
             throw(ArgumentError(err3))
@@ -70,10 +70,10 @@ function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::
             numFreeVars::Int64 = getNumFreeVariables(var)
             bounds::Vector{Float64} = boundsCheck.paramBounds
             for j in 1:numFreeVars
-                minBounds::Float64, maxBounds::Float64 = bounds[j,1], bounds[j,2]
-                if !isnan(minBounds) && !isnan(maxBounds)
+                minBound::Float64, maxBound::Float64 = bounds[j,1], bounds[j,2]
+                if !isnan(minBound) && !isnan(maxBound)
                     boundsCheck.variableBounds[Int16(index+j-1)] = copy(bounds[j,:])
-                    Logging.@debug "Set bounds for index $(index+j-1): [$minBounds, $maxBounds]"
+                    Logging.@debug "Set bounds for index $(index+j-1): [$minBound, $maxBound]"
                 end
             end
             freeVars::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
