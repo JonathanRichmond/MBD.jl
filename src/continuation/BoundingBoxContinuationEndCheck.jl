@@ -68,7 +68,7 @@ function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::
             Logging.@debug "Checking bounds for variable $(var.name)"
             checkBounds(boundsCheck, var)
             numFreeVars::Int64 = getNumFreeVariables(var)
-            bounds::Vector{Float64} = boundsCheck.paramBounds
+            bounds::Matrix{Float64} = boundsCheck.paramBounds
             for j in 1:numFreeVars
                 minBound::Float64, maxBound::Float64 = bounds[j,1], bounds[j,2]
                 if !isnan(minBound) && !isnan(maxBound)
