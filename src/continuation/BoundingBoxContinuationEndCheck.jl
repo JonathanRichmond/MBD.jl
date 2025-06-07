@@ -90,5 +90,6 @@ function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::
         end
     end
 
+    Logging.@debug "Continuation bounding box not yet reached"
     return false
 end
