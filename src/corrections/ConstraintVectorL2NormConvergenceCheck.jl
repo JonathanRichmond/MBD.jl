@@ -41,7 +41,7 @@ function isConverged(convergenceCheck::ConstraintVectorL2NormConvergenceCheck, p
         end
     end
 
-    Logging.@debug "Convergence check failed: norm = $constraintNorm > $maxNorm (unidentified maximum value)"
+    Logging.@debug "Convergence check failed: norm = $constraintNorm > $maxNorm (unidentified maximum value: $maxValue)"
     return false
 end
 
