@@ -8,7 +8,7 @@ C: 6/9/25
 import DifferentialEquations, LinearAlgebra, StaticArrays
 import MBD: BCR4BP12PeriodicOrbit
 
-export getBrouckeStability, getEigenData#, getManifoldArcByTime, getManifoldByArclength
+export getBrouckeStability, getEigenData, getManifoldArcByTime#, getManifoldByArclength
 export getStabilityIndex, getTimeConstant#getManifoldByStepOff, getManifoldByTime, 
 
 """
@@ -39,36 +39,39 @@ function getEigenData(periodicOrbit::BCR4BP12PeriodicOrbit)
     return (Vector{Complex{Float64}}(E.values), Matrix{Complex{Float64}}(E.vectors))
 end
 
-# """
-#     getManifoldArcByTime(periodicOrbit, stabilitity, direction, d, orbitTime)
+"""
+    getManifoldArcByTime(periodicOrbit, stabilitity, direction, d, orbitTime)
 
-# Return stable or unstable manifold tubes spaced by time
+Return stable or unstable manifold tubes spaced by time
 
-# # Arguments
-# - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
-# - `stability::String`: Desired manifold stability
-# - `direction::String`: Step-off direction
-# - `d::Float64`: Step-off distance [ndim]
-# - `orbitTime::Float64`: Normalized time along orbit from initial condition
-# """
-# function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, stability::String, direction::String, d::Float64, orbitTime::Float64)
-#     (eigenvalues::Vector{Complex{Float64}}, eigenvectors::Matrix{Complex{Float64}}) = getEigenData(periodicOrbit)
-#     index::Int16 = (stability == "Stable") ? Int16(argmin(abs.(eigenvalues))) : Int16(argmax(abs.(eigenvalues)))
-#     eigenvector::StaticArrays.SVector{6, Complex{Float64}} = StaticArrays.SVector{6, Complex{Float64}}(eigenvectors[:,index])
-#     propagator = MBD.Propagator()
-#     propagator.equationType = MBD.STM
-#     orbitArc::MBD.CR3BPArc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, orbitTime*periodicOrbit.period], periodicOrbit.dynamicsModel)
-#     stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
-#     q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(orbitArc, -1))
-#     state::Vector{Float64} = q[1:6]
-#     Phi::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([q[7:12] q[13:18] q[19:24] q[25:30] q[31:36] q[37:42]])
-#     arcEigenvector::StaticArrays.SVector{6, Complex{Float64}} = StaticArrays.SVector{6, Complex{Float64}}(Phi*eigenvector)
-#     normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
-#     step::Int16 = (direction == "Negative") ? Int16(-1) : Int16(1)
-#     manifoldArc = MBD.CR3BPManifoldArc(periodicOrbit, orbitTime, d, Vector{Complex{Float64}}(state+step*d.*normEigenvector))
+# Arguments
+- `periodicOrbit::BCR4BP12PeriodicOrbit`: BCR4BP P1-P2 periodic orbit object
+- `stability::String`: Desired manifold stability
+- `direction::String`: Step-off direction
+- `d::Float64`: Step-off distance [ndim]
+- `orbitTime::Float64`: Normalized time along orbit from initial condition
+"""
+function getManifoldArcByTime(periodicOrbit::BCR4BP12PeriodicOrbit, stability::String, direction::String, d::Float64, orbitTime::Float64)
+    (eigenvalues::Vector{Complex{Float64}}, eigenvectors::Matrix{Complex{Float64}}) = getEigenData(periodicOrbit)
+    index::Int16 = (stability == "Stable") ? Int16(argmin(abs.(eigenvalues))) : Int16(argmax(abs.(eigenvalues)))
+    eigenvector::StaticArrays.SVector{7, Complex{Float64}} = StaticArrays.SVector{7, Complex{Float64}}(eigenvectors[:,index])
+    propagator = MBD.Propagator()
+    propagator.equationType = MBD.STM
+    theta4dot::Float64 = evaluateEquations(periodicOrbit.dynamicsModel, MBD.SIMPLE, 0.0, [0.9, 0, 0, 0, -0.3, 0, 0])[7]
+    initialCondition::Vector{Float64} = push!(periodicOrbit.iniitalCondition[1:6], periodicOrbit.initialCondition[7]+theta4dot*orbitTime*periodicOrbit.period)
+    orbitArc::MBD.BCR4BP12Arc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, initialCondition, MBD.STM), [0, orbitTime*periodicOrbit.period], periodicOrbit.dynamicsModel)
+    stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
+    q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(orbitArc, -1))
+    state::Vector{Float64} = q[1:7]
+    Phi::StaticArrays.SMatrix{7, 7, Float64} = StaticArrays.SMatrix{7, 7, Float64}([q[8:14] q[15:21] q[22:28] q[29:35] q[36:42] q[43:49]])
+    arcEigenvector::StaticArrays.SVector{7, Complex{Float64}} = StaticArrays.SVector{7, Complex{Float64}}(Phi*eigenvector)
+    normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
+    println(normEigenvector)
+    step::Int16 = (direction == "Negative") ? Int16(-1) : Int16(1)
+    manifoldArc = MBD.BCR4BP12ManifoldArc(periodicOrbit, orbitTime, d, Vector{Complex{Float64}}(state+step*d.*normEigenvector))
 
-#     return manifoldArc
-# end
+    return manifoldArc
+end
 
 # """
 #     getManifoldByArclength(periodicOrbit, stabilitity, direction, d, nArcs)

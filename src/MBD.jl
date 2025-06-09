@@ -1367,6 +1367,38 @@ end
 Base.:(==)(periodicOrbit1::BCR4BP12PeriodicOrbit, periodicOrbit2::BCR4BP12PeriodicOrbit) = ((periodicOrbit1.dynamicsModel == periodicOrbit2.dynamicsModel) && (periodicOrbit1.initialCondition == periodicOrbit2.initialCondition) && (periodicOrbit1.monodromy == periodicOrbit2.monodromy) && (periodicOrbit1.period == periodicOrbit2.period))
 
 """
+    BCR4BP12ManifoldArc(periodicOrbit, orbitTime, d, initialCondition; TOF)
+
+BCR4BP P1-P2 manifold arc object
+
+# Arguments
+- `periodicOrbit::BCR4BP12PeriodicOrbit`: Underlying BCR4BP P1-P2 periodic orbit
+- `orbitTime::Float64`: Time along orbit from initial condition [ndim]
+- `d::Float64`: Step-off distance [ndim]
+- `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
+- `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
+"""
+mutable struct BCR4BP12ManifoldArc
+    d::Float64                                                          # Step-off distance [ndim]
+    initialCondition::Vector{Complex{Float64}}                          # Initial conditions [ndim]
+    orbitTime::Float64                                                  # Normalized time along orbit from initial condition
+    periodicOrbit::BCR4BP12PeriodicOrbit                                # Underlying periodic orbit
+    TOF::Float64                                                        # Time-of-flight [ndim]
+
+    function BCR4BP12ManifoldArc(periodicOrbit::BCR4BP12PeriodicOrbit, orbitTime::Float64, d::Float64, initialCondition::Vector{Complex{Float64}}, TOF::Float64 = 0.0)
+        this = new()
+
+        this.periodicOrbit = periodicOrbit
+        this.orbitTime = orbitTime
+        this.d = d
+        this.initialCondition = initialCondition
+        this.TOF = TOF
+
+        return this
+    end
+end
+
+"""
     BCR4BP41DynamicsModel(systemData)
 
 BCR4BP P4-B1 dynamics model object
