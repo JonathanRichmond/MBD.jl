@@ -65,9 +65,16 @@ function isConverged(convergenceCheck::ConstraintVectorL2NormConvergenceCheck, p
         Logging.@info "Convergence check passed: norm = $constraintNorm ≤ $maxNorm"
 
         return true
-    else
-        Logging.@debug "Convergence check failed: norm = $constraintNorm > $maxNorm"
-
-        return false
     end
+    maxIndex::Int16 = Int16(argmax(constraintVec))
+    maxValue::Float64 = constraintVec[maxIndex]
+    for c in getConstraints(problem)
+        if get(problem.constraintIndexMap, c, -1) == maxIndex
+            Logging.@debug "Convergence check failed: norm = $constraintNorm > $maxNorm (maximum value: $maxValue from $(typeof(c)))"
+            break
+        end
+    end
+
+    Logging.@debug "Convergence check failed: norm = $constraintNorm > $maxNorm (unidentified maximum value: $maxValue)"
+    return false
 end
