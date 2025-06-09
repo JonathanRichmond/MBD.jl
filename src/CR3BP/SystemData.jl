@@ -76,3 +76,15 @@ Return number of primaries
 function getNumPrimaries(systemData::CR3BPSystemData)
     return Int16(length(systemData.primaryData))
 end
+
+"""
+    shallowClone(systemData)
+
+Return copy of CR3BP system data object
+
+# Arguments
+- `systemData::CR3BPSystemData`: CR3BP system data object
+"""
+function shallowClone(systemData::CR3BPSystemData)
+    return CR3BPSystemData(systemData.primaryNames...)
+end

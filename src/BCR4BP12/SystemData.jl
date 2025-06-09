@@ -3,6 +3,7 @@ BCR4BP system data wrapper
 
 Author: Jonathan Richmond
 C: 2/18/25
+U: 6/9/25
 """
 
 import MBD: BCR4BPSystemData, GRAVITY
@@ -150,4 +151,16 @@ Return P4-B1 CR3BP system mass ratio
 """
 function get41MassRatio(systemData::BCR4BPSystemData)
     return get12CharMass(systemData)/get41CharMass(systemData)
+end
+
+"""
+    shallowClone(systemData)
+
+Return copy of BCR4BP system data object
+
+# Arguments
+- `systemData::BCR4BPSystemData`: BCR4BP system data object
+"""
+function shallowClone(systemData::BCR4BPSystemData)
+    return BCR4BPSystemData(systemData.primaryNames...)
 end
