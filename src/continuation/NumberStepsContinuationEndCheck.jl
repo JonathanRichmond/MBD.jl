@@ -3,7 +3,7 @@ Number of steps continuation end check wrapper
 
 Author: Jonathan Richmond
 C: 1/5/23
-U: 6/7/25
+U: 6/8/25
 """
 
 import Logging
@@ -26,13 +26,13 @@ function isContinuationDone(numStepsCheck::NumberStepsContinuationEndCheck, data
 
     Logging.@debug "Checking if number of continuation steps is reached"
 
-    if steps >= maxSteps
-        Logging.@info "Number of continuation steps reached: $steps ≥ $maxSteps"
+    if numSteps >= maxSteps
+        Logging.@info "Number of continuation steps reached: $numSteps ≥ $maxSteps"
         println("Number of continuation steps reached!")
 
         return true
     end
 
-    Logging.@debug "Continuation ongoing: $steps / $maxSteps steps completed"
+    Logging.@debug "Continuation ongoing: $numSteps / $maxSteps steps completed"
     return false
 end
