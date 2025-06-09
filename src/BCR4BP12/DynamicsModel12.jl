@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 4/22/25
+U: 6/9/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -207,8 +207,8 @@ function getHamiltonian(dynamicsModel::BCR4BP12DynamicsModel, q::Vector{Float64}
     m4::Float64 = get4Mass(dynamicsModel)
     a4::Float64 = get4Distance(dynamicsModel)
     v_2::Float64 = q[4]^2+q[5]^2+q[6]^2
-    r_13::Float64 = sqrt((q[1]+mu)^2+q[2]^2+q[3]^2)
-    r_23::Float64 = sqrt((q[1]-1+mu)^2+q[2]^2+q[3]^2)
+    r_13::Float64 = sqrt((q[1]+mu12)^2+q[2]^2+q[3]^2)
+    r_23::Float64 = sqrt((q[1]-1+mu12)^2+q[2]^2+q[3]^2)
     r_43::Float64 = sqrt((q[1]-a4*cos(q[7]))^2+(q[2]-a4*sin(q[7]))^2+q[3]^2)
     U::Float64 = (1-mu12)/r_13+mu12/r_23+m4/r_43-m4*(q[1]*cos(q[7])+q[2]*sin(q[7]))/a4^2+(1/2)*(q[1]^2+q[2]^2)
 
