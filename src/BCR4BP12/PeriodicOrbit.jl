@@ -63,7 +63,7 @@ function getManifoldArcByTime(periodicOrbit::BCR4BP12PeriodicOrbit, stability::S
     stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
     q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(orbitArc, -1))
     state::Vector{Float64} = q[1:7]
-    Phi::StaticArrays.SMatrix{7, 7, Float64} = StaticArrays.SMatrix{7, 7, Float64}([q[8:14] q[15:21] q[22:28] q[29:35] q[36:42] q[43:49]])
+    Phi::StaticArrays.SMatrix{7, 7, Float64} = StaticArrays.SMatrix{7, 7, Float64}([q[8:14] q[15:21] q[22:28] q[29:35] q[36:42] q[43:49] q[50:56]])
     arcEigenvector::StaticArrays.SVector{7, Complex{Float64}} = StaticArrays.SVector{7, Complex{Float64}}(Phi*eigenvector)
     normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
     println(normEigenvector)
