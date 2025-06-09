@@ -66,7 +66,6 @@ function getManifoldArcByTime(periodicOrbit::BCR4BP12PeriodicOrbit, stability::S
     Phi::StaticArrays.SMatrix{7, 7, Float64} = StaticArrays.SMatrix{7, 7, Float64}([q[8:14] q[15:21] q[22:28] q[29:35] q[36:42] q[43:49] q[50:56]])
     arcEigenvector::StaticArrays.SVector{7, Complex{Float64}} = StaticArrays.SVector{7, Complex{Float64}}(Phi*eigenvector)
     normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
-    println(normEigenvector)
     step::Int16 = (direction == "Negative") ? Int16(-1) : Int16(1)
     manifoldArc = MBD.BCR4BP12ManifoldArc(periodicOrbit, orbitTime, d, Vector{Complex{Float64}}(state+step*d.*normEigenvector))
 
