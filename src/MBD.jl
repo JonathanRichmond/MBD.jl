@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/6/25
+U: 6/9/25
 """
 module MBD
 
@@ -1342,6 +1342,31 @@ end
 Base.:(==)(multipleShooter1::BCR4BP12MultipleShooter, multipleShooter2::BCR4BP12MultipleShooter) = ((multipleShooter1.convergenceCheck == multipleShooter2.convergenceCheck) && (multipleShooter1.maxIterations == multipleShooter2.maxIterations) && (multipleShooter1.recentIterationCount == multipleShooter2.recentIterationCount) && (multipleShooter1.solutionInProgress == multipleShooter2.solutionInProgress))
 
 """
+    BCR4BP12PeriodicOrbit(dynamicsModel, initialCondition, period, monodromy)
+
+BCR4BP P1-P2 periodic orbit object
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `initialCondition::Vector{Float64}`: Initial condition [ndim]
+- `period::Float64`: Period [ndim]
+- `monodromy::Matrix{Float64}`: Monodromy matrix [ndim]
+"""
+struct BCR4BP12PeriodicOrbit
+    dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model object
+    initialCondition::Vector{Float64}                                   # Initial condition [ndim]
+    monodromy::StaticArrays.SMatrix{7, 7, Float64}                      # Monodromy matrix [ndim]
+    period::Float64                                                     # Period [ndim]
+
+    function BCR4BP12PeriodicOrbit(dynamicsModel::BCR4BP12DynamicsModel, initialCondition::Vector{Float64}, period::Float64, monodromy::Matrix{Float64})
+        this = new(dynamicsModel, copy(initialCondition), StaticArrays.SMatrix{7, 7, Float64}(monodromy), copy(period))
+
+        return this
+    end
+end
+Base.:(==)(periodicOrbit1::BCR4BP12PeriodicOrbit, periodicOrbit2::BCR4BP12PeriodicOrbit) = ((periodicOrbit1.dynamicsModel == periodicOrbit2.dynamicsModel) && (periodicOrbit1.initialCondition == periodicOrbit2.initialCondition) && (periodicOrbit1.monodromy == periodicOrbit2.monodromy) && (periodicOrbit1.period == periodicOrbit2.period))
+
+"""
     BCR4BP41DynamicsModel(systemData)
 
 BCR4BP P4-B1 dynamics model object
@@ -1515,6 +1540,7 @@ include("BCR4BP12/EquationsOfMotion12.jl")
 include("BCR4BP12/MultipleShooter12.jl")
 include("BCR4BP12/MultipleShooterProblem12.jl")
 include("BCR4BP12/Node12.jl")
+include("BCR4BP12/PeriodicOrbit.jl")
 include("BCR4BP12/Segment12.jl")
 include("BCR4BP12/StateConstraint12.jl")
 include("BCR4BP12/SystemData.jl")
