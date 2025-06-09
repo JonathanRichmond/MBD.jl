@@ -58,7 +58,7 @@ function getManifoldArcByTime(periodicOrbit::BCR4BP12PeriodicOrbit, stability::S
     propagator = MBD.Propagator()
     propagator.equationType = MBD.STM
     theta4dot::Float64 = evaluateEquations(periodicOrbit.dynamicsModel, MBD.SIMPLE, 0.0, [0.9, 0, 0, 0, -0.3, 0, 0])[7]
-    initialCondition::Vector{Float64} = push!(periodicOrbit.iniitalCondition[1:6], periodicOrbit.initialCondition[7]+theta4dot*orbitTime*periodicOrbit.period)
+    initialCondition::Vector{Float64} = push!(periodicOrbit.initialCondition[1:6], periodicOrbit.initialCondition[7]+theta4dot*orbitTime*periodicOrbit.period)
     orbitArc::MBD.BCR4BP12Arc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, initialCondition, MBD.STM), [0, orbitTime*periodicOrbit.period], periodicOrbit.dynamicsModel)
     stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
     q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(orbitArc, -1))
