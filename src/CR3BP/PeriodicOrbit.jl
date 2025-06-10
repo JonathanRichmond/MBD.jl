@@ -3,7 +3,7 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 1/23/25
+U: 6/10/25
 """
 
 import DifferentialEquations, LinearAlgebra, StaticArrays
@@ -54,9 +54,9 @@ function getJacobiConstant(periodicOrbit::CR3BPPeriodicOrbit)
 end
 
 """
-    getManifoldArcByTime(periodicOrbit, stabilitity, direction, d, orbitTime)
+    getManifoldArcByTime(periodicOrbit, stability, direction, d, orbitTime)
 
-Return stable or unstable manifold tubes spaced by time
+Return stable or unstable manifold arc
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
@@ -85,9 +85,9 @@ function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, stability::Stri
 end
 
 """
-    getManifoldByArclength(periodicOrbit, stabilitity, direction, d, nArcs)
+    getManifoldByArclength(periodicOrbit, stability, direction, d, nArcs)
 
-Return stable or unstable manifold tubes spaced by arclength
+Return stable or unstable manifold tube spaced by arclength
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
@@ -128,7 +128,7 @@ end
 """
     getManifoldByStepOff(periodicOrbit, stability, direction, d_max, nArcs)
 
-Return stable or unstable manifold tubes spaced by step-off
+Return stable or unstable manifold tube spaced by step-off
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
@@ -158,9 +158,9 @@ function getManifoldByStepOff(periodicOrbit::CR3BPPeriodicOrbit, stability::Stri
 end
 
 """
-    getManifoldByTime(periodicOrbit, stabilitity, direction, d, nArcs)
+    getManifoldByTime(periodicOrbit, stability, direction, d, nArcs)
 
-Return stable or unstable manifold tubes spaced by time
+Return stable or unstable manifold tube spaced by time
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object

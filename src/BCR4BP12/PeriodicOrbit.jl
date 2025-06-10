@@ -40,9 +40,9 @@ function getEigenData(periodicOrbit::BCR4BP12PeriodicOrbit)
 end
 
 """
-    getManifoldArcByTime(periodicOrbit, stabilitity, direction, d, orbitTime)
+    getManifoldArcByTime(periodicOrbit, stability, direction, d, orbitTime)
 
-Return stable or unstable manifold tubes spaced by time
+Return stable or unstable manifold arc
 
 # Arguments
 - `periodicOrbit::BCR4BP12PeriodicOrbit`: BCR4BP P1-P2 periodic orbit object
@@ -71,9 +71,9 @@ function getManifoldArcByTime(periodicOrbit::BCR4BP12PeriodicOrbit, stability::S
 end
 
 """
-    getManifoldByArclength(periodicOrbit, stabilitity, direction, d, nArcs)
+    getManifoldByArclength(periodicOrbit, stability, direction, d, nArcs)
 
-Return stable or unstable manifold tubes spaced by arclength
+Return stable or unstable manifold tube spaced by arclength
 
 # Arguments
 - `periodicOrbit::BCR4BP12PeriodicOrbit`: BCR4BP P1-P2 periodic orbit object
@@ -144,9 +144,9 @@ end
 # end
 
 """
-    getManifoldByTime(periodicOrbit, stabilitity, direction, d, nArcs)
+    getManifoldByTime(periodicOrbit, stability, direction, d, nArcs)
 
-Return stable or unstable manifold tubes spaced by time
+Return stable or unstable manifold tube spaced by time
 
 # Arguments
 - `periodicOrbit::BCR4BP12PeriodicOrbit`: BCR4BP P1-P2 periodic orbit object
