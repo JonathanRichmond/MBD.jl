@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/9/25
+U: 6/10/25
 """
 module MBD
 
@@ -1392,6 +1392,41 @@ mutable struct BCR4BP12ManifoldArc
         this.orbitTime = orbitTime
         this.d = d
         this.initialCondition = initialCondition
+        this.TOF = TOF
+
+        return this
+    end
+end
+
+"""
+    BCR4BP12Manifold(periodicOrbit, stability, direction; TOF)
+
+BCR4BP P1-P2 manifold object
+
+# Arguments
+- `periodicOrbit::BCR4BP12PeriodicOrbit`: Underlying BCR4BP P1-P2 periodic orbit
+- `stability::String`: Stability
+- `direction::String`: Step-off direction
+- `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
+"""
+mutable struct BCR4BP12Manifold
+    direction::String                                                   # Step-off direction
+    ds::Vector{Float64}                                                 # Step-off distances [ndim]
+    initialConditions::Vector{Vector{Complex{Float64}}}                 # Initial conditions [ndim]
+    orbitTimes::Vector{Float64}                                         # Normalized times along orbit from initial condition
+    periodicOrbit::BCR4BP12PeriodicOrbit                                # Underlying periodic orbit
+    stability::String                                                   # Stability
+    TOF::Float64                                                        # Time-of-flight [ndim]
+
+    function BCR4BP12Manifold(periodicOrbit::BCR4BP12PeriodicOrbit, stability::String, direction::String, TOF::Float64 = 0.0)
+        this = new()
+
+        this.periodicOrbit = periodicOrbit
+        this.orbitTimes = []
+        this.ds = []
+        this.stability = stability
+        this.direction = direction
+        this.initialConditions = []
         this.TOF = TOF
 
         return this
