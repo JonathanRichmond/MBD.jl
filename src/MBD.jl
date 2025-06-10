@@ -1434,6 +1434,39 @@ mutable struct BCR4BP12Manifold
 end
 
 """
+    BCR4BPPseudoManifold(periodicOrbit, dynamicsModel, theta40; TOF)
+
+BCR4BP pseudo-manifold object
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit object
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `theta40::Float64`: Initial P4 angle [ndim]
+- `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
+"""
+mutable struct BCR4BPPseudoManifold
+    dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model
+    initialConditions::Vector{Vector{Complex{Float64}}}                 # Initial conditions [ndim]
+    orbitTimes::Vector{Float64}                                         # Normalized times along orbit from initial condition
+    periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying CR3BP periodic orbit
+    theta40::Float64                                                    # Initial P4 angle [ndim]
+    TOF::Float64                                                        # Time-of-flight [ndim]
+
+    function BCR4BPPseudoManifold(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::BCR4BP12DynamicsModel, theta40::Float64, TOF::Float64 = 0.0)
+        this = new()
+
+        this.periodicOrbit = periodicOrbit
+        this.dynamicsModel = dynamicsModel
+        this.theta40 = theta40
+        this.orbitTimes = []
+        this.initialConditions = []
+        this.TOF = TOF
+
+        return this
+    end
+end
+
+"""
     BCR4BP41DynamicsModel(systemData)
 
 BCR4BP P4-B1 dynamics model object
