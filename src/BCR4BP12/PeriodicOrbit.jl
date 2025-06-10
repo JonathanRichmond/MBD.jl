@@ -95,7 +95,7 @@ function getManifoldByArclength(periodicOrbit::BCR4BP12PeriodicOrbit, stability:
     stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.ARCLENGTH)
     for a::Int16 in Int16(2):Int16(nArcs+1)
         arclengthEvent = DifferentialEquations.ContinuousCallback(arclengthCondition, terminateAffect!)
-        arc::MBD.BCR4BP12Arc = propagateWithEvent(propagator, arclengthEvent, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.ARCLENGTH), [0, periodicOrbit.period], periodicOrbit.dynamicsModel, [arclength[a]])
+        arc::MBD.BCR4BP12Arc = propagateWithEvent(propagator, arclengthEvent, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.ARCLENGTH), [0, periodicOrbit.period], periodicOrbit.dynamicsModel, [periodicOrbit.dynamicsModel, arclength[a]])
         q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(arc, -1))
         t::Float64 = getTimeByIndex(arc, -1)
         state::Vector{Float64} = q[1:7]
