@@ -88,7 +88,7 @@ function getManifoldByArclength(periodicOrbit::BCR4BP12PeriodicOrbit, stability:
     eigenvector::StaticArrays.SVector{7, Complex{Float64}} = StaticArrays.SVector{7, Complex{Float64}}(eigenvectors[:,index])
     propagator = MBD.Propagator()
     propagator.equationType = MBD.ARCLENGTH
-    orbitArc::MBD.CR3BPArc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.ARCLENGTH), [0, periodicOrbit.period], periodicOrbit.dynamicsModel)
+    orbitArc::MBD.BCR4BP12Arc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.ARCLENGTH), [0, periodicOrbit.period], periodicOrbit.dynamicsModel)
     orbitLength::Float64 = getStateByIndex(orbitArc, -1)[57]
     arclength::Vector{Float64} = collect(range(0, orbitLength, nArcs+1))
     manifold = MBD.BCR4BP12Manifold(periodicOrbit, stability, direction)
