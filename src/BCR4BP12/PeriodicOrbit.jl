@@ -167,7 +167,7 @@ function getManifoldByTime(periodicOrbit::BCR4BP12PeriodicOrbit, stability::Stri
     manifold = MBD.BCR4BP12Manifold(periodicOrbit, stability, direction)
     stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
     for a::Int16 in Int16(2):Int16(nArcs+1)
-        arc::MBD.CR3BPArc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, time[a]], periodicOrbit.dynamicsModel)
+        arc::MBD.BCR4BP12Arc = propagate(propagator, appendExtraInitialConditions(periodicOrbit.dynamicsModel, periodicOrbit.initialCondition, MBD.STM), [0, time[a]], periodicOrbit.dynamicsModel)
         q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(arc, -1))
         state::Vector{Float64} = q[1:7]
         Phi::StaticArrays.SMatrix{7, 7, Float64} = StaticArrays.SMatrix{7, 7, Float64}([q[8:14] q[15:21] q[22:28] q[29:35] q[36:42] q[43:49] q[50:56]])
