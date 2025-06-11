@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/10/25
+U: 6/11/25
 """
 module MBD
 
@@ -787,7 +787,7 @@ end
 Base.:(==)(boundingBoxJumpCheck1::BoundingBoxJumpCheck, boundingBoxJumpCheck2::BoundingBoxJumpCheck) = (isequal(boundingBoxJumpCheck1.paramBounds, boundingBoxJumpCheck2.paramBounds) && (boundingBoxJumpCheck1.paramName == boundingBoxJumpCheck2.paramName) && (boundingBoxJumpCheck1.variableBounds == boundingBoxJumpCheck2.variableBounds))
 
 """
-    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramIndex, initialParamStepSize, maxParamStepSize; tol)
+    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize; tol)
 
 CR3BP natural parameter continuation engine object
 
@@ -795,7 +795,7 @@ CR3BP natural parameter continuation engine object
 - `solution1::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `solution2::CR3BPMultipleShooterProblem`: CR3BP multiple shooter problem solution
 - `paramName::String`: Natural parameter name
-- `paramIndex::Int64`: Natural parameter index to step in
+- `paramFreeVarIndex::Int64`: Natural parameter free variable index to step in
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-11)
@@ -809,12 +809,12 @@ mutable struct CR3BPNaturalParameterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
+    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
         this.dataInProgress = CR3BPContinuationData(solution1, solution2)
-        this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator(paramName, paramIndex, initialParamStepSize, maxParamStepSize)
+        this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator(paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize)
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
