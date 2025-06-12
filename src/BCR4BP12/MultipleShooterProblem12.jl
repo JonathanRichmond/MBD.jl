@@ -245,8 +245,8 @@ function deepClone(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     object.nodes = []
     for node::MBD.BCR4BP12Node in multipleShooterProblem.nodes
         newNode::MBD.BCR4BP12Node = MBD.shallowClone(node)
-        updatePointers!(newNode, copiedObjectMap)
         copiedObjectMap[node] = newNode
+        updatePointers!(newNode, copiedObjectMap)
         push!(object.nodes, newNode)
     end
     object.segments = []
