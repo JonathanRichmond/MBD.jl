@@ -27,6 +27,7 @@ function solve!(multipleShooter::BCR4BP12MultipleShooter, initialGuess::MBD.BCR4
     while !isConverged(multipleShooter.convergenceCheck, solutionInProgress) && (multipleShooter.recentIterationCount < multipleShooter.maxIterations)
         if multipleShooter.recentIterationCount > 0
             freeVariableStep::StaticArrays.SVector{Int64(numFreeVariables), Float64} = solveUpdateEquation(multipleShooter, solutionInProgress)
+            println(freVariableStep)
             freeVariableVector::Vector{Float64} = getFreeVariableVector!(solutionInProgress)+freeVariableStep
             setFreeVariableVector!(solutionInProgress, freeVariableVector)
         end
