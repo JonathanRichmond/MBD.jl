@@ -82,12 +82,12 @@ end
 Return event conditions for specified distances from primaries
 
 # Arguments
-- `output::Vector{Float64}`: Condition output vector []
+- `output`: Condition output vector []
 - `state::Vector{Float64}`: State vector [ndim]
 - `time::Float64`: Time [ndim]
 - `integrator`: Integrator object with params: [p1Distance, p2Distance, p4Distance]
 """
-function primaryDistanceCondition(output::Vector{Float64}, state::Vector{Float64}, time::Float64, integrator)
+function primaryDistanceCondition(output, state::Vector{Float64}, time::Float64, integrator)
     r1::Vector{Float64} = getPrimaryState(integrator.p[1], 1, state[7])[1:3]
     r2::Vector{Float64} = getPrimaryState(integrator.p[1], 2, state[7])[1:3]
     r4::Vector{Float64} = getPrimaryState(integrator.p[1], 4, state[7])[1:3]
