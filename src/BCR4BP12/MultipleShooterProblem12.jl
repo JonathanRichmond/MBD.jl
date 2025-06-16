@@ -3,7 +3,7 @@ BCR4BP P1-P2 multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
-U: 6/12/25
+U: 6/16/25
 """
 
 import StaticArrays
@@ -244,17 +244,25 @@ function deepClone(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     end
     object.nodes = []
     for node::MBD.BCR4BP12Node in multipleShooterProblem.nodes
+        for var::MBD.Variable in (node.epoch, node.state)
+            !haskey(copiedObjectMap, var) && (copiedObjectMap[var] = MBD.deepClone(var))
+        end
         newNode::MBD.BCR4BP12Node = MBD.shallowClone(node)
-        updatePointers!(newNode, copiedObjectMap)
         copiedObjectMap[node] = newNode
         push!(object.nodes, newNode)
     end
+    for node::MBD.BCR4BP12Node in object.nodes
+        updatePointers!(node, copiedObjectMap)
+    end
     object.segments = []
     for segment::MBD.BCR4BP12Segment in multipleShooterProblem.segments
+        !haskey(copiedObjectMap, segment.TOF) && (copiedObjectMap[segment.TOF] = MBD.deepClone(segment.TOF))
         newSegment::MBD.BCR4BP12Segment = MBD.shallowClone(segment)
-        updatePointers!(newSegment, copiedObjectMap)
         copiedObjectMap[segment] = newSegment
         push!(object.segments, newSegment)
+    end
+    for segment::MBD.BCR4BP12Segment in object.segments
+            updatePointers!(segment, copiedObjectMap)
     end
     object.constraintIndexMap = Dict{MBD.AbstractConstraint, Int16}()
     for (index::MBD.AbstractConstraint, value::Int16) in multipleShooterProblem.constraintIndexMap
