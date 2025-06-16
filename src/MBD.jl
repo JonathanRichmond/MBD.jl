@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/11/25
+U: 6/16/25
 """
 module MBD
 
@@ -1637,6 +1637,7 @@ include("BCR4BP12/Arc12.jl")
 include("BCR4BP12/ContinuityConstraint12.jl")
 include("BCR4BP12/DynamicsModel12.jl")
 include("BCR4BP12/EquationsOfMotion12.jl")
+include("BCR4BP12/Manifold12.jl")
 include("BCR4BP12/MultipleShooter12.jl")
 include("BCR4BP12/MultipleShooterProblem12.jl")
 include("BCR4BP12/Node12.jl")

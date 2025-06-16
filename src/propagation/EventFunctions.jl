@@ -3,14 +3,15 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 5/28/25
+U: 6/16/25
 """
 
-import DifferentialEquations, LinearAlgebra
+import DifferentialEquations, LinearAlgebra, Logging
 
 export arclengthCondition, momentumDifferenceConditionBCR4BP12, momentumDifferenceConditionBCR4BP41
-export momentumDifferenceConditionCR3BP, p1DistanceCondition, p2DistanceCondition, renormalize!
-export terminateAffect!, xzPlaneCrossingCondition, zValueCondition
+export momentumDifferenceConditionCR3BP, primaryDistanceCondition, p1DistanceCondition
+export p2DistanceCondition, renormalize!, terminateAffect!, xzPlaneCrossingCondition
+export zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -76,6 +77,27 @@ function momentumDifferenceConditionCR3BP(state::Vector{Float64}, time::Float64,
 end
 
 """
+    primaryDistanceCondition(output, state, time, integrator)
+
+Return event conditions for specified distances from primaries
+
+# Arguments
+- `output::Vector{Float64}`: Condition output vector []
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object with params: [p1Distance, p2Distance, p4Distance]
+"""
+function primaryDistanceCondition(output::Vector{Float64}, state::Vector{Float64}, time::Float64, integrator)
+    r1::Vector{Float64} = getPrimaryState(integrator.p[1], 1, state[7])[1:3]
+    r2::Vector{Float64} = getPrimaryState(integrator.p[1], 2, state[7])[1:3]
+    r4::Vector{Float64} = getPrimaryState(integrator.p[1], 4, state[7])[1:3]
+    d1::Float64 = LinearAlgebra.norm(state[1:3]-r1)
+    d2::Float64 = LinearAlgebra.norm(state[1:3]-r2)
+    d4::Float64 = LinearAlgebra.norm(state[1:3]-r4)
+    output = [d1-integrator.p[2], d2-integrator.p[3], d4-integrator.p[4]]
+end
+
+"""
     p1DistanceCondition(state, time, integrator)
 
 Return event condition for specified distance from P1
@@ -131,6 +153,20 @@ Return event effect of termination
 - `integrator`: Integrator object
 """
 function terminateAffect!(integrator)
+    DifferentialEquations.terminate!(integrator)
+end
+
+"""
+    terminateAffect!(integrator, index)
+
+Return event effect of termination
+
+# Arguments
+- `integrator`: Integrator object
+- `index::Int64`: Condition index
+"""
+function terminateAffect!(integrator, index)
+    Logging.@info "Propagation terminated with crash into $(integrator.p[1].systemData.primaryNames[index])"
     DifferentialEquations.terminate!(integrator)
 end
 
