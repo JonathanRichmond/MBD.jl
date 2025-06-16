@@ -85,16 +85,16 @@ Return event conditions for specified distances from primaries
 - `output`: Condition output vector []
 - `state::Vector{Float64}`: State vector [ndim]
 - `time::Float64`: Time [ndim]
-- `integrator`: Integrator object with params: [p1Distance, p2Distance, p4Distance]
+- `integrator`: Integrator object with params: [dynamicsModel, p1Distance, p2Distance, p4Distance]
 """
 function primaryDistanceCondition(output, state::Vector{Float64}, time::Float64, integrator)
-    r1::Vector{Float64} = getPrimaryState(integrator.p[1], 1, state[7])[1:3]
-    r2::Vector{Float64} = getPrimaryState(integrator.p[1], 2, state[7])[1:3]
-    r4::Vector{Float64} = getPrimaryState(integrator.p[1], 4, state[7])[1:3]
+    r1::Vector{Float64} = getPrimaryState(integrator.p[2], 1, state[7])[1:3]
+    r2::Vector{Float64} = getPrimaryState(integrator.p[2], 2, state[7])[1:3]
+    r4::Vector{Float64} = getPrimaryState(integrator.p[2], 4, state[7])[1:3]
     d1::Float64 = LinearAlgebra.norm(state[1:3]-r1)
     d2::Float64 = LinearAlgebra.norm(state[1:3]-r2)
     d4::Float64 = LinearAlgebra.norm(state[1:3]-r4)
-    output = [d1-integrator.p[2], d2-integrator.p[3], d4-integrator.p[4]]
+    output = [d1-integrator.p[3], d2-integrator.p[4], d4-integrator.p[5]]
 end
 
 """
