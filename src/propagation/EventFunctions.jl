@@ -95,6 +95,7 @@ function primaryDistanceCondition(output, state::Vector{Float64}, time::Float64,
     d2::Float64 = LinearAlgebra.norm(state[1:3]-r2)
     d4::Float64 = LinearAlgebra.norm(state[1:3]-r4)
     output = [d1-integrator.p[3], d2-integrator.p[4], d4-integrator.p[5]]
+    println(output)
 end
 
 """
@@ -167,7 +168,6 @@ Return event effect of termination
 """
 function terminateAffectIndex!(integrator, index)
     Logging.@info "Propagation terminated with crash into $(integrator.p[2].systemData.primaryNames[index])"
-    println(integrator.u)
     DifferentialEquations.terminate!(integrator)
 end
 
