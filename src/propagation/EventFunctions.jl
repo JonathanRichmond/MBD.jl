@@ -165,7 +165,7 @@ Return event effect of termination
 - `integrator`: Integrator object with params: [dynamicsModel, ...]
 - `index::Int64`: Condition index
 """
-function terminateAffect!(integrator, index)
+function terminateAffectIndex!(integrator, index)
     Logging.@info "Propagation terminated with crash into $(integrator.p[2].systemData.primaryNames[index])"
     DifferentialEquations.terminate!(integrator)
 end
