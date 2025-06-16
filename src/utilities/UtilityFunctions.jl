@@ -3,8 +3,10 @@ Utility functions
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 4/15/25
+U: 6/15/25
 """
+
+import Logging
 
 export Cartesian2Cylindrical, checkIndices, isApproxSigFigs, maskData, updatePointer
 
@@ -99,5 +101,15 @@ Update pointer
 - `forceMatch::Bool`: Force match?
 """
 function updatePointer(original::Any, copiedObjectMap::IdDict{Any, Any}, forceMatch::Bool)
-    haskey(copiedObjectMap, original) ? (return copiedObjectMap[original]) : (forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original))
+    if haskey(copiedObjectMap, original)
+        return copiedObjectMap[original]
+    elseif forceMatch
+        Logging.@warn "Missing mapping for pointer update" typeof(original) original objectid(original)
+        keys_missing = filter(k -> typeof(k) == typeof(original), keys(copiedObjectMap))
+        Logging.@info "Mapped keys of this type" length(keys_missing) first(keys_missing, min(5, length(keys_missing)))
+        throw(ErrorException("Could not find match for original in copiedObjectMap"))
+    else
+        return original
+    end
+    # haskey(copiedObjectMap, original) ? (return copiedObjectMap[original]) : (forceMatch ? throw(ErrorException("Could not find match for original in copiedObjectMap")) : (return original))
 end
