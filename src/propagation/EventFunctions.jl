@@ -167,8 +167,7 @@ Return event effect of termination
 """
 function terminateAffectIndex!(integrator, index)
     Logging.@info "Propagation terminated with crash into $(integrator.p[2].systemData.primaryNames[index])"
-    println("$(integrator.p[3]), $(integrator.p[4]), $(integrator.p[5])")
-    println(index)
+    println(integrator.u)
     DifferentialEquations.terminate!(integrator)
 end
 
