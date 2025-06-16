@@ -3,7 +3,7 @@ BCR4BP P1-P2 multiple shooter problem wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
-U: 6/5/25
+U: 6/12/25
 """
 
 import StaticArrays
@@ -245,8 +245,8 @@ function deepClone(multipleShooterProblem::BCR4BP12MultipleShooterProblem)
     object.nodes = []
     for node::MBD.BCR4BP12Node in multipleShooterProblem.nodes
         newNode::MBD.BCR4BP12Node = MBD.shallowClone(node)
-        copiedObjectMap[node] = newNode
         updatePointers!(newNode, copiedObjectMap)
+        copiedObjectMap[node] = newNode
         push!(object.nodes, newNode)
     end
     object.segments = []
