@@ -21,10 +21,15 @@ Return manifold arcs, stopping propagation when a primary is encountered
 function stopCrashes(manifold::BCR4BP12Manifold)
     propagator = MBD.Propagator()
     crashEvent = DifferentialEquations.VectorContinuousCallback(primaryDistanceCondition, terminateAffectIndex!, 3)
+    EarthRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[1].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)
+    MoonRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[2].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)
+    SunRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[3].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)
+    println("$EarthRadius, $MoonRadius, $SunRadius")
     manifoldArcs::Vector{MBD.BCR4BP12ManifoldArc} = Vector{MBD.BCR4BP12ManifoldArc}(undef, length(manifold.initialConditions))
     for a::Int64 = 1:length(manifold.initialConditions)
-        arc::MBD.BCR4BP12Arc = propagateWithEvent(propagator, crashEvent, real(manifold.initialConditions[a]), [0.0, manifold.TOF], manifold.periodicOrbit.dynamicsModel, [manifold.periodicOrbit.dynamicsModel, manifold.periodicOrbit.dynamicsModel.systemData.primaryData[1].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel), manifold.periodicOrbit.dynamicsModel.systemData.primaryData[2].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel), manifold.periodicOrbit.dynamicsModel.systemData.primaryData[3].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)])
+        arc::MBD.BCR4BP12Arc = propagateWithEvent(propagator, crashEvent, real(manifold.initialConditions[a]), [0.0, manifold.TOF], manifold.periodicOrbit.dynamicsModel, [manifold.periodicOrbit.dynamicsModel, EarthRadius, MoonRadius, SunRadius])
         manifoldArcs[a] = MBD.BCR4BP12ManifoldArc(manifold.periodicOrbit, manifold.orbitTimes[a], manifold.ds[a], manifold.initialConditions[a], getTimeByIndex(arc, -1))
+        println(getTimeByIndex(arc, -1))
     end
 
     return manifoldArcs
