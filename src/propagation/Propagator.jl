@@ -221,7 +221,7 @@ function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialE
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
         problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, params...))
-        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount, save_positions = (true, true))
+        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         append!(arcOut.states, sol.u)
         append!(arcOut.times, sol.t)
     end
