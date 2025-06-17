@@ -3,14 +3,14 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 6/10/25
+U: 6/17/25
 """
 
 import DifferentialEquations, LinearAlgebra, StaticArrays
 import MBD: CR3BPPeriodicOrbit
 
 export getBrouckeStability, getEigenData, getJacobiConstant, getManifoldArcByTime
-export getManifoldByArclength, getManifoldByStepOff, getManifoldByTime
+export getManifoldByArclength, getManifoldByStepOff, getManifoldByTime, getPseudoManifoldArcByTime
 export getPseudoManifoldByArclength, getPseudoManifoldByTime, getStabilityIndex, getTimeConstant
 
 """
@@ -195,6 +195,28 @@ function getManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, stability::String,
 end
 
 """
+    getPseudoManifoldArcByTime(periodicOrbit, dynamicsModel, theta40, orbitTime)
+
+Return pseudo-manifold arc
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: CR3BP periodic orbit object
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `theta40::Float64`: Initial P4 angle [ndim]
+- `orbitTime::Float64`: Normalized time along orbit from initial condition
+"""
+function getPseudoManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::BCR4BP12DynamicsModel, theta40::Float64, orbitTime::Float64)
+    propagator = MBD.Propagator()
+    orbitArc::MBD.CR3BPArc = propagate(propagator, periodicOrbit.initialCondition, [0, orbitTime*periodicOrbit.period], periodicOrbit.dynamicsModel)
+    stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.SIMPLE)
+    q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(orbitArc, -1))
+    state::Vector{Float64} = q[1:6]
+    pseudoManifoldArc = MBD.BCR4BPPseudoManifoldArc(periodicOrbit, dynamicsModel, orbitTime, theta40, state)
+
+    return pseudoManifoldArc
+end
+
+"""
     getPseudoManifoldByArclength(periodicOrbit, dynamicsModel, theta40, nArcs)
 
 Return pseudo-manifold tube spaced by arclength
@@ -241,7 +263,7 @@ function getPseudoManifoldByTime(periodicOrbit::CR3BPPeriodicOrbit, dynamicsMode
     propagator = MBD.Propagator()
     time::Vector{Float64} = collect(range(0, periodicOrbit.period, nArcs+1))
     pseudoManifold = MBD.BCR4BPPseudoManifold(periodicOrbit, dynamicsModel, theta40)
-    stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.STM)
+    stateSize::Int64 = getStateSize(periodicOrbit.dynamicsModel, MBD.SIMPLE)
     for a::Int16 in Int16(2):Int16(nArcs+1)
         arc::MBD.CR3BPArc = propagate(propagator, periodicOrbit.initialCondition, [0, time[a]], periodicOrbit.dynamicsModel)
         q::StaticArrays.SVector{stateSize, Float64} = StaticArrays.SVector{stateSize, Float64}(getStateByIndex(arc, -1))

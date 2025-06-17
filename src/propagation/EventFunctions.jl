@@ -3,15 +3,15 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 6/16/25
+U: 6/17/25
 """
 
 import DifferentialEquations, LinearAlgebra, Logging
 
 export arclengthCondition, momentumDifferenceConditionBCR4BP12, momentumDifferenceConditionBCR4BP41
-export momentumDifferenceConditionCR3BP, primaryDistanceCondition, p1DistanceCondition
-export p2DistanceCondition, renormalize!, terminateAffect!, xzPlaneCrossingCondition
-export zValueCondition
+export momentumDifferenceConditionCR3BP, primaryDistanceCondition2, primaryDistanceCondition3
+export p1DistanceCondition, p2DistanceCondition, renormalize!, terminateAffect!
+export xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -77,7 +77,26 @@ function momentumDifferenceConditionCR3BP(state::Vector{Float64}, time::Float64,
 end
 
 """
-    primaryDistanceCondition(output, state, time, integrator)
+    primaryDistanceCondition2(output, state, time, integrator)
+
+Return event conditions for specified distances from primaries
+
+# Arguments
+- `output`: Condition output vector []
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object with params: [dynamicsModel, p1Distance, p2Distance]
+"""
+function primaryDistanceCondition2(output, state::Vector{Float64}, time::Float64, integrator)
+    r1::Vector{Float64} = getPrimaryState(integrator.p[2], 1)[1:3]
+    r2::Vector{Float64} = getPrimaryState(integrator.p[2], 2)[1:3]
+    d1::Float64 = LinearAlgebra.norm(state[1:3]-r1)
+    d2::Float64 = LinearAlgebra.norm(state[1:3]-r2)
+    output[1:2] = [d1-integrator.p[3], d2-integrator.p[4]]
+end
+
+"""
+    primaryDistanceCondition3(output, state, time, integrator)
 
 Return event conditions for specified distances from primaries
 
@@ -87,7 +106,7 @@ Return event conditions for specified distances from primaries
 - `time::Float64`: Time [ndim]
 - `integrator`: Integrator object with params: [dynamicsModel, p1Distance, p2Distance, p4Distance]
 """
-function primaryDistanceCondition(output, state::Vector{Float64}, time::Float64, integrator)
+function primaryDistanceCondition3(output, state::Vector{Float64}, time::Float64, integrator)
     r1::Vector{Float64} = getPrimaryState(integrator.p[2], 1, state[7])[1:3]
     r2::Vector{Float64} = getPrimaryState(integrator.p[2], 2, state[7])[1:3]
     r4::Vector{Float64} = getPrimaryState(integrator.p[2], 4, state[7])[1:3]

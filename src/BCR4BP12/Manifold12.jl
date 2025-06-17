@@ -20,7 +20,7 @@ Return manifold arcs, stopping propagation when a primary is encountered
 """
 function stopCrashes(manifold::BCR4BP12Manifold)
     propagator = MBD.Propagator()
-    crashEvent = DifferentialEquations.VectorContinuousCallback(primaryDistanceCondition, terminateAffectIndex!, 3)
+    crashEvent = DifferentialEquations.VectorContinuousCallback(primaryDistanceCondition3, terminateAffectIndex!, 3)
     EarthRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[1].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)
     MoonRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[2].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)
     SunRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[3].bodyRadius/get12CharLength(manifold.periodicOrbit.dynamicsModel)

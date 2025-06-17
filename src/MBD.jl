@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/16/25
+U: 6/17/25
 """
 module MBD
 
@@ -1434,6 +1434,41 @@ mutable struct BCR4BP12Manifold
 end
 
 """
+    BCR4BPPseudoManifoldArc(periodicOrbit, dynamicsModel, orbitTime, theta40, initialCondition; TOF)
+
+BCR4BP pseudo-manifold arc object
+
+# Arguments
+- `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `orbitTime::Float64`: Time along orbit from initial condition [ndim]
+- `theta40::Float64`: Initial P4 angle [ndim]
+- `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
+- `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
+"""
+mutable struct BCR4BPPseudoManifoldArc
+    dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model
+    initialCondition::Vector{Float64}                                   # Initial conditions [ndim]
+    orbitTime::Float64                                                  # Normalized time along orbit from initial condition
+    periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying periodic orbit
+    theta40::Float64                                                    # Initial P4 angle [ndim]
+    TOF::Float64                                                        # Time-of-flight [ndim]
+
+    function BCR4BPPseudoManifoldArc(periodicOrbit::CR3BPPeriodicOrbit, dynamicsModel::BCR4BP12DynamicsModel, orbitTime::Float64, theta40::Float64, initialCondition::Vector{Float64}, TOF::Float64 = 0.0)
+        this = new()
+
+        this.periodicOrbit = periodicOrbit
+        this.dynamicsModel = dynamicsModel
+        this.orbitTime = orbitTime
+        this.theta40 = theta40
+        this.initialCondition = initialCondition
+        this.TOF = TOF
+
+        return this
+    end
+end
+
+"""
     BCR4BPPseudoManifold(periodicOrbit, dynamicsModel, theta40; TOF)
 
 BCR4BP pseudo-manifold object
@@ -1446,7 +1481,7 @@ BCR4BP pseudo-manifold object
 """
 mutable struct BCR4BPPseudoManifold
     dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model
-    initialConditions::Vector{Vector{Complex{Float64}}}                 # Initial conditions [ndim]
+    initialConditions::Vector{Vector{Float64}}                          # Initial conditions [ndim]
     orbitTimes::Vector{Float64}                                         # Normalized times along orbit from initial condition
     periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying CR3BP periodic orbit
     theta40::Float64                                                    # Initial P4 angle [ndim]
@@ -1642,6 +1677,7 @@ include("BCR4BP12/MultipleShooter12.jl")
 include("BCR4BP12/MultipleShooterProblem12.jl")
 include("BCR4BP12/Node12.jl")
 include("BCR4BP12/PeriodicOrbit.jl")
+include("BCR4BP12/PseudoManifold.jl")
 include("BCR4BP12/Segment12.jl")
 include("BCR4BP12/StateConstraint12.jl")
 include("BCR4BP12/SystemData.jl")
