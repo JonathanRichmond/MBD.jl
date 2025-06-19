@@ -72,7 +72,7 @@ Return P4 mass continuation engine object with updated constraints
 """
 function constrainNextGuess!(p4MassContinuationEngine::P4MassContinuationEngine, data::MBD.BCR4BP12ContinuationData)
     for node::MBD.BCR4BP12Node in data.nextGuess.nodes
-        node.dynamicsModel.systemData.P4Mass += data.currentStepSize
+        node.dynamicsModel.systemData.P4Mass += data.currentStepSize*node.dynamicsModel.systemData.primaryData[3].mass
     end
 end
 
