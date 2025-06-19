@@ -1079,9 +1079,9 @@ mutable struct BCR4BPSystemData
         this.primaryNames = StaticArrays.SVector(p1, p2, p4, b1)
         this.primarySpiceIDs = StaticArrays.SVector(this.primaryData[1].spiceID, this.primaryData[2].spiceID, this.primaryData[3].spiceID, this.primaryData[4].spiceID)
         (this.primaryData[2].parentSpiceID == this.primarySpiceIDs[1]) || throw(ArgumentError("First primary must be parent of second primary"))
-        (this.primaryData[1].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of fourth primary"))
+        (this.primaryData[1].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of first primary"))
         (this.primaryData[4].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of first barycenter"))
-        this.P4Mass = this.primaryData[4].mass
+        this.P4Mass = this.primaryData[3].mass
 
         return this
     end
