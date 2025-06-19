@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/17/25
+U: 6/18/25
 """
 module MBD
 
@@ -1070,6 +1070,7 @@ mutable struct BCR4BPSystemData
     primaryData::StaticArrays.SVector{4, BodyData}                      # Primary data objects
     primaryNames::StaticArrays.SVector{4, String}                       # Primary names
     primarySpiceIDs::StaticArrays.SVector{4, Int16}                     # Primary SPICE IDs
+    P4Mass::Float64                                                     # P4 mass
 
     function BCR4BPSystemData(p1::String, p2::String, p4::String, b1::String)
         this = new()
@@ -1080,11 +1081,12 @@ mutable struct BCR4BPSystemData
         (this.primaryData[2].parentSpiceID == this.primarySpiceIDs[1]) || throw(ArgumentError("First primary must be parent of second primary"))
         (this.primaryData[1].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of fourth primary"))
         (this.primaryData[4].parentSpiceID == this.primarySpiceIDs[3]) || throw(ArgumentError("Fourth primary must be parent of first barycenter"))
+        this.P4Mass = this.primaryData[4].mass
 
         return this
     end
 end
-Base.:(==)(systemData1::BCR4BPSystemData, systemData2::BCR4BPSystemData) = ((systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryNames == systemData2.primaryNames) && (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs))
+Base.:(==)(systemData1::BCR4BPSystemData, systemData2::BCR4BPSystemData) = ((systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryNames == systemData2.primaryNames) && (systemData1.primarySpiceIDs == systemData2.primarySpiceIDs) && (systemData1.P4Mass == systemData2.P4Mass))
 
 """
     BCR4BP12DynamicsModel(systemData)
@@ -1340,6 +1342,104 @@ mutable struct BCR4BP12MultipleShooter
     end
 end
 Base.:(==)(multipleShooter1::BCR4BP12MultipleShooter, multipleShooter2::BCR4BP12MultipleShooter) = ((multipleShooter1.convergenceCheck == multipleShooter2.convergenceCheck) && (multipleShooter1.maxIterations == multipleShooter2.maxIterations) && (multipleShooter1.recentIterationCount == multipleShooter2.recentIterationCount) && (multipleShooter1.solutionInProgress == multipleShooter2.solutionInProgress))
+
+"""
+    BCR4BP12ContinuationFamily()
+
+BCR4BP P1-P2 continuation family object
+"""
+mutable struct BCR4BP12ContinuationFamily
+    nodes::Vector{Vector{BCR4BP12Node}}                                 # BCR4BP P1-P2 node objects
+    segments::Vector{Vector{BCR4BP12Segment}}                           # BCR4BP P1-P2 segment objects
+
+    function BCR4BP12ContinuationFamily()
+        this = new()
+
+        this.nodes = []
+        this.segments = []
+
+        return this
+    end
+end
+Base.:(==)(continuationFamily1::BCR4BP12ContinuationFamily, continuationFamily2::BCR4BP12ContinuationFamily) = ((continuationFamily1.nodes == continuationFamily2.nodes) && (continuationFamily1.segments == continuationFamily2.segments))
+
+"""
+    BCR4BP12ContinuationData(solution1, solution2)
+
+BCR4BP P1-P2 continuation data object
+
+# Arguments
+- `solution1::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem solution
+- `solution2::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem solution
+"""
+mutable struct BCR4BP12ContinuationData
+    converging::Bool                                                    # Converging?
+    currentStepSize::Float64                                            # Current continuation step size
+    family::BCR4BP12ContinuationFamily                                  # Computed BCR4BP P1-P2 continuation family object
+    forceEndContinuation::Bool                                          # Force end of continuation?
+    fullStep::Vector{Float64}                                           # Full step along free variable vector
+    initialGuess::BCR4BP12MultipleShooterProblem                        # First member passed to corrections algorithm
+    nextGuess::BCR4BP12MultipleShooterProblem                           # Inital guess for next family member
+    numIterations::Int16                                                # Number of iterations required to converge previous solution
+    previousSolution::BCR4BP12MultipleShooterProblem                    # Most recently converged family member
+    twoPreviousSolution::BCR4BP12MultipleShooterProblem                 # Second previously converged family member
+
+    function BCR4BP12ContinuationData(solution1::BCR4BP12MultipleShooterProblem, solution2::BCR4BP12MultipleShooterProblem)
+        this = new()
+
+        this.previousSolution = solution1
+        this.twoPreviousSolution = solution2
+        this.numIterations = Int16(0)
+        this.initialGuess = BCR4BP12MultipleShooterProblem()
+        this.converging = true
+        this.fullStep = []
+        this.currentStepSize = 1.0
+        this.nextGuess = BCR4BP12MultipleShooterProblem()
+        this.family = BCR4BP12ContinuationFamily()
+        this.forceEndContinuation = false
+
+        return this
+    end
+end
+Base.:(==)(continuationData1::BCR4BP12ContinuationData, continuationData2::BCR4BP12ContinuationData) = ((continuationData1.currentStepSize = continuationData2.currentStepSize) && (continuationData1.family = continuationData2.family) && (continuationData1.fullStep = continuationData2.fullStep) && (continuationData1.initialGuess = continuationData2.initialGuess) && (continuationData1.nextGuess = continuationData2.nextGuess) && (continuationData1.numIterations = continuationData2.numIterations) && (continuationData1.previousSolution = continuationData2.previousSolution) && (continuationData1.twoPreviousSolution = continuationData2.twoPreviousSolution))
+
+"""
+    P4MassContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol, JTol)
+
+Jacobi constant continuation engine object
+
+# Arguments
+- `solution1::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem solution
+- `solution2::BCR4BP12MultipleShooterProblem`: BCR4BP P1-P2 multiple shooter problem solution
+- `initialParamStepSize::Float64`: Initial step size
+- `maxParamStepSize::Float64`: Maximum parameter step size
+- `tol::Float64`: Convergence tolerance (default = 1E-11)
+- `JTol::Float64`: Jacobian check tolerance (default = 2E-3)
+"""
+mutable struct P4MassContinuationEngine
+    corrector::BCR4BP12MultipleShooter                                  # Multiple shooter corrector for family
+    dataInProgress::BCR4BP12ContinuationData                            # Continuation data
+    endChecks::Vector{AbstractContinuationEndCheck}                     # Continuation end checks
+    jumpChecks::Vector{AbstractContinuationJumpCheck}                   # Continuation jump checks
+    printProgress::Bool                                                 # Print progress?
+    stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
+    storeIntermediateMembers::Bool                                      # Store intermediate family members?
+
+    function P4MassContinuationEngine(solution1::BCR4BP12MultipleShooterProblem, solution2::BCR4BP12MultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64; tol::Float64 = 1E-11, JTol::Float64 = 2E-3)
+        this = new()
+
+        this.corrector = CR3BPMultipleShooter(tol)
+        this.dataInProgress = CR3BPContinuationData(solution1, solution2)
+        this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator("P4 Mass", 1, initialParamStepSize, maxParamStepSize)
+        this.jumpChecks = []
+        this.endChecks = []
+        this.storeIntermediateMembers = true
+        this.printProgress = false
+
+        return this
+    end
+end
+Base.:(==)(p4MassContinuationEngine1::P4MassContinuationEngine, p4MassContinuationEngine2::P4MassContinuationEngine) = ((p4MassContinuationEngine1.corrector == p4MassContinuationEngine2.corrector) && (p4MassContinuationEngine1.dataInProgress == p4MassContinuationEngine2.dataInProgress) && (p4MassContinuationEngine1.endChecks == p4MassContinuationEngine2.endChecks) && (p4MassContinuationEngine1.jumpChecks == p4MassContinuationEngine2.jumpChecks) && (p4MassContinuationEngine1.stepSizeGenerator == p4MassContinuationEngine2.stepSizeGenerator))
 
 """
     BCR4BP12PeriodicOrbit(dynamicsModel, initialCondition, period, monodromy)
@@ -1669,6 +1769,8 @@ Base.:(==)(arc1::BCR4BP41Arc, arc2::BCR4BP41Arc) = ((arc1.dynamicsModel == arc2.
 
 # include("bifurcation/Bifurcation.jl")
 include("BCR4BP12/Arc12.jl")
+include("BCR4BP12/ContinuationData.jl")
+include("BCR4BP12/ContinuationFamily.jl")
 include("BCR4BP12/ContinuityConstraint12.jl")
 include("BCR4BP12/DynamicsModel12.jl")
 include("BCR4BP12/EquationsOfMotion12.jl")
@@ -1678,6 +1780,7 @@ include("BCR4BP12/MultipleShooterProblem12.jl")
 include("BCR4BP12/Node12.jl")
 include("BCR4BP12/PeriodicOrbit.jl")
 include("BCR4BP12/PseudoManifold.jl")
+include("BCR4BP12/P4MassContinuationEngine.jl")
 include("BCR4BP12/Segment12.jl")
 include("BCR4BP12/StateConstraint12.jl")
 include("BCR4BP12/SystemData.jl")
