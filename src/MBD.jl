@@ -1428,8 +1428,8 @@ mutable struct P4MassContinuationEngine
     function P4MassContinuationEngine(solution1::BCR4BP12MultipleShooterProblem, solution2::BCR4BP12MultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64; tol::Float64 = 1E-11, JTol::Float64 = 2E-3)
         this = new()
 
-        this.corrector = CR3BPMultipleShooter(tol)
-        this.dataInProgress = CR3BPContinuationData(solution1, solution2)
+        this.corrector = BCR4BP12MultipleShooter(tol)
+        this.dataInProgress = BCR4BP12ContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator("P4 Mass", 1, initialParamStepSize, maxParamStepSize)
         this.jumpChecks = []
         this.endChecks = []
