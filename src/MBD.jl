@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/18/25
+U: 6/23/25
 """
 module MBD
 
@@ -1404,6 +1404,25 @@ end
 Base.:(==)(continuationData1::BCR4BP12ContinuationData, continuationData2::BCR4BP12ContinuationData) = ((continuationData1.currentStepSize = continuationData2.currentStepSize) && (continuationData1.family = continuationData2.family) && (continuationData1.fullStep = continuationData2.fullStep) && (continuationData1.initialGuess = continuationData2.initialGuess) && (continuationData1.nextGuess = continuationData2.nextGuess) && (continuationData1.numIterations = continuationData2.numIterations) && (continuationData1.previousSolution = continuationData2.previousSolution) && (continuationData1.twoPreviousSolution = continuationData2.twoPreviousSolution))
 
 """
+    HomotopyEndCheck(maxParam)
+
+Homotopy parameter end check object
+
+# Arguments
+- `maxParam::Float64`: Maximum homotopy parameter
+"""
+struct HomotopyEndCheck <: AbstractContinuationEndCheck
+    maxParam::Float64                                                   # Maximum homotopy parameter
+
+    function HomotopyEndCheck(maxParam::Float64)
+        this = new(maxParam)
+
+        return this
+    end
+end
+Base.:(==)(homotopyEndCheck1::HomotopyEndCheck, homotopyEndCheck2::HomotopyEndCheck) = (homotopyEndCheck1.maxParam == homotopyEndCheck2.maxParam)
+
+"""
     P4MassContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol, JTol)
 
 Jacobi constant continuation engine object
@@ -1774,6 +1793,7 @@ include("BCR4BP12/ContinuationFamily.jl")
 include("BCR4BP12/ContinuityConstraint12.jl")
 include("BCR4BP12/DynamicsModel12.jl")
 include("BCR4BP12/EquationsOfMotion12.jl")
+include("BCR4BP12/HomotopyEndCheck.jl")
 include("BCR4BP12/Manifold12.jl")
 include("BCR4BP12/MultipleShooter12.jl")
 include("BCR4BP12/MultipleShooterProblem12.jl")
