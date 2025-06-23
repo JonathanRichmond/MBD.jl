@@ -3,7 +3,7 @@ BCR4BP system data wrapper
 
 Author: Jonathan Richmond
 C: 2/18/25
-U: 6/19/25
+U: 6/23/25
 """
 
 import MBD: BCR4BPSystemData, GRAVITY
@@ -123,7 +123,7 @@ Return P4-B1 CR3BP characteristic mass
 - `systemData::BCR4BPSystemData`: BCR4BP system data object
 """
 function get41CharMass(systemData::BCR4BPSystemData) 
-    return get12CharMass(systemData)*(get4Mass(systemData)+1)
+    return systemData.primaryData[3].gravParam/GRAVITY+get12CharMass(systemData)
 end
 
 """

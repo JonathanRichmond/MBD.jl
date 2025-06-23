@@ -3,7 +3,7 @@ Bounding box continuation end check wrapper
 
 Author: Jonathan Richmond
 C: 1/9/23
-U: 6/7/25
+U: 6/23/25
 """
 
 import Logging
@@ -61,6 +61,51 @@ Return true if continuation is done
 - `data::CR3BPContinuationData`: CR3BP continuation data object
 """
 function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::MBD.CR3BPContinuationData)
+    Logging.@debug "Checking if continuation bounding box is reached"
+
+    for (var::MBD.Variable, index0::Int16) in getFreeVariableIndexMap!(data.previousSolution)
+        if var.name == boundsCheck.paramName
+            Logging.@debug "Checking bounds for variable $(var.name)"
+            checkBounds(boundsCheck, var)
+            numFreeVars::Int64 = getNumFreeVariables(var)
+            bounds::Matrix{Float64} = boundsCheck.paramBounds
+            for j in 1:numFreeVars
+                minBound::Float64, maxBound::Float64 = bounds[j,1], bounds[j,2]
+                if !isnan(minBound) && !isnan(maxBound)
+                    boundsCheck.variableBounds[Int16(index0+j-1)] = copy(bounds[j,:])
+                    Logging.@debug "Set bounds for index $(index0+j-1): [$minBound, $maxBound]"
+                end
+            end
+            freeVars::Vector{Float64} = getFreeVariableVector!(data.previousSolution)
+            for (index::Int16, varBounds::Vector{Float64}) in boundsCheck.variableBounds
+                value::Float64 = freeVars[index]
+                minBound::Float64, maxBound::Float64 = varBounds[1], varBounds[2]
+                Logging.@debug "Index $index: value = $value, bounds = [$minBound, $maxBound]"
+                if (value < minBound) || (value > maxBound)
+                    Logging.@info "Continuation bounding box reached at index $index: $value ∉ [$(varBounds[1]), $(varBounds[2])]"
+                    println("Continuation bounding box reached!")
+                    
+                    return true
+                end
+            end
+            [delete!(boundsCheck.variableBounds, index0+j-1) for j in 1:numFreeVars]
+        end
+    end
+
+    Logging.@debug "Continuation onging: bounding box not yet reached"
+    return false
+end
+
+"""
+    isContinuationDone(boundsCheck, data)
+
+Return true if continuation is done
+
+# Arguments
+- `boundsCheck::BoundingBoxContinuationEndCheck`: Bounding box continuation end check object
+- `data::BCR4BP12ContinuationData`: BCR4BP P1-P2 continuation data object
+"""
+function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::MBD.BCR4BP12ContinuationData)
     Logging.@debug "Checking if continuation bounding box is reached"
 
     for (var::MBD.Variable, index0::Int16) in getFreeVariableIndexMap!(data.previousSolution)

@@ -3,7 +3,7 @@ BCR4BP P1-P2 equations of motion wrapper
 
 Author: Jonathan Richmond
 C: 2/19/25
-U: 2/25/25
+U: 6/23/25
 """
 
 import MBD: BCR4BP12EquationsOfMotion
@@ -37,7 +37,7 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
     qdot[4] = 2*q[5]+q[1]-omm*(q[1]+mu12)/r_13_3-mu12*(q[1]-omm)/r_23_3-m4*(q[1]-a4*cos(q[7]))/r_43_3-m4*cos(q[7])/a4_2
     qdot[5] = q[2]-2*q[4]-omm*q[2]/r_13_3-mu12*q[2]/r_23_3-m4*(q[2]-a4*sin(q[7]))/r_43_3-m4*sin(q[7])/a4_2
     qdot[6] = -omm*q[3]/r_13_3-mu12*q[3]/r_23_3-m4*q[3]/r_43_3
-    qdot[7] = sqrt((m4+1)/(a4^3))-1
+    qdot[7] = sqrt((params[1].dynamicsModel.systemData.primaryData[3].mass/get12CharMass(params[1].dynamicsModel.systemData)+1)/(a4^3))-1
     if params[1].equationType != MBD.SIMPLE
         r_13_5::Float64 = r_13_3*r_13^2
         r_23_5::Float64 = r_23_3*r_23^2
