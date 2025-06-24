@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/23/25
+U: 6/24/25
 """
 module MBD
 
@@ -1461,13 +1461,14 @@ end
 Base.:(==)(p4MassContinuationEngine1::P4MassContinuationEngine, p4MassContinuationEngine2::P4MassContinuationEngine) = ((p4MassContinuationEngine1.corrector == p4MassContinuationEngine2.corrector) && (p4MassContinuationEngine1.dataInProgress == p4MassContinuationEngine2.dataInProgress) && (p4MassContinuationEngine1.endChecks == p4MassContinuationEngine2.endChecks) && (p4MassContinuationEngine1.jumpChecks == p4MassContinuationEngine2.jumpChecks) && (p4MassContinuationEngine1.stepSizeGenerator == p4MassContinuationEngine2.stepSizeGenerator))
 
 """
-    BCR4BP12PeriodicOrbit(dynamicsModel, initialCondition, period, monodromy)
+    BCR4BP12PeriodicOrbit(dynamicsModel, nodeStates, nodeEpochs, period, monodromy)
 
 BCR4BP P1-P2 periodic orbit object
 
 # Arguments
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
-- `initialCondition::Vector{Float64}`: Initial condition [ndim]
+- `nodeStates::Vector{Vector{Float64}}`: Node states [ndim]
+- `nodeEpochs::Vector{Float64}`: Node epochs [ndim]
 - `period::Float64`: Period [ndim]
 - `monodromy::Matrix{Float64}`: Monodromy matrix [ndim]
 """
@@ -1475,10 +1476,12 @@ struct BCR4BP12PeriodicOrbit
     dynamicsModel::BCR4BP12DynamicsModel                                # BCR4BP P1-P2 dynamics model object
     initialCondition::Vector{Float64}                                   # Initial condition [ndim]
     monodromy::StaticArrays.SMatrix{7, 7, Float64}                      # Monodromy matrix [ndim]
+    nodeEpochs::Vector{Float64}                                         # Node epochs [ndim]
+    nodeStates::Vector{Vector{Float64}}                                 # Node states [ndim]
     period::Float64                                                     # Period [ndim]
 
-    function BCR4BP12PeriodicOrbit(dynamicsModel::BCR4BP12DynamicsModel, initialCondition::Vector{Float64}, period::Float64, monodromy::Matrix{Float64})
-        this = new(dynamicsModel, copy(initialCondition), StaticArrays.SMatrix{7, 7, Float64}(monodromy), copy(period))
+    function BCR4BP12PeriodicOrbit(dynamicsModel::BCR4BP12DynamicsModel, nodeStates::Vector{Vector{Float64}}, nodeEpochs::Vector{Float64}, period::Float64, monodromy::Matrix{Float64})
+        this = new(dynamicsModel, copy(nodeStates[1]), StaticArrays.SMatrix{7, 7, Float64}(monodromy), copy(nodeEpochs), copy(nodeStates), copy(period))
 
         return this
     end
