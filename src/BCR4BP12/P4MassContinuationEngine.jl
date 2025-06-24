@@ -189,14 +189,11 @@ function tryConverging!(p4MassContinuationEngine::P4MassContinuationEngine)
         p4MassContinuationEngine.dataInProgress.previousSolution = solve!(p4MassContinuationEngine.corrector, p4MassContinuationEngine.dataInProgress.nextGuess)
         p4MassContinuationEngine.dataInProgress.converging = true
         if abs(LinearAlgebra.norm(getFreeVariableVector!(p4MassContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(p4MassContinuationEngine.dataInProgress.twoPreviousSolution))) > abs(p4MassContinuationEngine.dataInProgress.currentStepSize)*50
-            println("Entered if")
             p4MassContinuationEngine.dataInProgress.converging = false
             p4MassContinuationEngine.printProgress && println("Solution outside of trust region: delta = $(abs(LinearAlgebra.norm(getFreeVariableVector!(p4MassContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(p4MassContinuationEngine.dataInProgress.twoPreviousSolution))))")
         else
-            println("Entered else")
             for jumpCheck::MBD.AbstractContinuationJumpCheck in p4MassContinuationEngine.jumpChecks
                 if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
-                    println("Check reached")
                     for (index::MBD.Variable, value::Int16) in p4MassContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
                         if index.name == jumpCheck.paramName
                             addBounds!(jumpCheck, p4MassContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
