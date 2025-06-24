@@ -35,7 +35,6 @@ Return P4 mass continuation engine with updated jump checks
 """
 function addJumpCheck!(p4MassContinuationEngine::P4MassContinuationEngine, jumpCheck::MBD.AbstractContinuationJumpCheck)
     push!(p4MassContinuationEngine.jumpChecks, jumpCheck)
-    println("Jump check added")
 end
 
 """
