@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/24/25
+U: 6/25/25
 """
 module MBD
 
@@ -470,21 +470,21 @@ end
 Base.:(==)(stateConstraint1::CR3BPStateConstraint, stateConstraint2::CR3BPStateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
 
 """
-    StateMatchConstraint(state1, state2, indices)
+    CR3BPStateMatchConstraint(state1, state2, indices)
 
-State match constraint object
+CR3BP state match constraint object
 
 # Arguments
 - `state1::Variable`: First state vector
 - `state2::Variable`: Second state vector
 - `indices::Vector{Int64}`: Constrained state indices
 """
-mutable struct StateMatchConstraint <: AbstractConstraint
+mutable struct CR3BPStateMatchConstraint <: AbstractConstraint
     constrainedIndices::Vector{Int16}                                   # Constrained state indices
     variable1::Variable                                                 # First state variable
     variable2::Variable                                                 # Second state variable
 
-    function StateMatchConstraint(state1::Variable, state2::Variable, indices::Vector{Int64})
+    function CR3BPStateMatchConstraint(state1::Variable, state2::Variable, indices::Vector{Int64})
         this = new()
 
         (length(state1.data) == length(state2.data)) || throw(ArgumentError("First state length, $(length(state1.data)), must match second state length, $(length(state2.data))"))
@@ -501,7 +501,7 @@ mutable struct StateMatchConstraint <: AbstractConstraint
         return this
     end
 end
-Base.:(==)(stateMatchConstraint1::StateMatchConstraint, stateMatchConstraint2::StateMatchConstraint) = ((stateMatchConstraint1.constrainedIndices == stateMatchConstraint2.constrainedIndices) && (stateMatchConstraint1.variable1 == stateMatchConstraint2.variable1) && (stateMatchConstraint1.variable2 == stateMatchConstraint2.variable2))
+Base.:(==)(stateMatchConstraint1::CR3BPStateMatchConstraint, stateMatchConstraint2::CR3BPStateMatchConstraint) = ((stateMatchConstraint1.constrainedIndices == stateMatchConstraint2.constrainedIndices) && (stateMatchConstraint1.variable1 == stateMatchConstraint2.variable1) && (stateMatchConstraint1.variable2 == stateMatchConstraint2.variable2))
 
 """
     JacobiConstraint(node, value)
@@ -1312,6 +1312,40 @@ end
 Base.:(==)(stateConstraint1::BCR4BP12StateConstraint, stateConstraint2::BCR4BP12StateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
 
 """
+    BCR4BP12StateMatchConstraint(state1, state2, indices)
+
+BCR4BP P1-P2 state match constraint object
+
+# Arguments
+- `state1::Variable`: First state vector
+- `state2::Variable`: Second state vector
+- `indices::Vector{Int64}`: Constrained state indices
+"""
+mutable struct BCR4BP12StateMatchConstraint <: AbstractConstraint
+    constrainedIndices::Vector{Int16}                                   # Constrained state indices
+    variable1::Variable                                                 # First state variable
+    variable2::Variable                                                 # Second state variable
+
+    function BCR4BP12StateMatchConstraint(state1::Variable, state2::Variable, indices::Vector{Int64})
+        this = new()
+
+        (length(state1.data) == length(state2.data)) || throw(ArgumentError("First state length, $(length(state1.data)), must match second state length, $(length(state2.data))"))
+        this.variable1 = state1
+        this.variable2 = state2
+        checkIndices(indices, length(state1.data))
+        this.constrainedIndices = convert(Vector{Int16}, indices)
+        mask1::Vector{Bool} = getFreeVariableMask(this.variable1)
+        mask2::Vector{Bool} = getFreeVariableMask(this.variable2)
+        for i::Int64 in eachindex(this.constrainedIndices)
+            (mask1[this.constrainedIndices[i]] || mask2[this.constrainedIndices[i]]) || throw(ArgumentError("Cannot constrain index = $(this.constrainedIndices[i]); it is not a free variable"))
+        end
+
+        return this
+    end
+end
+Base.:(==)(stateMatchConstraint1::BCR4BP12StateMatchConstraint, stateMatchConstraint2::BCR4BP12StateMatchConstraint) = ((stateMatchConstraint1.constrainedIndices == stateMatchConstraint2.constrainedIndices) && (stateMatchConstraint1.variable1 == stateMatchConstraint2.variable1) && (stateMatchConstraint1.variable2 == stateMatchConstraint2.variable2))
+
+"""
     BCR4BP12MultipleShooter(tol)
 
 BCR4BP P1-P2 multiple shooter object
@@ -1806,6 +1840,7 @@ include("BCR4BP12/PseudoManifold.jl")
 include("BCR4BP12/P4MassContinuationEngine.jl")
 include("BCR4BP12/Segment12.jl")
 include("BCR4BP12/StateConstraint12.jl")
+include("BCR4BP12/StateMatchConstraint.jl")
 include("BCR4BP12/SystemData.jl")
 include("BCR4BP41/Arc41.jl")
 include("BCR4BP41/DynamicsModel41.jl")
@@ -1817,7 +1852,6 @@ include("continuation/NumberStepsContinuationEndCheck.jl")
 include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
 include("corrections/MinimumNormUpdateGenerator.jl")
-include("corrections/StateMatchConstraint.jl")
 include("corrections/Variable.jl")
 include("CR3BP/Arc.jl")
 include("CR3BP/ContinuationData.jl")
@@ -1838,6 +1872,7 @@ include("CR3BP/OrbitFamily.jl")
 include("CR3BP/PeriodicOrbit.jl")
 include("CR3BP/Segment.jl")
 include("CR3BP/StateConstraint.jl")
+include("CR3BP/StateMatchConstraint.jl")
 include("CR3BP/SystemData.jl")
 include("propagation/EventFunctions.jl")
 include("propagation/Propagator.jl")

@@ -1,12 +1,11 @@
 """
-State match constraint wrapper
+BCR4BP P1-P2 state match constraint wrapper
 
 Author: Jonathan Richmond
-C: 9/23/22
-U: 6/25/25
+C: 6/25/25
 """
 
-import MBD: StateMatchConstraint
+import MBD: BCR4BP12StateMatchConstraint
 
 export evaluateConstraint, getNumConstraintRows, getPartials_ConstraintWRTVariables
 
@@ -16,12 +15,19 @@ export evaluateConstraint, getNumConstraintRows, getPartials_ConstraintWRTVariab
 Return constraint error
 
 # Arguments
-- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `stateMatchConstraint::BCR4BP12StateMatchConstraint`: BCR4BP P1-P2 state match constraint object
 - `freeVariableIndexMap::Dict{Variable, Int64}`: Free variable index map
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
-function evaluateConstraint(stateMatchConstraint::StateMatchConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
-    return getData(stateMatchConstraint.variable1)[stateMatchConstraint.constrainedIndices]-getData(stateMatchConstraint.variable2)[stateMatchConstraint.constrainedIndices]
+function evaluateConstraint(stateMatchConstraint::BCR4BP12StateMatchConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
+    X1::Vector{Float64} = getData(stateMatchConstraint.variable1)[stateMatchConstraint.constrainedIndices]
+    X2::Vector{Float64} = getData(stateMatchConstraint.variable2)[stateMatchConstraint.constrainedIndices]
+    if 7 in stateMatchConstraint.constrainedIndices
+        X1[end] = mod2pi(X1[end])
+        X2[end] = mod2pi(X2[end])
+    end
+
+    return X1-X2
 end
 
 """
@@ -30,9 +36,9 @@ end
 Return number of constraints
 
 # Arguments
-- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `stateMatchConstraint::BCR4BP12StateMatchConstraint`: BCR4BP P1-P2 state match constraint object
 """
-function getNumConstraintRows(stateMatchConstraint::StateMatchConstraint)
+function getNumConstraintRows(stateMatchConstraint::BCR4BP12StateMatchConstraint)
     return length(stateMatchConstraint.constrainedIndices)
 end
 
@@ -42,11 +48,11 @@ end
 Return partial derivatives of constraint with respect to free variables
 
 # Arguments
-- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `stateMatchConstraint::BCR4BP12StateMatchConstraint`: BCR4BP P1-P2 state match constraint object
 - `freeVariableIndexMap::Dict{Variable, Int64}`: Free variable index map
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
-function getPartials_ConstraintWRTVariables(stateMatchConstraint::StateMatchConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
+function getPartials_ConstraintWRTVariables(stateMatchConstraint::BCR4BP12StateMatchConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
     numConstraints::Int16 = Int16(getNumConstraintRows(stateMatchConstraint))
     partials1::Matrix{Float64} = zeros(Float64, (numConstraints,length(stateMatchConstraint.variable1.data)))
     partials2::Matrix{Float64} = zeros(Float64, (numConstraints,length(stateMatchConstraint.variable2.data)))
@@ -63,23 +69,10 @@ end
 Return copy of state match constraint object
 
 # Arguments
-- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
-- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
-"""
-function shallowClone(stateMatchConstraint::StateMatchConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
-    return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
-end
-
-"""
-    shallowClone(stateMatchConstraint, dynamicsModel)
-
-Return copy of state match constraint object
-
-# Arguments
-- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `stateMatchConstraint::BCR4BP12StateMatchConstraint`: BCR4BP P1-P2 state match constraint object
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
-function shallowClone(stateMatchConstraint::StateMatchConstraint, dynamicsModel::MBD.BCR4BP12DynamicsModel)
+function shallowClone(stateMatchConstraint::BCR4BP12StateMatchConstraint, dynamicsModel::MBD.BCR4BP12DynamicsModel)
     return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
 end
 
@@ -89,10 +82,10 @@ end
 Update pointers for state match constraint object
 
 # Arguments
-- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `stateMatchConstraint::BCR4BP12StateMatchConstraint`: BCR4BP P1-P2 state match constraint object
 - `copiedObjectMap::IdDict{Any, Any}`: Map between old and new objects
 """
-function updatePointers!(stateMatchConstraint::StateMatchConstraint, copiedObjectMap::IdDict{Any, Any})
+function updatePointers!(stateMatchConstraint::BCR4BP12StateMatchConstraint, copiedObjectMap::IdDict{Any, Any})
     stateMatchConstraint.variable1 = updatePointer(stateMatchConstraint.variable1, copiedObjectMap, true)
     stateMatchConstraint.variable2 = updatePointer(stateMatchConstraint.variable2, copiedObjectMap, true)
 end
