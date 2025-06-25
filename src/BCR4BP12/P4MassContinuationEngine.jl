@@ -209,9 +209,11 @@ function tryConverging!(p4MassContinuationEngine::P4MassContinuationEngine)
         else
             p4MassContinuationEngine.dataInProgress.twoPreviousSolution = twoPreviousConvergedSolution
             p4MassContinuationEngine.dataInProgress.previousSolution = previousConvergedSolution
+            p4MassContinuationEngine.dataInProgress.nextGuess.nodes[1].dynamicsModel.systemData.P4Mass -= p4MassContinuationEngine.dataInProgress.currentStepSize*p4MassContinuationEngine.dataInProgress.nextGuess.nodes[1].dynamicsModel.systemData.primaryData[3].mass
         end
     catch
         p4MassContinuationEngine.dataInProgress.converging = false
         p4MassContinuationEngine.printProgress && println("Failed to converge")
+        p4MassContinuationEngine.dataInProgress.nextGuess.nodes[1].dynamicsModel.systemData.P4Mass -= p4MassContinuationEngine.dataInProgress.currentStepSize*p4MassContinuationEngine.dataInProgress.nextGuess.nodes[1].dynamicsModel.systemData.primaryData[3].mass
     end
 end
