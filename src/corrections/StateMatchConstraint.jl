@@ -3,7 +3,7 @@ State match constraint wrapper
 
 Author: Jonathan Richmond
 C: 9/23/22
-U: 4/15/25
+U: 6/25/25
 """
 
 import MBD: StateMatchConstraint
@@ -67,6 +67,19 @@ Return copy of state match constraint object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
 function shallowClone(stateMatchConstraint::StateMatchConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
+    return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
+end
+
+"""
+    shallowClone(stateMatchConstraint, dynamicsModel)
+
+Return copy of state match constraint object
+
+# Arguments
+- `stateMatchConstraint::StateMatchConstraint`: State match constraint object
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+"""
+function shallowClone(stateMatchConstraint::StateMatchConstraint, dynamicsModel::MBD.BCR4BP12DynamicsModel)
     return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
 end
 
