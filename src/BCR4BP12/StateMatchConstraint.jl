@@ -73,7 +73,7 @@ Return copy of state match constraint object
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 """
 function shallowClone(stateMatchConstraint::BCR4BP12StateMatchConstraint, dynamicsModel::MBD.BCR4BP12DynamicsModel)
-    return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
+    return BCR4BP12StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
 end
 
 """

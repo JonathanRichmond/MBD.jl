@@ -67,7 +67,7 @@ Return copy of state match constraint object
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 """
 function shallowClone(stateMatchConstraint::CR3BPStateMatchConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
-    return StateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
+    return CR3BPStateMatchConstraint(stateMatchConstraint.variable1, stateMatchConstraint.variable2, [Int64(i) for i in stateMatchConstraint.constrainedIndices])
 end
 
 """
