@@ -20,7 +20,7 @@ Return constraint error
 - `freeVariableVector::Vector{Float64}`: Free variable vector
 """
 function evaluateConstraint(timeConstraint::CR3BPTimeConstraint, freeVariableIndexMap::Dict{MBD.Variable, Int16}, freeVariableVector::Vector{Float64})
-    return getData(timeConstraint.variable)[1]-timeConstraint.value
+    return [getData(timeConstraint.variable)[1]-timeConstraint.value]
 end
 
 """
