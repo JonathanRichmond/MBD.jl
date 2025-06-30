@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/25/25
+U: 6/30/25
 """
 module MBD
 
@@ -808,7 +808,7 @@ end
 Base.:(==)(boundingBoxJumpCheck1::BoundingBoxJumpCheck, boundingBoxJumpCheck2::BoundingBoxJumpCheck) = (isequal(boundingBoxJumpCheck1.paramBounds, boundingBoxJumpCheck2.paramBounds) && (boundingBoxJumpCheck1.paramName == boundingBoxJumpCheck2.paramName) && (boundingBoxJumpCheck1.variableBounds == boundingBoxJumpCheck2.variableBounds))
 
 """
-    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize; tol)
+    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize; tol, boundRadiusScaleFactor)
 
 CR3BP natural parameter continuation engine object
 
@@ -820,8 +820,10 @@ CR3BP natural parameter continuation engine object
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-11)
+- `boundRadiusScaleFactor::Float64`: Solution bounding sphere radius scale factor (default = 50.0)
 """
 mutable struct CR3BPNaturalParameterContinuationEngine
+    boundRadiusScaleFactor::Float64                                     # Bounding sphere radius scale factor
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
     dataInProgress::CR3BPContinuationData                               # Continuation data
     endChecks::Vector{AbstractContinuationEndCheck}                     # Continuation end checks
@@ -830,12 +832,13 @@ mutable struct CR3BPNaturalParameterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
+    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
         this.dataInProgress = CR3BPContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator(paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize)
+        this.boundRadiusScaleFactor = boundRadiusScaleFactor
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
@@ -847,7 +850,7 @@ end
 Base.:(==)(naturalParameterContinuationEngine1::CR3BPNaturalParameterContinuationEngine, naturalParameterContinuationEngine2::CR3BPNaturalParameterContinuationEngine) = ((naturalParameterContinuationEngine1.corrector == naturalParameterContinuationEngine2.corrector) && (naturalParameterContinuationEngine1.dataInProgress == naturalParameterContinuationEngine2.dataInProgress) && (naturalParameterContinuationEngine1.endChecks == naturalParameterContinuationEngine2.endChecks) && (naturalParameterContinuationEngine1.jumpChecks == naturalParameterContinuationEngine2.jumpChecks) && (naturalParameterContinuationEngine1.stepSizeGenerator == naturalParameterContinuationEngine2.stepSizeGenerator))
 
 """
-    JacobiConstantContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol)
+    JacobiConstantContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol, boundRadiusScaleFactor)
 
 Jacobi constant continuation engine object
 
@@ -857,8 +860,10 @@ Jacobi constant continuation engine object
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-11)
+- `boundRadiusScaleFactor::Float64`: Solution bounding sphere radius scale factor (default = 50.0)
 """
 mutable struct JacobiConstantContinuationEngine
+    boundRadiusScaleFactor::Float64                                     # Bounding sphere radius scale factor
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
     dataInProgress::CR3BPContinuationData                               # Continuation data
     endChecks::Vector{AbstractContinuationEndCheck}                     # Continuation end checks
@@ -867,12 +872,13 @@ mutable struct JacobiConstantContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
+    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
         this.dataInProgress = CR3BPContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator("Jacobi Constant", 1, initialParamStepSize, maxParamStepSize)
+        this.boundRadiusScaleFactor = boundRadiusScaleFactor
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true

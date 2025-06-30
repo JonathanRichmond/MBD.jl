@@ -3,7 +3,7 @@ Jacobi constant continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/11/23
-U: 6/6/25
+U: 6/30/25
 """
 
 import LinearAlgebra
@@ -190,7 +190,7 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
         jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(jacobiConstantContinuationEngine.dataInProgress.previousSolution)
         jacobiConstantContinuationEngine.dataInProgress.previousSolution = solve!(jacobiConstantContinuationEngine.corrector, jacobiConstantContinuationEngine.dataInProgress.nextGuess)
         jacobiConstantContinuationEngine.dataInProgress.converging = true
-        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > abs(jacobiConstantContinuationEngine.dataInProgress.currentStepSize)*50
+        if abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))) > abs(jacobiConstantContinuationEngine.dataInProgress.currentStepSize)*jacobiConstantContinuationEngine.boundRadiusScaleFactor
             jacobiConstantContinuationEngine.dataInProgress.converging = false
             jacobiConstantContinuationEngine.printProgress && println("Solution outside of trust region: delta = $(abs(LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(jacobiConstantContinuationEngine.dataInProgress.twoPreviousSolution))))")
         else
