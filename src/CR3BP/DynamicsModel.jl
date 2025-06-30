@@ -454,7 +454,7 @@ function get2BApproximation(dynamicsModel::CR3BPDynamicsModel, bodyData::MBD.Bod
     v::Float64 = circularVelocity_dim*tstar/lstar
     q_primaryInertial::Vector{Float64} = [-radius, 0, 0, 0, v, 0]
 
-    return primaryInertial2Rotating(dynamicsModel, primary, [q_primaryInertial], [0.0])[1]
+    return primaryInertialToRotating(dynamicsModel, primary, [q_primaryInertial], [0.0])[1]
 end
 
 """
