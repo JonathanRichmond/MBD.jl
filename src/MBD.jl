@@ -470,6 +470,33 @@ end
 Base.:(==)(stateConstraint1::CR3BPStateConstraint, stateConstraint2::CR3BPStateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
 
 """
+    CR3BPTimeConstraint(segment, value)
+
+CR3BP time constraint object
+
+# Arguments
+- `segment::CR3BPNode`: CR3BP segment object
+- `value::Float64`: Constraint value
+"""
+mutable struct CR3BPTimeConstraint <: AbstractConstraint
+    value::Float64                                                      # Constraint value
+    variable::Variable                                                  # Constrained variable
+
+    function CR3BPTimeConstraint(segment::CR3BPSegment, value::Float64)
+        this = new()
+
+        this.variable = segment.TOF
+        this.value = value
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        freeVariableMask[1] || throw(ArgumentError("Variable is constrained but not free to vary"))
+
+        return this
+    end
+end
+Base.:(==)(timeConstraint1::CR3BPTimeConstraint, timeConstraint2::CR3BPTimeConstraint) = ((timeConstraint1.value == timeConstraint2.value) && (timeConstraint1.variable == timeConstraint2.variable))
+
+
+"""
     CR3BPStateMatchConstraint(state1, state2, indices)
 
 CR3BP state match constraint object
@@ -1902,6 +1929,7 @@ include("CR3BP/Segment.jl")
 include("CR3BP/StateConstraint.jl")
 include("CR3BP/StateMatchConstraint.jl")
 include("CR3BP/SystemData.jl")
+include("CR3BP/TimeConstraint.jl")
 include("propagation/EventFunctions.jl")
 include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
