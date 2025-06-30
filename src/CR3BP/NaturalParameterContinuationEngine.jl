@@ -89,6 +89,8 @@ function constrainNextGuess!(naturalParameterContinuationEngine::CR3BPNaturalPar
                     (constraint.constrainedIndices[i] == continuationIndex) && (constraint.values[i] += data.currentStepSize)
                 end
             end
+        elseif typeof(constraint) == MBD.CR3BPTimeConstraint
+            (constraint.variable.name == naturalParameterContinuationEngine.stepSizeGenerator.elementName) && (constraint.value += data.currentStepSize)
         end
     end
 end
