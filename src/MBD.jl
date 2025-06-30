@@ -761,6 +761,27 @@ end
 Base.:(==)(boundingBoxContinuationEndCheck1::BoundingBoxContinuationEndCheck, boundingBoxContinuationEndCheck2::BoundingBoxContinuationEndCheck) = (isequal(boundingBoxContinuationEndCheck1.paramBounds, boundingBoxContinuationEndCheck2.paramBounds) && (boundingBoxContinuationEndCheck1.paramName == boundingBoxContinuationEndCheck2.paramName) && (boundingBoxContinuationEndCheck1.variableBounds == boundingBoxContinuationEndCheck2.variableBounds))
 
 """
+    CR3BPPrimarySurfaceContinuationEndCheck(dynamicsModel, primary)
+
+CR3BP primary surface continuation end check object
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `primary::Int64`: Primary identifier
+"""
+mutable struct CR3BPPrimarySurfaceContinuationEndCheck <: AbstractContinuationEndCheck
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    primary::Int64                                                      # Primary identifier
+
+    function CR3BPPrimarySurfaceContinuationEndCheck(dynamicsModel::CR3BPDynamicsModel, primary::Int64)
+        this = new(dynamicsModel, primary)
+
+        return this
+    end
+end
+Base.:(==)(primarySurfaceContinuationEndCheck1::CR3BPPrimarySurfaceContinuationEndCheck, primarySurfaceContinuationEndCheck2::CR3BPPrimarySurfaceContinuationEndCheck) = ((primarySurfaceContinuationEndCheck1.dynamicsModel, primarySurfaceContinuationEndCheck2.dynamicsModel) && (primarySurfaceContinuationEndCheck1.primary == primarySurfaceContinuationEndCheck2.primary))
+
+"""
     BundingBoxJumpCheck(paramName, paramBounds)
 
 Bounding box jump check object
@@ -1870,6 +1891,7 @@ include("CR3BP/NaturalParameterContinuationEngine.jl")
 include("CR3BP/Node.jl")
 include("CR3BP/OrbitFamily.jl")
 include("CR3BP/PeriodicOrbit.jl")
+include("CR3BP/PrimarySurfaceContinuationEndCheck.jl")
 include("CR3BP/Segment.jl")
 include("CR3BP/StateConstraint.jl")
 include("CR3BP/StateMatchConstraint.jl")
