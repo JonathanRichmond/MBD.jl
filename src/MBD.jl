@@ -100,6 +100,18 @@ mutable struct BodyData
     end
 end
 Base.:(==)(bodyData1::BodyData, bodyData2::BodyData) = (bodyData1.SPICEID == bodyData2.SPICEID)
+Base.show(io::IO, bodyData::BodyData) = print(io, "BodyData for ", bodyData.name)
+Base.show(io::IO, ::MIME"text/plain", bodyData::BodyData) = begin
+    println(io, "BodyData")
+    println(io, "\tName: ", bodyData.name, " (SPICE ID: ", bodyData.SPICEID, ")")
+    println(io, "\tParent SPICE ID: ", bodyData.parentSPICEID)
+    println(io, "\tGravitational parameter: ", bodyData.gravParam, " [kg^3/s^2]")
+    println(io, "\tMass: ", bodyData.mass, " [kg]")
+    println(io, "\tRadius: ", bodyData.bodyRadius, " [km]")
+    println(io, "\tOrbit radius: ", bodyData.orbitRadius, " [km]")
+    println(io, "\tInclination: ", bodyData.inc, " [rad]")
+    println(io, "\tRAAN: ", bodyData.RAAN, " [rad]")
+end
 
 """
     SystemData(modelType, primaryNames)
@@ -130,6 +142,102 @@ mutable struct SystemData
     end
 end
 Base.:(==)(systemData1::SystemData, systemData2::SystemData) = ((systemData1.modelType == systemData2.modelType) && (systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryNames == systemData2.primaryNames) && (systemData1.primarySPICEIDs == systemData2.primarySPICEIDs))
+Base.show(io::IO, systemData::SystemData) = print(io, "SystemData for ", join(systemData.primaryNames, "-"), " ", length(systemData.primaryNames)+1, "-body system")
+Base.show(io::IO, ::MIME"text/plain", systemData::SystemData) = begin
+    println(io, "SystemData")
+    println(io, "\tModel type: ", systemData.modelType)
+    for (j, bodyData) in enumerate(systemData.primaryData)
+        println(io, "\tPrimary ", j, ": ", bodyData.name, " (SPICE ID: ", bodyData.SPICEID, ")")
+    end
+end
+
+"""
+    DynamicsModel(systemData)
+
+Dynamics model object
+
+# Arguments
+- `systemData::SystemData`: System data object
+"""
+struct DynamicsModel
+    systemData::SystemData                                              # System data object
+
+    function DynamicsModel(systemData::SystemData)
+        Logging.@info "Creating $(length(systemData.primaryNames)+1)-body dynamics model with primaries: $(join(systemData.primaryNames, ","))"
+
+        return new(systemData)
+    end
+end
+Base.:(==)(dynamicsModel1::DynamicsModel, dynamicsModel2::DynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
+Base.show(io::IO, dynamicsModel::DynamicsModel) = print(io, "DynamicsModel for ", join(dynamicsModel.systemData.primaryNames, "-"), " ", length(dynamicsModel.systemData.primaryNames)+1, "-body system")
+Base.show(io::IO, ::MIME"text/plain", dynamicsModel::DynamicsModel) = begin
+    println(io, "DynamicsModel")
+    println(io, "\tSystem data: ", dynamicsModel.systemData)
+end
+
+"""
+    EquationsOfMotion(dynamicsModel, equationType)
+
+Equations of motion object
+
+# Arguments
+- `dynamicsModel::DynamicsModel`: Dynamics model object
+- `equationType::EquationType`: Enumerated equation type
+"""
+struct EquationsOfMotion
+    dynamicsModel::DynamicsModel                                        # Dynamics model object
+    equationType::EquationType                                          # Enumerated equation type
+
+    function EquationsOfMotion(dynamicsModel::DynamicsModel, equationType::EquationType)
+        Logging.@info "Creating $(length(dynamicsModel.systemData.primaryNames)+1)-body $equationType EoMs with primaries: $(join(dynamicsModel.systemData.primaryNames, ","))"
+
+        return new(dynamicsModel, equationType)
+    end
+end
+Base.:(==)(equations1::EquationsOfMotion, equations2::EquationsOfMotion) = ((equations1.dynamicsModel == equations2.dynamicsModel) && (equations1.equationType == equations2.equationType))
+Base.show(io::IO, equations::EquationsOfMotion) = print(io, "EquationsOfMotion for ", join(equations.dynamicsModel.systemData.primaryNames, "-"), " ", length(equations.dynamicsModel.systemData.primaryNames)+1, "-body system")
+Base.show(io::IO, ::MIME"text/plain", equations::EquationsOfMotion) = begin
+    println(io, "EquationsOfMotion")
+    println(io, "\tDynamics model: ", equations.dynamicsModel)
+    println(io, "\tEquation type: ", equations.equationType)
+end
+
+"""
+    Integrator(integratorType)
+
+# Arguments
+- `integratorType::IntegratorType`: Enumerated integrator type
+"""
+mutable struct Integrator
+    integrator                                                          # Integrator object
+    integratorType::IntegratorType                                      # Enumerated integrator type
+
+    function Integrator(integratorType::IntegratorType)
+        integratorMap = Dict{IntegratorType, Any}(
+            AB5     => DifferentialEquations.AB5(),
+            ABM54   => DifferentialEquations.ABM54(),
+            BS5     => DifferentialEquations.BS5(),
+            DP5     => DifferentialEquations.DP5(),
+            DP8     => DifferentialEquations.DP8(),
+            VERN9   => DifferentialEquations.Vern9()
+        )
+        Logging.@info "Creating $integratorType integrator"
+
+        integrator = get(integratorMap, integratorType, nothing)
+        if integrator === nothing
+            Logging.@error "Unsupported integrator type: $integratorType"
+            throw(ArgumentError("Invalid integrator type: $integratorType"))
+        end
+
+        return new(integrator, integratorType)
+    end
+end
+Base.:(==)(integrator1::Integrator, integrator2::Integrator) = ((integrator1.integrator == integrator2.integrator) && (integrator1.integratorType == integrator2.integratorType))
+Base.show(io::IO, integrator::Integrator) = print(io, "Integrator for ", integrator.integratorType)
+Base.show(io::IO, ::MIME"text/plain", integrator::Integrator) = begin
+    println(io, "Integrator")
+    println(io, "\tType: ", integrator.integratorType)
+end
 
 
 end # module MBD

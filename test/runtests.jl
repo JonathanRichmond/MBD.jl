@@ -6,7 +6,7 @@ C: 6/25/25
 """
 
 using Logging, MBD, Test
-using LightXML, SPICE
+using DifferentialEquations, LightXML, SPICE
 
 global_logger(ConsoleLogger(stderr, Logging.Info)) # Debug/Info/Warn/Error
 
@@ -18,17 +18,19 @@ end
 
 @testset "BodyData Tests" begin
     @testset "Constructor with valid body name" begin
-        body = MBD.BodyData("Earth")
+        bodyData = MBD.BodyData("Earth")
+        println(bodyData)
+        display(bodyData)
 
-        @test typeof(body) == MBD.BodyData
-        @test body.name == "Earth"
-        @test body.SPICEID isa Int16
-        @test body.gravParam > 0.0
-        @test body.mass > 0.0
-        @test body.bodyRadius > 0.0
-        @test body.orbitRadius > body.bodyRadius
-        @test body.inc >= 0.0
-        @test body.RAAN >= 0.0
+        @test typeof(bodyData) == MBD.BodyData
+        @test bodyData.name == "Earth"
+        @test bodyData.SPICEID isa Int16
+        @test bodyData.gravParam > 0.0
+        @test bodyData.mass > 0.0
+        @test bodyData.bodyRadius > 0.0
+        @test bodyData.orbitRadius > bodyData.bodyRadius
+        @test bodyData.inc >= 0.0
+        @test bodyData.RAAN >= 0.0
     end
 
     @testset "Invalid SPICE name" begin
@@ -86,16 +88,18 @@ end
     end
 
     @testset "Equality" begin
-        body1 = MBD.BodyData("Earth")
-        body2 = MBD.BodyData("Earth")
+        bodyData1 = MBD.BodyData("Earth")
+        bodyData2 = MBD.BodyData("Earth")
 
-        @test body1 == body2
+        @test bodyData1 == bodyData2
     end
 end
 
 @testset "SystemData Tests" begin
     @testset "Constructor with valid 3-body system" begin
         systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        println(systemData)
+        display(systemData)
 
         @test typeof(systemData) == MBD.SystemData
         @test systemData.modelType == MBD.CR3BP
@@ -114,6 +118,18 @@ end
         @test systemData.primaryNames == ["Sun", "Earth", "Moon"]
         @test all(x -> x isa MBD.BodyData, systemData.primaryData)
         @test all(x -> x isa Int16, systemData.primarySPICEIDs)
+    end
+
+    @testset "Invalid model type" begin
+        err = try
+            MBD.SystemData(MBD.QBCR4BP, "Sun", "Earth", "Moon")
+            nothing
+        catch e
+            e
+        end
+
+        @test err isa UndefVarError
+        @test occursin("not defined in", sprint(showerror, err))
     end
 
     @testset "Invalid body name" begin
@@ -151,5 +167,108 @@ end
         systemData2 = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
 
         @test systemData1 == systemData2
+    end
+end
+
+@testset "DynamicsModel Tests" begin
+    @testset "Constructor with valid system data" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel = MBD.DynamicsModel(systemData)
+        println(dynamicsModel)
+        display(dynamicsModel)
+
+        @test typeof(dynamicsModel) == MBD.DynamicsModel
+        @test dynamicsModel.systemData === systemData
+    end
+
+    @testset "Equality" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel1 = MBD.DynamicsModel(systemData)
+        dynamicsModel2 = MBD.DynamicsModel(systemData)
+
+        @test dynamicsModel1 == dynamicsModel2
+    end
+end
+
+@testset "EquationsOfMotion Tests" begin
+    @testset "Constructor with valid simple dynamicsModel" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel = MBD.DynamicsModel(systemData)
+        equations = MBD.EquationsOfMotion(dynamicsModel, MBD.SIMPLE)
+        println(equations)
+        display(equations)
+
+        @test typeof(equations) == MBD.EquationsOfMotion
+        @test equations.equationType == MBD.SIMPLE
+        @test equations.dynamicsModel === dynamicsModel
+    end
+
+    @testset "Constructor with valid STM dynamicsModel" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel = MBD.DynamicsModel(systemData)
+        equations = MBD.EquationsOfMotion(dynamicsModel, MBD.STM)
+
+        @test typeof(equations) == MBD.EquationsOfMotion
+        @test equations.equationType == MBD.STM
+    end
+
+    @testset "Invalid equation type" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel = MBD.DynamicsModel(systemData)
+        err = try
+            MBD.EquationsOfMotion(dynamicsModel, MBD.COMPLEX)
+            nothing
+        catch e
+            e
+        end
+
+        @test err isa UndefVarError
+        @test occursin("not defined in", sprint(showerror, err))
+    end
+
+    @testset "Equality" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel = MBD.DynamicsModel(systemData)
+        equations1 = MBD.EquationsOfMotion(dynamicsModel, MBD.SIMPLE)
+        equations2 = MBD.EquationsOfMotion(dynamicsModel, MBD.SIMPLE)
+
+        @test equations1 == equations2
+    end
+end
+
+@testset "Integrator Tests" begin
+    @testset "Constructor with valid VERN9 integrator" begin
+        integrator = MBD.Integrator(MBD.VERN9)
+        println(integrator)
+        display(integrator)
+
+        @test typeof(integrator) == MBD.Integrator
+        @test integrator.integratorType == MBD.VERN9
+    end
+
+    @testset "Constructor with valid DP8 integrator" begin
+        integrator = MBD.Integrator(MBD.DP8)
+
+        @test typeof(integrator) == MBD.Integrator
+        @test integrator.integratorType == MBD.DP8
+    end
+
+    @testset "Invalid integrator type" begin
+        err = try
+            MBD.Integrator(MBD.VERN11)
+            nothing
+        catch e
+            e
+        end
+
+        @test err isa UndefVarError
+        @test occursin("not defined in", sprint(showerror, err))
+    end
+
+    @testset "Equality" begin
+        integrator1 = MBD.Integrator(MBD.VERN9)
+        integrator2 = MBD.Integrator(MBD.VERN9)
+
+        @test integrator1 == integrator2
     end
 end
