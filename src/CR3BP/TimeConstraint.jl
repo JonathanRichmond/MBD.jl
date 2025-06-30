@@ -63,8 +63,8 @@ Return copy of time constraint object
 """
 function shallowClone(timeConstraint::CR3BPTimeConstraint, dynamicsModel::MBD.CR3BPDynamicsModel)
     node1 = MBD.CR3BPNode(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
-    node2 = MBD.CR3BPNode(0.0, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dynamicsModel)
-    segment = MBD.CR3BPSegment(0.0, node1, node2)
+    node2 = MBD.CR3BPNode(0.5, [0.1, 0.0, 0.0, 0.0, 0.1, 0.0], dynamicsModel)
+    segment = MBD.CR3BPSegment(0.5, node1, node2)
     object = CR3BPTimeConstraint(segment, timeConstraint.value)
     object.value = timeConstraint.value
     object.variable = timeConstraint.variable
