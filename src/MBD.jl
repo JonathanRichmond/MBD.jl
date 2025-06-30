@@ -832,7 +832,7 @@ mutable struct CR3BPNaturalParameterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
+    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64; tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
@@ -872,7 +872,7 @@ mutable struct JacobiConstantContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
+    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64; tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
