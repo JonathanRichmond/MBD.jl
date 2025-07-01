@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/30/25
+U: 7/1/25
 """
 module MBD
 
@@ -495,6 +495,71 @@ mutable struct CR3BPTimeConstraint <: AbstractConstraint
 end
 Base.:(==)(timeConstraint1::CR3BPTimeConstraint, timeConstraint2::CR3BPTimeConstraint) = ((timeConstraint1.value == timeConstraint2.value) && (timeConstraint1.variable == timeConstraint2.variable))
 
+"""
+    CR3BPAltitudeConstraint(node, primary, value)
+
+CR3BP altitude constraint object
+
+# Arguments
+- `node::CR3BPNode`: CR3BP node object
+- `primary::Int64`: Primary identifier
+- `value::Vector{Float64}`: Constraint value
+"""
+mutable struct CR3BPAltitudeConstraint <: AbstractConstraint
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    primary::Int64                                                      # Primary identifier
+    value::Float64                                                      # Constraint values
+    variable::Variable                                                  # Constrained variable
+
+    function CR3BPAltitudeConstraint(node::CR3BPNode, primary::Int64, value::Float64)
+        this = new()
+
+        this.variable = node.state
+        checkIndices(indices, length(this.variable.data))
+        this.constrainedIndices = convert(Vector{Int16}, indices)
+        this.dynamicsModel = node.dynamicsModel
+        this.primary = primary
+        this.value = value
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        in(true, freeVariableMask) || throw(ArgumentError("Variable is constrained but not free to vary"))
+
+        return this
+    end
+end
+Base.:(==)(altitudeConstraint1::CR3BPAltitudeConstraint, altitudeConstraint2::CR3BPAltitudeConstraint) = ((altitudeConstraint1.constrainedIndices == altitudeConstraint2.constrainedIndices) && (altitudeConstraint1.dynamicsModel == altitudeConstraint2.dynamicsModel) && (altitudeConstraint1.value == altitudeConstraint2.value) && (altitudeConstraint1.variable == altitudeConstraint2.variable))
+
+"""
+    CR3BPFlightPathAngleConstraint(node, primary, value)
+
+CR3BP flight path angle constraint object
+
+# Arguments
+- `node::CR3BPNode`: CR3BP node object
+- `primary::Int64`: Primary identifier
+- `value::Vector{Float64}`: Constraint value
+"""
+mutable struct CR3BPFlightPathAngleConstraint <: AbstractConstraint
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    primary::Int64                                                      # Primary identifier
+    value::Float64                                                      # Constraint values
+    variable::Variable                                                  # Constrained variable
+
+    function CR3BPFlightPathAngleConstraint(node::CR3BPNode, primary::Int64, value::Float64)
+        this = new()
+
+        this.variable = node.state
+        checkIndices(indices, length(this.variable.data))
+        this.constrainedIndices = convert(Vector{Int16}, indices)
+        this.dynamicsModel = node.dynamicsModel
+        this.primary = primary
+        this.value = value
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        in(true, freeVariableMask) || throw(ArgumentError("Variable is constrained but not free to vary"))
+
+        return this
+    end
+end
+Base.:(==)(flightPathAngleConstraint1::CR3BPFlightPathAngleConstraint, flightPathAngleConstraint2::CR3BPFlightPathAngleConstraint) = ((flightPathAngleConstraint1.constrainedIndices == flightPathAngleConstraint2.constrainedIndices) && (flightPathAngleConstraint1.dynamicsModel == flightPathAngleConstraint2.dynamicsModel) && (flightPathAngleConstraint1.value == flightPathAngleConstraint2.value) && (flightPathAngleConstraint1.variable == flightPathAngleConstraint2.variable))
 
 """
     CR3BPStateMatchConstraint(state1, state2, indices)
@@ -1907,12 +1972,14 @@ include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
 include("corrections/MinimumNormUpdateGenerator.jl")
 include("corrections/Variable.jl")
+include("CR3BP/AltitudeConstraint.jl")
 include("CR3BP/Arc.jl")
 include("CR3BP/ContinuationData.jl")
 include("CR3BP/ContinuationFamily.jl")
 include("CR3BP/ContinuityConstraint.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
+include("CR3BP/FlightPathAngleConstraint.jl")
 include("CR3BP/JacobiConstantContinuationEngine.jl")
 include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/Manifold.jl")
