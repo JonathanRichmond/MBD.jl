@@ -515,7 +515,6 @@ mutable struct CR3BPAltitudeConstraint <: AbstractConstraint
         this = new()
 
         this.variable = node.state
-        this.constrainedIndices = convert(Vector{Int16}, indices)
         this.dynamicsModel = node.dynamicsModel
         this.primary = primary
         this.value = value
@@ -547,7 +546,6 @@ mutable struct CR3BPFlightPathAngleConstraint <: AbstractConstraint
         this = new()
 
         this.variable = node.state
-        this.constrainedIndices = convert(Vector{Int16}, indices)
         this.dynamicsModel = node.dynamicsModel
         this.primary = primary
         this.value = value
