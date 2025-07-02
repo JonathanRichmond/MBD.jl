@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 7/1/25
+U: 7/2/25
 """
 module MBD
 
@@ -1069,6 +1069,34 @@ end
 Base.:(==)(periodicOrbit1::CR3BPPeriodicOrbit, periodicOrbit2::CR3BPPeriodicOrbit) = ((periodicOrbit1.dynamicsModel == periodicOrbit2.dynamicsModel) && (periodicOrbit1.initialCondition == periodicOrbit2.initialCondition) && (periodicOrbit1.monodromy == periodicOrbit2.monodromy) && (periodicOrbit1.period == periodicOrbit2.period))
 
 """
+    CR3BPMSPeriodicOrbit(dynamicsModel, nodeStates, nodeEpochs, period, monodromy)
+
+CR3BP multiple shooter periodic orbit object
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `nodeStates::Vector{Vector{Float64}}`: Node states [ndim]
+- `nodeEpochs::Vector{Float64}`: Node epochs [ndim]
+- `period::Float64`: Period [ndim]
+- `monodromy::Matrix{Float64}`: Monodromy matrix [ndim]
+"""
+struct CR3BPMSPeriodicOrbit
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    initialCondition::Vector{Float64}                                   # Initial condition [ndim]
+    monodromy::StaticArrays.SMatrix{7, 7, Float64}                      # Monodromy matrix [ndim]
+    nodeEpochs::Vector{Float64}                                         # Node epochs [ndim]
+    nodeStates::Vector{Vector{Float64}}                                 # Node states [ndim]
+    period::Float64                                                     # Period [ndim]
+
+    function CR3BPMSPeriodicOrbit(dynamicsModel::CR3BPDynamicsModel, nodeStates::Vector{Vector{Float64}}, nodeEpochs::Vector{Float64}, period::Float64, monodromy::Matrix{Float64})
+        this = new(dynamicsModel, copy(nodeStates[1]), StaticArrays.SMatrix{6, 6, Float64}(monodromy), copy(nodeEpochs), copy(nodeStates), copy(period))
+
+        return this
+    end
+end
+Base.:(==)(periodicOrbit1::CR3BPMSPeriodicOrbit, periodicOrbit2::CR3BPMSPeriodicOrbit) = ((periodicOrbit1.dynamicsModel == periodicOrbit2.dynamicsModel) && (periodicOrbit1.initialCondition == periodicOrbit2.initialCondition) && (periodicOrbit1.monodromy == periodicOrbit2.monodromy) && (periodicOrbit1.period == periodicOrbit2.period))
+
+"""
     CR3BPOrbitFamily(dynamicsModel)
 
 CR3BP orbit family object
@@ -1980,6 +2008,7 @@ include("CR3BP/JacobiConstantContinuationEngine.jl")
 include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/Manifold.jl")
 include("CR3BP/ManifoldArc.jl")
+include("CR3BP/MSPeriodicOrbit.jl")
 include("CR3BP/MultipleShooter.jl")
 include("CR3BP/MultipleShooterContinuationEngine.jl")
 include("CR3BP/MultipleShooterProblem.jl")
