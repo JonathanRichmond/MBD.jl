@@ -3,6 +3,7 @@ CR3BP altitude constraint wrapper
 
 Author: Jonathan Richmond
 C: 7/1/25
+U: 7/2/25
 """
 
 import MBD: CR3BPAltitudeConstraint
@@ -23,7 +24,7 @@ function evaluateConstraint(altitudeConstraint::CR3BPAltitudeConstraint, freeVar
     primaryPos::Vector{Float64} = getPrimaryState(altitudeConstraint.dynamicsModel, altitudeConstraint.primary)[1:3]
     primaryRad::Float64 = altitudeConstraint.dynamicsModel.systemData.primaryData[altitudeConstraint.primary].bodyRadius/getCharLength(altitudeConstraint.dynamicsModel)
 
-    return LinearAlgebra.norm(altitudeConstraint.variable.data[1:3]-primaryPos)-primaryRad-altitudeConstraint.value
+    return [LinearAlgebra.norm(altitudeConstraint.variable.data[1:3]-primaryPos)-primaryRad-altitudeConstraint.value]
 end
 
 """

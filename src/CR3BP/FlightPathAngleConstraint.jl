@@ -3,6 +3,7 @@ CR3BP flight path angle constraint wrapper
 
 Author: Jonathan Richmond
 C: 7/1/25
+U: 7/2/25
 """
 
 import MBD: CR3BPFlightPathAngleConstraint
@@ -23,7 +24,7 @@ function evaluateConstraint(flightPathAngleConstraint::CR3BPFlightPathAngleConst
     primaryState::Vector{Float64} = getPrimaryState(flightPathAngleConstraint.dynamicsModel, flightPathAngleConstraint.primary)
     q_PC::Vector{Float64} = flightPathAngleConstraint.variable.data[1:6]-primaryState
     
-    return LinearAlgebra.dot(q_PC[1:3], q_PC[4:6])/(LinearAlgebra.norm(q_PC[1:3])*LinearAlgebra.norm(q_PC[4:6]))-sin(flightPathAngleConstraint.value)
+    return [LinearAlgebra.dot(q_PC[1:3], q_PC[4:6])/(LinearAlgebra.norm(q_PC[1:3])*LinearAlgebra.norm(q_PC[4:6]))-sin(flightPathAngleConstraint.value)]
 end
 
 """
