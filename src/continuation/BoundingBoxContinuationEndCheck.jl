@@ -92,7 +92,7 @@ function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::
         end
     end
 
-    Logging.@debug "Continuation onging: bounding box not yet reached"
+    Logging.@debug "Continuation ongoing: bounding box not yet reached"
     return false
 end
 
@@ -137,6 +137,6 @@ function isContinuationDone(boundsCheck::BoundingBoxContinuationEndCheck, data::
         end
     end
 
-    Logging.@debug "Continuation onging: bounding box not yet reached"
+    Logging.@debug "Continuation ongoing: bounding box not yet reached"
     return false
 end

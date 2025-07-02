@@ -3,7 +3,7 @@ CR3BP natural parameter continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/4/23
-U: 1/27/25
+U: 6/30/25
 """
 
 import MBD: CR3BPNaturalParameterContinuationEngine
@@ -89,6 +89,8 @@ function constrainNextGuess!(naturalParameterContinuationEngine::CR3BPNaturalPar
                     (constraint.constrainedIndices[i] == continuationIndex) && (constraint.values[i] += data.currentStepSize)
                 end
             end
+        elseif typeof(constraint) == MBD.CR3BPTimeConstraint
+            (constraint.variable.name == naturalParameterContinuationEngine.stepSizeGenerator.elementName) && (constraint.value += data.currentStepSize)
         end
     end
 end
@@ -204,14 +206,19 @@ function tryConverging!(naturalParameterContinuationEngine::CR3BPNaturalParamete
         naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution = deepClone(naturalParameterContinuationEngine.dataInProgress.previousSolution)
         naturalParameterContinuationEngine.dataInProgress.previousSolution = solve!(naturalParameterContinuationEngine.corrector, naturalParameterContinuationEngine.dataInProgress.nextGuess)
         naturalParameterContinuationEngine.dataInProgress.converging = true
-        for jumpCheck::MBD.AbstractContinuationJumpCheck in naturalParameterContinuationEngine.jumpChecks
-            if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
-                for (index::MBD.Variable, value::Int16) in naturalParameterContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
-                    if index.name == jumpCheck.paramName
-                        addBounds!(jumpCheck, naturalParameterContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
-                        naturalParameterContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, naturalParameterContinuationEngine.dataInProgress)
-                        !naturalParameterContinuationEngine.dataInProgress.converging && println("Solution jumped")
-                        removeBounds!(jumpCheck, naturalParameterContinuationEngine.dataInProgress.previousSolution, index)
+        if abs(LinearAlgebra.norm(getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution))) > abs(naturalParameterContinuationEngine.dataInProgress.currentStepSize)*naturalParameterContinuationEngine.boundRadiusScaleFactor
+            naturalParameterContinuationEngine.dataInProgress.converging = false
+            naturalParameterContinuationEngine.printProgress && println("Solution outside of trust region: delta = $(abs(LinearAlgebra.norm(getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.previousSolution))-LinearAlgebra.norm(getFreeVariableVector!(naturalParameterContinuationEngine.dataInProgress.twoPreviousSolution))))")
+        else
+            for jumpCheck::MBD.AbstractContinuationJumpCheck in naturalParameterContinuationEngine.jumpChecks
+                if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
+                    for (index::MBD.Variable, value::Int16) in naturalParameterContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
+                        if index.name == jumpCheck.paramName
+                            addBounds!(jumpCheck, naturalParameterContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
+                            naturalParameterContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, naturalParameterContinuationEngine.dataInProgress)
+                            !naturalParameterContinuationEngine.dataInProgress.converging && println("Solution jumped")
+                            removeBounds!(jumpCheck, naturalParameterContinuationEngine.dataInProgress.previousSolution, index)
+                        end
                     end
                 end
             end

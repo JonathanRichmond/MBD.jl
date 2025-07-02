@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 6/25/25
+U: 7/1/25
 """
 module MBD
 
@@ -470,6 +470,94 @@ end
 Base.:(==)(stateConstraint1::CR3BPStateConstraint, stateConstraint2::CR3BPStateConstraint) = ((stateConstraint1.constrainedIndices == stateConstraint2.constrainedIndices) && (stateConstraint1.values == stateConstraint2.values) && (stateConstraint1.variable == stateConstraint2.variable))
 
 """
+    CR3BPTimeConstraint(segment, value)
+
+CR3BP time constraint object
+
+# Arguments
+- `segment::CR3BPNode`: CR3BP segment object
+- `value::Float64`: Constraint value
+"""
+mutable struct CR3BPTimeConstraint <: AbstractConstraint
+    value::Float64                                                      # Constraint value
+    variable::Variable                                                  # Constrained variable
+
+    function CR3BPTimeConstraint(segment::CR3BPSegment, value::Float64)
+        this = new()
+
+        this.variable = segment.TOF
+        this.value = value
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        freeVariableMask[1] || throw(ArgumentError("Variable is constrained but not free to vary"))
+
+        return this
+    end
+end
+Base.:(==)(timeConstraint1::CR3BPTimeConstraint, timeConstraint2::CR3BPTimeConstraint) = ((timeConstraint1.value == timeConstraint2.value) && (timeConstraint1.variable == timeConstraint2.variable))
+
+"""
+    CR3BPAltitudeConstraint(node, primary, value)
+
+CR3BP altitude constraint object
+
+# Arguments
+- `node::CR3BPNode`: CR3BP node object
+- `primary::Int64`: Primary identifier
+- `value::Vector{Float64}`: Constraint value
+"""
+mutable struct CR3BPAltitudeConstraint <: AbstractConstraint
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    primary::Int64                                                      # Primary identifier
+    value::Float64                                                      # Constraint values
+    variable::Variable                                                  # Constrained variable
+
+    function CR3BPAltitudeConstraint(node::CR3BPNode, primary::Int64, value::Float64)
+        this = new()
+
+        this.variable = node.state
+        this.dynamicsModel = node.dynamicsModel
+        this.primary = primary
+        this.value = value
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        in(true, freeVariableMask) || throw(ArgumentError("Variable is constrained but not free to vary"))
+
+        return this
+    end
+end
+Base.:(==)(altitudeConstraint1::CR3BPAltitudeConstraint, altitudeConstraint2::CR3BPAltitudeConstraint) = ((altitudeConstraint1.constrainedIndices == altitudeConstraint2.constrainedIndices) && (altitudeConstraint1.dynamicsModel == altitudeConstraint2.dynamicsModel) && (altitudeConstraint1.value == altitudeConstraint2.value) && (altitudeConstraint1.variable == altitudeConstraint2.variable))
+
+"""
+    CR3BPFlightPathAngleConstraint(node, primary, value)
+
+CR3BP flight path angle constraint object
+
+# Arguments
+- `node::CR3BPNode`: CR3BP node object
+- `primary::Int64`: Primary identifier
+- `value::Vector{Float64}`: Constraint value
+"""
+mutable struct CR3BPFlightPathAngleConstraint <: AbstractConstraint
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    primary::Int64                                                      # Primary identifier
+    value::Float64                                                      # Constraint values
+    variable::Variable                                                  # Constrained variable
+
+    function CR3BPFlightPathAngleConstraint(node::CR3BPNode, primary::Int64, value::Float64)
+        this = new()
+
+        this.variable = node.state
+        this.dynamicsModel = node.dynamicsModel
+        this.primary = primary
+        this.value = value
+        freeVariableMask::Vector{Bool} = getFreeVariableMask(this.variable)
+        in(true, freeVariableMask) || throw(ArgumentError("Variable is constrained but not free to vary"))
+
+        return this
+    end
+end
+Base.:(==)(flightPathAngleConstraint1::CR3BPFlightPathAngleConstraint, flightPathAngleConstraint2::CR3BPFlightPathAngleConstraint) = ((flightPathAngleConstraint1.constrainedIndices == flightPathAngleConstraint2.constrainedIndices) && (flightPathAngleConstraint1.dynamicsModel == flightPathAngleConstraint2.dynamicsModel) && (flightPathAngleConstraint1.value == flightPathAngleConstraint2.value) && (flightPathAngleConstraint1.variable == flightPathAngleConstraint2.variable))
+
+"""
     CR3BPStateMatchConstraint(state1, state2, indices)
 
 CR3BP state match constraint object
@@ -761,6 +849,27 @@ end
 Base.:(==)(boundingBoxContinuationEndCheck1::BoundingBoxContinuationEndCheck, boundingBoxContinuationEndCheck2::BoundingBoxContinuationEndCheck) = (isequal(boundingBoxContinuationEndCheck1.paramBounds, boundingBoxContinuationEndCheck2.paramBounds) && (boundingBoxContinuationEndCheck1.paramName == boundingBoxContinuationEndCheck2.paramName) && (boundingBoxContinuationEndCheck1.variableBounds == boundingBoxContinuationEndCheck2.variableBounds))
 
 """
+    CR3BPPrimarySurfaceContinuationEndCheck(dynamicsModel, primary)
+
+CR3BP primary surface continuation end check object
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `primary::Int64`: Primary identifier
+"""
+mutable struct CR3BPPrimarySurfaceContinuationEndCheck <: AbstractContinuationEndCheck
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    primary::Int64                                                      # Primary identifier
+
+    function CR3BPPrimarySurfaceContinuationEndCheck(dynamicsModel::CR3BPDynamicsModel, primary::Int64)
+        this = new(dynamicsModel, primary)
+
+        return this
+    end
+end
+Base.:(==)(primarySurfaceContinuationEndCheck1::CR3BPPrimarySurfaceContinuationEndCheck, primarySurfaceContinuationEndCheck2::CR3BPPrimarySurfaceContinuationEndCheck) = ((primarySurfaceContinuationEndCheck1.dynamicsModel, primarySurfaceContinuationEndCheck2.dynamicsModel) && (primarySurfaceContinuationEndCheck1.primary == primarySurfaceContinuationEndCheck2.primary))
+
+"""
     BundingBoxJumpCheck(paramName, paramBounds)
 
 Bounding box jump check object
@@ -787,7 +896,7 @@ end
 Base.:(==)(boundingBoxJumpCheck1::BoundingBoxJumpCheck, boundingBoxJumpCheck2::BoundingBoxJumpCheck) = (isequal(boundingBoxJumpCheck1.paramBounds, boundingBoxJumpCheck2.paramBounds) && (boundingBoxJumpCheck1.paramName == boundingBoxJumpCheck2.paramName) && (boundingBoxJumpCheck1.variableBounds == boundingBoxJumpCheck2.variableBounds))
 
 """
-    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize; tol)
+    CR3BPNaturalParameterContinuationEngine(solution1, solution2, paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize; tol, boundRadiusScaleFactor)
 
 CR3BP natural parameter continuation engine object
 
@@ -799,8 +908,10 @@ CR3BP natural parameter continuation engine object
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-11)
+- `boundRadiusScaleFactor::Float64`: Solution bounding sphere radius scale factor (default = 50.0)
 """
 mutable struct CR3BPNaturalParameterContinuationEngine
+    boundRadiusScaleFactor::Float64                                     # Bounding sphere radius scale factor
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
     dataInProgress::CR3BPContinuationData                               # Continuation data
     endChecks::Vector{AbstractContinuationEndCheck}                     # Continuation end checks
@@ -809,12 +920,13 @@ mutable struct CR3BPNaturalParameterContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
+    function CR3BPNaturalParameterContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, paramName::String, paramFreeVarIndex::Int64, initialParamStepSize::Float64, maxParamStepSize::Float64; tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
         this.dataInProgress = CR3BPContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator(paramName, paramFreeVarIndex, initialParamStepSize, maxParamStepSize)
+        this.boundRadiusScaleFactor = boundRadiusScaleFactor
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
@@ -826,7 +938,7 @@ end
 Base.:(==)(naturalParameterContinuationEngine1::CR3BPNaturalParameterContinuationEngine, naturalParameterContinuationEngine2::CR3BPNaturalParameterContinuationEngine) = ((naturalParameterContinuationEngine1.corrector == naturalParameterContinuationEngine2.corrector) && (naturalParameterContinuationEngine1.dataInProgress == naturalParameterContinuationEngine2.dataInProgress) && (naturalParameterContinuationEngine1.endChecks == naturalParameterContinuationEngine2.endChecks) && (naturalParameterContinuationEngine1.jumpChecks == naturalParameterContinuationEngine2.jumpChecks) && (naturalParameterContinuationEngine1.stepSizeGenerator == naturalParameterContinuationEngine2.stepSizeGenerator))
 
 """
-    JacobiConstantContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol)
+    JacobiConstantContinuationEngine(solution1, solution2, initialParamStepSize, maxParamStepSize; tol, boundRadiusScaleFactor)
 
 Jacobi constant continuation engine object
 
@@ -836,8 +948,10 @@ Jacobi constant continuation engine object
 - `initialParamStepSize::Float64`: Initial step size
 - `maxParamStepSize::Float64`: Maximum parameter step size
 - `tol::Float64`: Convergence tolerance (default = 1E-11)
+- `boundRadiusScaleFactor::Float64`: Solution bounding sphere radius scale factor (default = 50.0)
 """
 mutable struct JacobiConstantContinuationEngine
+    boundRadiusScaleFactor::Float64                                     # Bounding sphere radius scale factor
     corrector::CR3BPMultipleShooter                                     # Multiple shooter corrector for family
     dataInProgress::CR3BPContinuationData                               # Continuation data
     endChecks::Vector{AbstractContinuationEndCheck}                     # Continuation end checks
@@ -846,12 +960,13 @@ mutable struct JacobiConstantContinuationEngine
     stepSizeGenerator::AdaptiveStepSizeByElementGenerator               # Step size generator
     storeIntermediateMembers::Bool                                      # Store intermediate family members?
 
-    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64, tol::Float64 = 1E-11)
+    function JacobiConstantContinuationEngine(solution1::CR3BPMultipleShooterProblem, solution2::CR3BPMultipleShooterProblem, initialParamStepSize::Float64, maxParamStepSize::Float64; tol::Float64 = 1E-11, boundRadiusScaleFactor::Float64 = 50.0)
         this = new()
 
         this.corrector = CR3BPMultipleShooter(tol)
         this.dataInProgress = CR3BPContinuationData(solution1, solution2)
         this.stepSizeGenerator = AdaptiveStepSizeByElementGenerator("Jacobi Constant", 1, initialParamStepSize, maxParamStepSize)
+        this.boundRadiusScaleFactor = boundRadiusScaleFactor
         this.jumpChecks = []
         this.endChecks = []
         this.storeIntermediateMembers = true
@@ -1853,12 +1968,14 @@ include("corrections/ConstraintVectorL2NormConvergenceCheck.jl")
 include("corrections/LeastSquaresUpdateGenerator.jl")
 include("corrections/MinimumNormUpdateGenerator.jl")
 include("corrections/Variable.jl")
+include("CR3BP/AltitudeConstraint.jl")
 include("CR3BP/Arc.jl")
 include("CR3BP/ContinuationData.jl")
 include("CR3BP/ContinuationFamily.jl")
 include("CR3BP/ContinuityConstraint.jl")
 include("CR3BP/DynamicsModel.jl")
 include("CR3BP/EquationsOfMotion.jl")
+include("CR3BP/FlightPathAngleConstraint.jl")
 include("CR3BP/JacobiConstantContinuationEngine.jl")
 include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/Manifold.jl")
@@ -1870,10 +1987,12 @@ include("CR3BP/NaturalParameterContinuationEngine.jl")
 include("CR3BP/Node.jl")
 include("CR3BP/OrbitFamily.jl")
 include("CR3BP/PeriodicOrbit.jl")
+include("CR3BP/PrimarySurfaceContinuationEndCheck.jl")
 include("CR3BP/Segment.jl")
 include("CR3BP/StateConstraint.jl")
 include("CR3BP/StateMatchConstraint.jl")
 include("CR3BP/SystemData.jl")
+include("CR3BP/TimeConstraint.jl")
 include("propagation/EventFunctions.jl")
 include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
