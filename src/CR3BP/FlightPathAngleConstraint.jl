@@ -55,8 +55,8 @@ function getPartials_ConstraintWRTVariables(flightPathAngleConstraint::CR3BPFlig
 
     primaryState::Vector{Float64} = getPrimaryState(flightPathAngleConstraint.dynamicsModel, flightPathAngleConstraint.primary)
     q_PC::Vector{Float64} = flightPathAngleConstraint.variable.data[1:6]-primaryState
-    [partials[1,j] = (q_PC[j+3]*LinearAlgebra.norm(q_PC[1:3])^(2)-LinearAlgebra.dot(q_PC[1:3], q_PC[4:6])*q_PC[j])/(LinearAlgebra.norm(q_PC[1:3])^(3)*LinearAlgebra.norm(q_PC)) for j = 1:3]
-    [partials[1,j] = (q_PC[j-3]*LinearAlgebra.norm(q_PC[4:6])^(2)-LinearAlgebra.dot(q_PC[1:3], q_PC[4:6])*q_PC[j])/(LinearAlgebra.norm(q_PC[1:3])*LinearAlgebra.norm(q_PC)^(3)) for j = 4:6]
+    [partials[1,j] = (q_PC[j+3]*LinearAlgebra.norm(q_PC[1:3])^(2)-LinearAlgebra.dot(q_PC[1:3], q_PC[4:6])*q_PC[j])/(LinearAlgebra.norm(q_PC[1:3])^(3)*LinearAlgebra.norm(q_PC[4:6])) for j = 1:3]
+    [partials[1,j] = (q_PC[j-3]*LinearAlgebra.norm(q_PC[4:6])^(2)-LinearAlgebra.dot(q_PC[1:3], q_PC[4:6])*q_PC[j])/(LinearAlgebra.norm(q_PC[1:3])*LinearAlgebra.norm(q_PC[4:6])^(3)) for j = 4:6]
     
     partialsMap::Dict{MBD.Variable, Matrix{Float64}} = Dict{MBD.Variable, Matrix{Float64}}(flightPathAngleConstraint.variable => partials)
 
