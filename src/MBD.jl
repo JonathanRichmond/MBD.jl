@@ -1083,7 +1083,7 @@ CR3BP multiple shooter periodic orbit object
 struct CR3BPMSPeriodicOrbit
     dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
     initialCondition::Vector{Float64}                                   # Initial condition [ndim]
-    monodromy::StaticArrays.SMatrix{7, 7, Float64}                      # Monodromy matrix [ndim]
+    monodromy::StaticArrays.SMatrix{6, 6, Float64}                      # Monodromy matrix [ndim]
     nodeEpochs::Vector{Float64}                                         # Node epochs [ndim]
     nodeStates::Vector{Vector{Float64}}                                 # Node states [ndim]
     period::Float64                                                     # Period [ndim]
