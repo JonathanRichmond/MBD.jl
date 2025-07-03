@@ -3,7 +3,7 @@ CR3BP natural parameter continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/4/23
-U: 6/30/25
+U: 7/3/25
 """
 
 import MBD: CR3BPNaturalParameterContinuationEngine
@@ -222,6 +222,7 @@ function tryConverging!(naturalParameterContinuationEngine::CR3BPNaturalParamete
                     end
                 end
             end
+            map(s -> updateTerminalNodeEpoch!(s), naturalParameterContinuationEngine.dataInProgress.previousSolution.segments)
         end
         if naturalParameterContinuationEngine.dataInProgress.converging
             naturalParameterContinuationEngine.dataInProgress.numIterations = naturalParameterContinuationEngine.corrector.recentIterationCount
