@@ -3,7 +3,7 @@ Jacobi constant continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 1/11/23
-U: 6/30/25
+U: 7/3/25
 """
 
 import LinearAlgebra
@@ -208,6 +208,7 @@ function tryConverging!(jacobiConstantContinuationEngine::JacobiConstantContinua
                 end
                 !jacobiConstantContinuationEngine.dataInProgress.converging && break
             end
+            map(s -> updateTerminalNodeEpoch!(s), jacobiConstantContinuationEngine.dataInProgress.previousSolution.segments)
         end
         if jacobiConstantContinuationEngine.dataInProgress.converging
             jacobiConstantContinuationEngine.dataInProgress.numIterations = jacobiConstantContinuationEngine.corrector.recentIterationCount

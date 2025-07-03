@@ -3,6 +3,7 @@ P4 mass continuation engine wrapper
 
 Author: Jonathan Richmond
 C: 6/18/23
+U: 7/3/25
 """
 
 import LinearAlgebra
@@ -203,6 +204,7 @@ function tryConverging!(p4MassContinuationEngine::P4MassContinuationEngine)
                 end
                 !p4MassContinuationEngine.dataInProgress.converging && break
             end
+            map(s -> updateTerminalNodeEpoch!(s), p4MassContinuationEngine.dataInProgress.previousSolution.segments)
         end
         if p4MassContinuationEngine.dataInProgress.converging
             p4MassContinuationEngine.dataInProgress.numIterations = p4MassContinuationEngine.corrector.recentIterationCount
