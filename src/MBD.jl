@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 7/3/25
+U: 7/7/25
 """
 module MBD
 
@@ -1093,6 +1093,45 @@ end
 Base.:(==)(orbitFamily1::CR3BPOrbitFamily, orbitFamily2::CR3BPOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
 
 """
+    CR3BPMSOrbitFamily(dynamicsModel)
+
+CR3BP multiple shooter orbit family object
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+"""
+mutable struct CR3BPMSOrbitFamily
+    # bifurcations::Vector{Bifurcation}                                   # Bifurcations
+    dynamicsModel::CR3BPDynamicsModel                                   # CR3BP dynamics model object
+    eigenvalues::Vector{Vector{Complex{Float64}}}                       # Eigenvalues [ndim]
+    eigenvectors::Vector{Matrix{Complex{Float64}}}                      # Eigenvectors [ndim]
+    hasBeenSorted::Bool                                                 # Eigendata has been sorted?
+    initialConditions::Vector{Vector{Float64}}                          # Initial conditions [ndim]
+    monodromies::Vector{Matrix{Float64}}                                # Monodromy matrices [ndim]
+    nodeEpochs::Vector{Vector{Float64}}                                 # Node epochs [ndim]
+    nodeStates::Vector{Vector{Vector{Float64}}}                         # Node states [ndim]
+    periods::Vector{Float64}                                            # Periods [ndim]
+
+    function CR3BPOrbitFamily(dynamicsModel::CR3BPDynamicsModel)
+        this = new()
+
+        this.dynamicsModel = dynamicsModel
+        this.initialConditions = []
+        this.periods = []
+        this.monodromies = []
+        this.nodeStates = []
+        this.nodeEpochs = []
+        this.eigenvalues = []
+        this.eigenvectors = []
+        this.hasBeenSorted = false
+        # this.bifurcations = []
+
+        return this
+    end
+end
+Base.:(==)(orbitFamily1::CR3BPOrbitFamily, orbitFamily2::CR3BPOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
+
+"""
     CR3BPManifoldArc(periodicOrbit, orbitTime, d, initialCondition; TOF)
 
 CR3BP manifold arc object
@@ -1969,6 +2008,7 @@ include("CR3BP/JacobiConstantContinuationEngine.jl")
 include("CR3BP/JacobiConstraint.jl")
 include("CR3BP/Manifold.jl")
 include("CR3BP/ManifoldArc.jl")
+include("CR3BP/MSOrbitFamily.jl")
 include("CR3BP/MSPeriodicOrbit.jl")
 include("CR3BP/MultipleShooter.jl")
 include("CR3BP/MultipleShooterProblem.jl")

@@ -1,13 +1,12 @@
 """
-CR3BP orbit family wrapper
+CR3BP multiple shooter orbit family wrapper
 
 Author: Jonathan Richmond
-C: 1/17/23
-U: 7/7/25
+C: 7/7/25
 """
 
 import Combinatorics, LinearAlgebra, StaticArrays
-import MBD: CR3BPOrbitFamily
+import MBD: CR3BPMSOrbitFamily
 
 export eigenSort!, getAlternateIndices, getMember, getNumMembers
 
@@ -17,15 +16,15 @@ export eigenSort!, getAlternateIndices, getMember, getNumMembers
 Return orbit family object with updated eigenvalues/vectors
 
 # Arguments
-- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+- `orbitFamily::CR3BPMSOrbitFamily`: CR3BP multiple shooter orbit family object
 """
-function eigenSort!(orbitFamily::CR3BPOrbitFamily)
+function eigenSort!(orbitFamily::CR3BPMSOrbitFamily)
     nMembers::Int16 = Int16(getNumMembers(orbitFamily))
     iszero(nMembers) && throw(ArgumentError("No eigenvalues to sort"))
     eigenvalues::Vector{Vector{Complex{Float64}}} = Vector{Vector{Complex{Float64}}}(undef, nMembers)
     eigenvectors::Vector{Matrix{Complex{Float64}}} = Vector{Matrix{Complex{Float64}}}(undef, nMembers)
     for o::Int64 in 1:Int64(nMembers)
-        orbit::CR3BPPeriodicOrbit = getMember(orbitFamily, o)
+        orbit::CR3BPMSPeriodicOrbit = getMember(orbitFamily, o)
         (eigenvalues[o], eigenvectors[o]) = getEigenData(orbit)
     end
     println("Sorting $nMembers sets of eigenvalues/vectors...")
@@ -80,9 +79,9 @@ end
 Return alternate stability indices for the orbit family
 
 # Arguments
-- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+- `orbitFamily::CR3BPMSOrbitFamily`: CR3BP multiple shooter orbit family object
 """
-function getAlternateIndices(orbitFamily::CR3BPOrbitFamily)
+function getAlternateIndices(orbitFamily::CR3BPMSOrbitFamily)
     orbitFamily.hasBeenSorted || eigenSort!(orbitFamily)
     numMembers::Int16 = getNumMembers(orbitFamily)
     standardStabilityIndices::Vector{Vector{Float64}} = [zeros(Float64, 3) for _ in 1:numMembers]
@@ -101,11 +100,11 @@ end
 Return periodic orbit member object
 
 # Arguments
-- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+- `orbitFamily::CR3BPMSOrbitFamily`: CR3BP multiple shooter orbit family object
 - `orbit::Int64`: Orbit identifier
 """
-function getMember(orbitFamily::CR3BPOrbitFamily, orbit::Int64)
-    return MBD.CR3BPPeriodicOrbit(orbitFamily.dynamicsModel, orbitFamily.initialConditions[orbit], orbitFamily.periods[orbit], orbitFamily.monodromies[orbit])
+function getMember(orbitFamily::CR3BPMSOrbitFamily, orbit::Int64)
+    return MBD.CR3BPMSPeriodicOrbit(orbitFamily.dynamicsModel, orbitFamily.nodeStates[orbit], orbitFamily.nodeEpochs[orbit], orbitFamily.periods[orbit], orbitFamily.monodromies[orbit])
 end
 
 """
@@ -114,8 +113,8 @@ end
 Return number of family members
 
 # Arguments
-- `orbitFamily::CR3BPOrbitFamily`: CR3BP orbit family object
+- `orbitFamily::CR3BPMSOrbitFamily`: CR3BP multiple shooter orbit family object
 """
-function getNumMembers(orbitFamily::CR3BPOrbitFamily)
+function getNumMembers(orbitFamily::CR3BPMSOrbitFamily)
     return length(orbitFamily.periods)
 end
