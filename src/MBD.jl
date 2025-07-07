@@ -1112,7 +1112,7 @@ mutable struct CR3BPMSOrbitFamily
     nodeStates::Vector{Vector{Vector{Float64}}}                         # Node states [ndim]
     periods::Vector{Float64}                                            # Periods [ndim]
 
-    function CR3BPOrbitFamily(dynamicsModel::CR3BPDynamicsModel)
+    function CR3BPMSOrbitFamily(dynamicsModel::CR3BPDynamicsModel)
         this = new()
 
         this.dynamicsModel = dynamicsModel
@@ -1129,7 +1129,7 @@ mutable struct CR3BPMSOrbitFamily
         return this
     end
 end
-Base.:(==)(orbitFamily1::CR3BPOrbitFamily, orbitFamily2::CR3BPOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
+Base.:(==)(orbitFamily1::CR3BPMSOrbitFamily, orbitFamily2::CR3BPMSOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
 
 """
     CR3BPManifoldArc(periodicOrbit, orbitTime, d, initialCondition; TOF)
