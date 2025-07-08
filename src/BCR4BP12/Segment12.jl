@@ -3,14 +3,14 @@ Segment wrapper
 
 Author: Jonathan Richmond
 C: 4/9/25
-U: 4/15/25
+U: 7/8/25
 """
 
 import MBD: BCR4BP12Segment
 
 export getFinalState!, getFinalStateRate!, getPartials_FinalStateWRTEpoch!
 export getPartials_FinalStateWRTInitialState!, getVariables, lazyPropagate!, propagate!
-export resetPropagatedArc!
+export resetPropagatedArc!, updateTerminalNodeEpoch!
 
 """
     getFinalState!(segment)
@@ -161,4 +161,16 @@ function updatePointers!(segment::BCR4BP12Segment, copiedObjectMap::IdDict{Any, 
     segment.TOF = updatePointer(segment.TOF, copiedObjectMap, true)
     segment.originNode = updatePointer(segment.originNode, copiedObjectMap, true)
     segment.terminalNode = updatePointer(segment.terminalNode, copiedObjectMap, true)
+end
+
+"""
+    updateTerminalNodeEpoch!(segment)
+
+Update epoch of terminal node
+
+# Arguments
+- `segment::BCR4BP12Segment`: BCR4BP P1-P2 segment object
+"""
+function updateTerminalNodeEpoch!(segment::BCR4BP12Segment)
+    segment.terminalNode.epoch.data = getData(segment.originNode.epoch)+getData(segment.TOF)
 end
