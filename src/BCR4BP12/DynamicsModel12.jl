@@ -695,8 +695,8 @@ function rotating12ToPrimaryInertial(dynamicsModel::BCR4BP12DynamicsModel, prima
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
     for j in Int16(1):numTimes
         state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[j][1:6]-getPrimaryState(dynamicsModel, primary, states[j][7])[1:6])
-        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[i]-times[1]) -sin(times[i]-times[1]) 0; sin(times[i]-times[1]) cos(times[i]-times[1]) 0; 0 0 1])
-        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[i]-times[1]) -cos(times[i]-times[1]) 0; cos(times[i]-times[1]) -sin(times[i]-times[1]) 0; 0 0 0])
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[j]-times[1]) -sin(times[j]-times[1]) 0; sin(times[j]-times[1]) cos(times[j]-times[1]) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[j]-times[1]) -cos(times[j]-times[1]) 0; cos(times[j]-times[1]) -sin(times[j]-times[1]) 0; 0 0 0])
         N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
         states_primaryInertial[i] = N*state_primary
     end
