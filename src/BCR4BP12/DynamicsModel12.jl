@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 6/9/25
+U: 7/9/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -15,7 +15,7 @@ export getInstantaneousEquilibriumPoint, getParameterDependencies, getPrimarySta
 export getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix, getSynodicPeriod
 export gettheta4, get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance
 export get4Mass, isEpochIndependent, primaryEclipticToRotating12, rotating12ToPrimaryEcliptic
-export rotating12ToRotating41
+export rotating12ToPrimaryInertial, rotating12ToRotating41
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -675,6 +675,33 @@ function rotating12ToPrimaryEcliptic(dynamicsModel::BCR4BP12DynamicsModel, frame
     end
 
     return (states_primaryEclipJ2000, initialEpochTime.+timesDim)
+end
+
+"""
+    rotating12ToPrimaryInertial(dynamicsModel, primary, states, times)
+
+Return primary-centered fixed frame states and times [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `primary::Int64`: Primary identifier
+- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
+- `times::Vector{Float64}`: Rotating times [ndim]
+"""
+function rotating12ToPrimaryInertial(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    (1 <= primary <= 2) || (primary == 4) || throw(ArgumentError("Invalid primary $primary"))
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for j in Int16(1):numTimes
+        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[j][1:6]-getPrimaryState(dynamicsModel, primary, states[j][7])[1:6])
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[i]-times[1]) -sin(times[i]-times[1]) 0; sin(times[i]-times[1]) cos(times[i]-times[1]) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[i]-times[1]) -cos(times[i]-times[1]) 0; cos(times[i]-times[1]) -sin(times[i]-times[1]) 0; 0 0 0])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        states_primaryInertial[i] = N*state_primary
+    end
+
+    return (states_primaryInertial, times)
 end
 
 """

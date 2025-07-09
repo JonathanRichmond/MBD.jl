@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 4/22/25
+U: 7/9/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -555,8 +555,8 @@ function rotatingToPrimaryInertial(dynamicsModel::CR3BPDynamicsModel, primary::I
     states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
     for i in Int16(1):numTimes
         state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[i]-getPrimaryState(dynamicsModel, primary))
-        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[i]) -sin(times[i]) 0; sin(times[i]) cos(times[i]) 0; 0 0 1])
-        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[i]) -cos(times[i]) 0; cos(times[i]) -sin(times[i]) 0; 0 0 0])
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(times[i]-times[1]) -sin(times[i]-times[1]) 0; sin(times[i]-times[1]) cos(times[i]-times[1]) 0; 0 0 1])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([-sin(times[i]-times[1]) -cos(times[i]-times[1]) 0; cos(times[i]-times[1]) -sin(times[i]-times[1]) 0; 0 0 0])
         N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
         states_primaryInertial[i] = N*state_primary
     end
