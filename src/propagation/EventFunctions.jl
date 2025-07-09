@@ -3,15 +3,15 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 6/17/25
+U: 7/9/25
 """
 
 import DifferentialEquations, LinearAlgebra, Logging
 
 export arclengthCondition, momentumDifferenceConditionBCR4BP12, momentumDifferenceConditionBCR4BP41
 export momentumDifferenceConditionCR3BP, primaryDistanceCondition2, primaryDistanceCondition3
-export p1DistanceCondition, p2DistanceCondition, renormalize!, terminateAffect!
-export xzPlaneCrossingCondition, zValueCondition
+export p1BCR4BP12DistanceCondition, p1CR3BPDistanceCondition, p2DistanceCondition, renormalize!
+export terminateAffect!, xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -117,18 +117,33 @@ function primaryDistanceCondition3(output, state::Vector{Float64}, time::Float64
 end
 
 """
-    p1DistanceCondition(state, time, integrator)
+    p1CR3BPDistanceCondition(state, time, integrator)
 
-Return event condition for specified distance from P1
+Return event condition for specified distance from P1 in CR3BP
 
 # Arguments
 - `state::Vector{Float64}`: State vector [ndim]
 - `time::Float64`: Time [ndim]
 - `integrator`: Integrator object with params: [p1Distance]
 """
-function p1DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
+function p1CR3BPDistanceCondition(state::Vector{Float64}, time::Float64, integrator)
     mu::Float64 = getMassRatio(integrator.p[1])
     sqrt((state[1]+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
+end
+
+"""
+    p1BCR4BP12DistanceCondition(state, time, integrator)
+
+Return event condition for specified distance from P1 in BCR4BP P1-P2
+
+# Arguments
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object with params: [p1Distance]
+"""
+function p1BCR4BP12DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
+    mu12::Float64 = get12MassRatio(integrator.p[1])
+    sqrt((state[1]+mu12)^2+state[2]^2+state[3]^2)-integrator.p[2]
 end
 
 """
