@@ -272,3 +272,48 @@ end
         @test integrator1 == integrator2
     end
 end
+
+@testset "Propagator Tests" begin
+    @testset "Constructor with defaults" begin
+        propagator = MBD.Propagator()
+        println(propagator)
+        display(propagator)
+
+        @test typeof(propagator) == MBD.Propagator
+        @test propagator.absTol == 1E-12
+        @test propagator.relTol == 1E-12
+        @test propagator.maxStep == 100
+        @test propagator.maxEvaluations == typemax(Int64)
+        @test propagator.events == []
+        @test propagator.equationType == MBD.SIMPLE
+        @test propagator.integrator.integratorType == MBD.DP8
+    end
+
+    @testset "Constructor with valid VERN9 integrator and STM equation type" begin
+        integrator = MBD.Integrator(MBD.VERN9)
+        propagator = MBD.Propagator(integrator = integrator, equationType = MBD.STM)
+
+        @test typeof(propagator) == MBD.Propagator
+        @test propagator.integrator.integratorType == MBD.VERN9
+        @test propagator.equationType == MBD.STM
+    end
+
+    @testset "Invalid equation type" begin
+        err = try
+            MBD.Propagator(equationType = MBD.COMPLEX)
+            nothing
+        catch e
+            e
+        end
+
+        @test err isa UndefVarError
+        @test occursin("not defined in", sprint(showerror, err))
+    end
+
+    @testset "Equality" begin
+        propagator1 = MBD.Propagator()
+        propagator2 = MBD.Propagator()
+
+        @test propagator1 == propagator2
+    end
+end

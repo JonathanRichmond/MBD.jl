@@ -159,7 +159,7 @@ Dynamics model object
 # Arguments
 - `systemData::SystemData`: System data object
 """
-struct DynamicsModel
+mutable struct DynamicsModel
     systemData::SystemData                                              # System data object
 
     function DynamicsModel(systemData::SystemData)
@@ -205,6 +205,8 @@ end
 """
     Integrator(integratorType)
 
+Integrator object
+
 # Arguments
 - `integratorType::IntegratorType`: Enumerated integrator type
 """
@@ -237,6 +239,73 @@ Base.show(io::IO, integrator::Integrator) = print(io, "Integrator for ", integra
 Base.show(io::IO, ::MIME"text/plain", integrator::Integrator) = begin
     println(io, "Integrator")
     println(io, "\tType: ", integrator.integratorType)
+end
+
+"""
+    Propagator(; integrator, equationType)
+
+Propagator object
+
+# Arguments
+- `integrator::Integrator`: Integrator object (default = Integrator(DP8))
+- `equationType::EquationType`: Enumerated equation type (default = SIMPLE)
+"""
+mutable struct Propagator
+    absTol::Float64                                                     # Absolute tolerance
+    equationType::EquationType                                          # Enumerated equation type
+    events::Vector{Any}                                                 # Propagation events
+    integrator::Integrator                                              # Integrator object
+    maxEvaluations::Int64                                               # Maximum equation evaluations
+    maxStep::Int64                                                      # Maximum step size
+    relTol::Float64                                                     # Relative tolerance
+
+    function Propagator(; integrator::Integrator = Integrator(DP8), equationType::EquationType = SIMPLE)
+        Logging.@info "Creating $(integrator.integratorType) propagator for $equationType EoMs"
+
+        return new(1E-12, equationType, [], integrator, typemax(Int64), 100, 1E-12)
+    end
+end
+Base.:(==)(propagator1::Propagator, propagator2::Propagator) = ((propagator1.equationType == propagator2.equationType) && (propagator1.integrator == propagator2.integrator))
+Base.show(io::IO, propagator::Propagator) = print(io, "Propagator for ", propagator.equationType, " EoMs using ", propagator.integrator.integratorType)
+Base.show(io::IO, ::MIME"text/plain", propagator::Propagator) = begin
+    println(io, "Propagator")
+    println(io, "\tEquation type: ", propagator.equationType)
+    println(io, "\tIntegrator: ", propagator.integrator)
+    println(io, "\tAbsolute tolerance: ", propagator.absTol)
+    println(io, "\tRelative tolerance: ", propagator.relTol)
+    println(io, "\tMaximum step: ", propagator.maxStep)
+    println(io, "\tMaximum evaluations: ", propagator.maxEvaluations)
+    println(io, "\tEvents: ", propagator.events)
+end
+
+"""
+    Arc(dynamicsModel)
+
+Arc object
+
+# Arguments
+- `dynamicsModel::DynamicsModel`: Dynamics model object
+"""
+mutable struct Arc
+    dynamicsModel::DynamicsModel                                        # Dynamics model object
+    states::Vector{Vector{Float64}}                                     # State vectors along arc
+    times::Vector{Float64}                                              # Times along arc
+
+    function Arc(dynamicsModel::DynamicsModel)
+        Logging.@info "Creating $(dynamicsModel.systemData.modelType) arc"
+
+        return new(dynamicsModel, [], [])
+    end
+end
+Base.:(==)(arc1::Arc, arc2::Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
+Base.show(io::IO, arc::Arc) = print(io, "Arc for ", arc.dynamicsModel.systemData.modelType, " system")
+Base.show(io::IO, ::MIME"text/plain", arc::Arc) = begin
+    println(io, "Arc")
+    println(io, "Dynamics model: ", arc.dynamicsModel)
+    println(io, "Initital state: ", arc.states[1])
+    println(io, "Intitial time: ", arc.times[1])
+    println(io, "Final state: ", arc.states[end])
+    println(io, "Final time: ", arc.times[end])
 end
 
 
