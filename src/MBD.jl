@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 7/7/25
+U: 7/21/25
 """
 module MBD
 
@@ -524,7 +524,7 @@ mutable struct CR3BPAltitudeConstraint <: AbstractConstraint
         return this
     end
 end
-Base.:(==)(altitudeConstraint1::CR3BPAltitudeConstraint, altitudeConstraint2::CR3BPAltitudeConstraint) = ((altitudeConstraint1.constrainedIndices == altitudeConstraint2.constrainedIndices) && (altitudeConstraint1.dynamicsModel == altitudeConstraint2.dynamicsModel) && (altitudeConstraint1.value == altitudeConstraint2.value) && (altitudeConstraint1.variable == altitudeConstraint2.variable))
+Base.:(==)(altitudeConstraint1::CR3BPAltitudeConstraint, altitudeConstraint2::CR3BPAltitudeConstraint) = ((altitudeConstraint1.dynamicsModel == altitudeConstraint2.dynamicsModel) && (altitudeConstraint1.primary == altitudeConstraint2.primary) && (altitudeConstraint1.value == altitudeConstraint2.value) && (altitudeConstraint1.variable == altitudeConstraint2.variable))
 
 """
     CR3BPFlightPathAngleConstraint(node, primary, value)
@@ -555,7 +555,7 @@ mutable struct CR3BPFlightPathAngleConstraint <: AbstractConstraint
         return this
     end
 end
-Base.:(==)(flightPathAngleConstraint1::CR3BPFlightPathAngleConstraint, flightPathAngleConstraint2::CR3BPFlightPathAngleConstraint) = ((flightPathAngleConstraint1.constrainedIndices == flightPathAngleConstraint2.constrainedIndices) && (flightPathAngleConstraint1.dynamicsModel == flightPathAngleConstraint2.dynamicsModel) && (flightPathAngleConstraint1.value == flightPathAngleConstraint2.value) && (flightPathAngleConstraint1.variable == flightPathAngleConstraint2.variable))
+Base.:(==)(flightPathAngleConstraint1::CR3BPFlightPathAngleConstraint, flightPathAngleConstraint2::CR3BPFlightPathAngleConstraint) = ((flightPathAngleConstraint1.dynamicsModel == flightPathAngleConstraint2.dynamicsModel) && (flightPathAngleConstraint1.primary == flightPathAngleConstraint2.primary) && (flightPathAngleConstraint1.value == flightPathAngleConstraint2.value) && (flightPathAngleConstraint1.variable == flightPathAngleConstraint2.variable))
 
 """
     CR3BPStateMatchConstraint(state1, state2, indices)
