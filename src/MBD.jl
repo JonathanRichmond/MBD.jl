@@ -301,11 +301,15 @@ Base.:(==)(arc1::Arc, arc2::Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) &
 Base.show(io::IO, arc::Arc) = print(io, "Arc for ", arc.dynamicsModel.systemData.modelType, " system")
 Base.show(io::IO, ::MIME"text/plain", arc::Arc) = begin
     println(io, "Arc")
-    println(io, "Dynamics model: ", arc.dynamicsModel)
-    println(io, "Initital state: ", arc.states[1])
-    println(io, "Intitial time: ", arc.times[1])
-    println(io, "Final state: ", arc.states[end])
-    println(io, "Final time: ", arc.times[end])
+    println(io, "\tDynamics model: ", arc.dynamicsModel)
+    if isempty(arc.times)
+        println(io, "\tEmpty")
+    else
+        println(io, "\tInitial state: ", arc.states[1])
+        println(io, "\tInitial time: ", arc.times[1])
+        println(io, "\tFinal state: ", arc.states[end])
+        println(io, "\tFinal time: ", arc.times[end])
+    end
 end
 
 

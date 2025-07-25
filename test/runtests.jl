@@ -90,8 +90,10 @@ end
     @testset "Equality" begin
         bodyData1 = MBD.BodyData("Earth")
         bodyData2 = MBD.BodyData("Earth")
+        bodyData3 = MBD.BodyData("Moon")
 
         @test bodyData1 == bodyData2
+        @test bodyData1 != bodyData3
     end
 end
 
@@ -165,8 +167,10 @@ end
     @testset "Equality" begin
         systemData1 = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
         systemData2 = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        systemData3 = MBD.SystemData(MBD.CR3BP, "Sun", "Earth")
 
         @test systemData1 == systemData2
+        @test systemData1 != systemData3
     end
 end
 
@@ -182,16 +186,19 @@ end
     end
 
     @testset "Equality" begin
-        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
-        dynamicsModel1 = MBD.DynamicsModel(systemData)
-        dynamicsModel2 = MBD.DynamicsModel(systemData)
+        systemData1 = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        systemData2 = MBD.SystemData(MBD.CR3BP, "Sun", "Earth")
+        dynamicsModel1 = MBD.DynamicsModel(systemData1)
+        dynamicsModel2 = MBD.DynamicsModel(systemData1)
+        dynamicsModel3 = MBD.DynamicsModel(systemData2)
 
         @test dynamicsModel1 == dynamicsModel2
+        @test dynamicsModel1 != dynamicsModel3
     end
 end
 
 @testset "EquationsOfMotion Tests" begin
-    @testset "Constructor with valid simple dynamicsModel" begin
+    @testset "Constructor with valid simple dynamics model" begin
         systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
         dynamicsModel = MBD.DynamicsModel(systemData)
         equations = MBD.EquationsOfMotion(dynamicsModel, MBD.SIMPLE)
@@ -203,7 +210,7 @@ end
         @test equations.dynamicsModel === dynamicsModel
     end
 
-    @testset "Constructor with valid STM dynamicsModel" begin
+    @testset "Constructor with valid STM dynamics model" begin
         systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
         dynamicsModel = MBD.DynamicsModel(systemData)
         equations = MBD.EquationsOfMotion(dynamicsModel, MBD.STM)
@@ -231,8 +238,10 @@ end
         dynamicsModel = MBD.DynamicsModel(systemData)
         equations1 = MBD.EquationsOfMotion(dynamicsModel, MBD.SIMPLE)
         equations2 = MBD.EquationsOfMotion(dynamicsModel, MBD.SIMPLE)
+        equations3 = MBD.EquationsOfMotion(dynamicsModel, MBD.STM)
 
         @test equations1 == equations2
+        @test equations1 != equations3
     end
 end
 
@@ -268,8 +277,10 @@ end
     @testset "Equality" begin
         integrator1 = MBD.Integrator(MBD.VERN9)
         integrator2 = MBD.Integrator(MBD.VERN9)
+        integrator3 = MBD.Integrator(MBD.DP8)
 
         @test integrator1 == integrator2
+        @test integrator1 != integrator3
     end
 end
 
@@ -315,5 +326,33 @@ end
         propagator2 = MBD.Propagator()
 
         @test propagator1 == propagator2
+    end
+end
+
+@testset "Arc Tests" begin
+    @testset "Constructor with valid dynamics model" begin
+        systemData = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        dynamicsModel = MBD.DynamicsModel(systemData)
+        arc = MBD.Arc(dynamicsModel)
+        println(arc)
+        display(arc)
+
+        @test typeof(arc) == MBD.Arc
+        @test arc.dynamicsModel === dynamicsModel
+        @test arc.states == []
+        @test arc.times == []
+    end
+
+    @testset "Equality" begin
+        systemData1 = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        systemData2 = MBD.SystemData(MBD.CR3BP, "Sun", "Earth")
+        dynamicsModel1 = MBD.DynamicsModel(systemData1)
+        dynamicsModel2 = MBD.DynamicsModel(systemData2)
+        arc1 = MBD.Arc(dynamicsModel1)
+        arc2 = MBD.Arc(dynamicsModel1)
+        arc3 = MBD.Arc(dynamicsModel2)
+
+        @test arc1 == arc2
+        @test arc1 != arc3
     end
 end
