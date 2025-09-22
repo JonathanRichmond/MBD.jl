@@ -63,10 +63,10 @@ function checkSTM(dynamicsModel::KDynamicsModel, relTol::Float64 = 2E-3)
     for index::Int16 in Int16(1):numStates
         perturbedFreeVariables::Vector{Float64} = copy(X)
         perturbedFreeVariables[index] -= stepSize
-        arcMinus::MBD.CR3BPArc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
+        arcMinus::MBD.KArc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
         constraintVectorMinus::StaticArrays.SVector{Int64(numStates), Float64} = StaticArrays.SVector{Int64(numStates), Float64}(getStateByIndex(arcMinus, -1))
         perturbedFreeVariables[index] += 2*stepSize
-        arcPlus::MBD.CR3BPArc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
+        arcPlus::MBD.KArc = propagate(propagator, perturbedFreeVariables, [0, tau], dynamicsModel)
         constraintVectorPlus::StaticArrays.SVector{Int64(numStates), Float64} = StaticArrays.SVector{Int64(numStates), Float64}(getStateByIndex(arcPlus, -1))
         STMNumerical[:,index] = (constraintVectorPlus-constraintVectorMinus)./(2*stepSize)
     end
