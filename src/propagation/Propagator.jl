@@ -3,13 +3,43 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 6/17/25
+U: 9/22/25
 """
 
 import DifferentialEquations
 import MBD: Propagator
 
 export propagate, propagateWithEvent, propagateWithPeriodicEvent
+
+"""
+    propagate(propagator, q0, tSpan, dynamicsModel)
+
+Return propagated Keplerian arc
+
+# Arguments
+- `propagator::Propagator`: Propagator object
+- `q0::Vector{Float64}`: Initial state vector [dim]
+- `tSpan::Vector{Float64}`: Time span [dim]
+- `dynamicsModel::KDynamicsModel`: Keplerian dynamics model object
+"""
+function propagate(propagator::Propagator, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.KDynamicsModel)
+    arcOut = MBD.KArc(dynamicsModel)
+    EOMs::MBD.KEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
+    for tIndex::Int16 in Int16(2):Int16(length(tSpan))
+        if tIndex > Int16(2)
+            q0 = copy(getStateByIndex(arcOut, -1))
+            deleteStateAndTime!(arcOut, -1)
+        end
+        t0::Float64 = tSpan[tIndex-1]
+        tf::Float64 = tSpan[tIndex]
+        problem::DifferentialEquations.ODEProblem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs,))
+        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
+        append!(arcOut.states, sol.u)
+        append!(arcOut.times, sol.t)
+    end
+
+    return arcOut
+end
 
 """
     propagate(propagator, q0, tSpan, dynamicsModel)
