@@ -188,7 +188,7 @@ Return distance from primary
 """
 function getExcursion(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, q::Vector{Float64})
     lstar12::Float64 = get12CharLength(dynamicsModel)
-    primaryPos::Vector{Float64} = getPrimaryState(dynamicsModel, primary)[1:3]
+    primaryPos::Vector{Float64} = getPrimaryState(dynamicsModel, primary, q[7])[1:3]
 
     return LinearAlgebra.norm(q[1:3]-primaryPos)*lstar12
 end
