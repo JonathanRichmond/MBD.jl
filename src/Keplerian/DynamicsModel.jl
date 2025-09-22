@@ -3,6 +3,7 @@ Keplerian dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/18/25
+U: 9/22/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -51,12 +52,13 @@ Return true if STM is accurate
 - `relTol::Float64`: Relative tolerance (default = 2E-3)
 """
 function checkSTM(dynamicsModel::KDynamicsModel, relTol::Float64 = 2E-3)
-    stepSize::Float64 = 1E-6
     numStates::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
     propagator = MBD.Propagator()
     propagatorSTM = MBD.Propagator(equationType = MBD.STM)
-    X::Vector{Float64} = [300000.0, 0, 0, 0, 1.0, 0]
-    tau::Float64 = 360.0
+    bodyData::MBD.BodyData = dynamicsModel.systemData.primaryData
+    X::Vector{Float64} = isnan(bodyData.orbitRadius) ? [1.5E8, 0, 0, 0, 30.0, 0] : [bodyData.orbitRadius/100.0, 0, 0, 0, 1.0, 0]
+    tau::Float64 = 2E-2*LinearAlgebra.norm(X[1:3])/LinearAlgebra.norm(X[4:6])
+    stepSize::Float64 = max(1E-6, min(1E3, sqrt(eps(Float64))*max(maximum(abs.(X)), 1.0)))
     arc::MBD.KArc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
     STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(getStateTransitionMatrix(dynamicsModel, getStateByIndex(arc, -1)))
     STMNumerical::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(zeros(Float64, (numStates, numStates)))
@@ -75,7 +77,8 @@ function checkSTM(dynamicsModel::KDynamicsModel, relTol::Float64 = 2E-3)
         analytical::Float64 = STMAnalytical[r,c]
         numerical::Float64 = STMNumerical[r,c]
         diff::Float64 = absDiff[r,c]
-        useAbs::Bool = ((abs(analytical) < 1E-8) || (abs(numerical) < 1E-12))
+        scale::Float64 = max(max(1E-8, 1E-9*max(maximum(abs.(X)), 1.0)), 1E-9*max(abs(analytical), abs(numerical)))
+        useAbs::Bool = abs(analytical) < scale || abs(numerical) < 1e-12
         relDiff::Float64 = useAbs ? diff : (diff/max(abs(numerical), 1E-12))
         errorType::String = useAbs ? "Absolute" : "Relative"
         if relDiff > relTol

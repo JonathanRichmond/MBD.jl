@@ -27,7 +27,8 @@ function computeDerivatives!(qdot::Vector{Float64}, q::Vector{Float64}, params::
     qdot[4:6] = -mu*q[1:3]./r^3
     if params[1].equationType != MBD.SIMPLE
         A_21::Matrix{Float64} = (3*mu/r^5).*q[1:3]*q[1:3]'-(mu/r^3)*LinearAlgebra.I
-        qdot[7:42] = reshape([zeros(Float64, (3,3)) LinearAlgebra.I; A_21 zeros(Float64, (3,3))], 36)
+        Phi::Matrix{Float64} = reshape(q[7:42], (6,6))
+        qdot[7:42] = reshape([zeros(Float64, (3,3)) LinearAlgebra.I; A_21 zeros(Float64, (3,3))]*Phi, 36)
     end
     if params[1].equationType == MBD.ARCLENGTH
         qdot[43] = sqrt(q[4]^2+q[5]^2+q[6]^2)
