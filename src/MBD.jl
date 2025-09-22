@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 9/17/25
+U: 9/22/25
 """
 module MBD
 
@@ -1947,7 +1947,7 @@ mutable struct KArc
     states::Vector{Vector{Float64}}                                     # State vectors along arc [ndim]
     times::Vector{Float64}                                              # Times along arc [ndim]
 
-    function KArc(dynamicsModel::CR3BPDynamicsModel)
+    function KArc(dynamicsModel::KDynamicsModel)
         this = new()
 
         this.dynamicsModel = dynamicsModel
