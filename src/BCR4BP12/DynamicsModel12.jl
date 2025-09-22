@@ -3,7 +3,7 @@ BCR4BP P1-P2 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/26/25
-U: 7/9/25
+U: 9/22/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -15,7 +15,7 @@ export getInstantaneousEquilibriumPoint, getParameterDependencies, getPrimarySta
 export getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix, getSynodicPeriod
 export gettheta4, get12CharLength, get12CharTime, get12MassRatio, get2BApproximation, get4Distance
 export get4Mass, isEpochIndependent, primaryEclipticToRotating12, rotating12ToPrimaryEcliptic
-export rotating12ToPrimaryInertial, rotating12ToRotating41
+export rotating12ToPrimaryInertial, rotating12ToP4Ecliptic, rotating12ToRotating41
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -702,6 +702,53 @@ function rotating12ToPrimaryInertial(dynamicsModel::BCR4BP12DynamicsModel, prima
     end
 
     return (states_primaryInertial, times)
+end
+
+"""
+    rotating12ToP4Ecliptic(dynamicsModel, frame, initialEpochGuess, states, times)
+
+Return P4-centered fixed frame states and times [ndim]
+
+# Arguments
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
+- `frame::String`: Fixed ecliptic frame
+- `initialEpochGuess::String`: Initial epoch guess
+- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
+- `times::Vector{Float64}`: Rotating times [ndim]
+"""
+function rotating12ToP4Ecliptic(dynamicsModel::BCR4BP12DynamicsModel, frame::String, initialEpochGuess::String, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    initialEpochTime::Float64 = getEpochTime(dynamicsModel, frame, initialEpochGuess, states[1][7])
+    initialEpoch::String = SPICE.et2utc(initialEpochTime, :C, 11)
+    lstar12::Float64 = get12CharLength(dynamicsModel)
+    tstar12::Float64 = get12CharTime(dynamicsModel)
+    P2InitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], frame)[1][1]
+    P1::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
+    P2SPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(P2InitialStateDim, initialEpochTime, P1.gravParam))
+    timesDim::Vector{Float64} = times.*tstar12
+    theta12dotDim::Float64 = 1/tstar12
+    states_P4Eclip::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for j in Int16(1):numTimes
+        state_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[j][1:6]-getPrimaryState(dynamicsModel, 1, states[j][7])[1:6])
+        stateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_P1[1:3].*lstar12, state_P1[4:6].*lstar12./tstar12))
+        P2Elements::Vector{Float64} = append!([lstar12, 0.0, 0.0], P2SPICEElements[4:5], [P2SPICEElements[6]+timesDim[j]/tstar12, initialEpochTime+timesDim[j]], [P2SPICEElements[8]])
+        P2StateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(P2Elements, initialEpochTime+timesDim[j]))
+        xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(P2StateDim[1:3]./LinearAlgebra.norm(P2StateDim[1:3]))
+        zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(P2StateDim[1:3], P2StateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(P2StateDim[1:3], P2StateDim[4:6])))
+        yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat)./LinearAlgebra.norm(LinearAlgebra.cross(zhat, xhat)))
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([xhat yhat zhat])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([theta12dotDim.*yhat -theta12dotDim.*xhat zeros(Float64, 3)])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        stateDim_P1Eclip::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*stateDim_P1)
+        P4State_P1::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(getPrimaryState(dynamicsModel, 4, states[j][7])-getPrimaryState(dynamicsModel, 1, states[j][7]))
+        P4StateDim_P1::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(P4State_P1[1:3].*lstar12, P4State_P1[4:6].*lstar12./tstar12))
+        P4StateDim_P1Eclip::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*P4StateDim_P1)
+        stateDim_P4Eclip::StaticArrays.SVector{6, Float64} = stateDim_P1Eclip-P4StateDim_P1Eclip
+        states_P4Eclip[j] = append!(stateDim_P4Eclip[1:3]./lstar12, stateDim_P4Eclip[4:6].*tstar12./lstar12)
+    end
+
+    return (states_P4Eclip, initialEpochTime.+timesDim)
 end
 
 """
