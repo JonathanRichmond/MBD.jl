@@ -55,8 +55,8 @@ function checkSTM(dynamicsModel::KDynamicsModel, relTol::Float64 = 2E-3)
     numStates::Int16 = getStateSize(dynamicsModel, MBD.SIMPLE)
     propagator = MBD.Propagator()
     propagatorSTM = MBD.Propagator(equationType = MBD.STM)
-    X::Vector{Float64} = [400000.0, 0, 0, 0, 1.0, 0]
-    tau::Float64 = 3600
+    X::Vector{Float64} = [300000.0, 0, 0, 0, 1.0, 0]
+    tau::Float64 = 360
     arc::MBD.KArc = propagate(propagatorSTM, appendExtraInitialConditions(dynamicsModel, X, MBD.STM), [0, tau], dynamicsModel)
     STMAnalytical::StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.SMatrix{Int64(numStates), Int64(numStates), Float64}(getStateTransitionMatrix(dynamicsModel, getStateByIndex(arc, -1)))
     STMNumerical::StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64} = StaticArrays.MMatrix{Int64(numStates), Int64(numStates), Float64}(zeros(Float64, (numStates, numStates)))
