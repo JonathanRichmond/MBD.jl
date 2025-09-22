@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 9/1/22
-U: 7/21/25
+U: 9/17/25
 """
 module MBD
 
@@ -1867,74 +1867,97 @@ mutable struct BCR4BP41Arc
 end
 Base.:(==)(arc1::BCR4BP41Arc, arc2::BCR4BP41Arc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
 
-# """
-#     TBPSystemData(p)
+"""
+    KSystemData(p)
 
-# TBP system object
+Keplerian system object
 
-# # Arguments
-# - `p::String`: Name of primary
-# """
-# mutable struct TBPSystemData <: AbstractSystemData
-#     charLength::Float64                                     # Characteristic length [km]
-#     charTime::Float64                                       # Characteristic time [s]
-#     gravParam::Float64                                      # Gravitational parameter [km^3/s^2]
-#     numPrimaries::Int64                                     # Number of primaries that must exist in this system
-#     primaryName::String                                     # Primary name
-#     primarySpiceID::Int64                                   # Primary SPICE ID
+# Arguments
+- `p::String`: Name of primary
+"""
+mutable struct KSystemData
+    primaryData::BodyData                                               # Primary data object
+    primaryName::String                                                 # Primary name
+    primarySpiceID::Int16                                               # Primary SPICE ID
 
-#     function TBPSystemData(p::String)
-#         this = new()
+    function KSystemData(p::String)
+        this = new()
 
-#         pData = BodyData(p)
-#         this.numPrimaries = 1
-#         this.primaryName = pData.name
-#         this.primarySpiceID = pData.spiceID
-#         this.gravParam = pData.gravParam
-#         this.charLength = pData.orbitRadius
-#         this.charTime = sqrt(this.charLength^3/this.gravParam)
-        
-#         return this
-#     end
-# end
-# Base.:(==)(systemData1::TBPSystemData, systemData2::TBPSystemData) = (systemData1.primarySpiceID == systemData2.primarySpiceID)
+        this.primaryData = BodyData(p)
+        this.primaryName = p
+        this.primarySpiceID = this.primaryData.spiceID
+                
+        return this
+    end
+end
+Base.:(==)(systemData1::KSystemData, systemData2::KSystemData) = ((systemData1.primaryData == systemData2.primaryData) && (systemData1.primaryName == systemData2.primaryName) && (systemData1.primarySpiceID == systemData2.primarySpiceID))
 
-# """
-#     TBPDynamicsModel(systemData)
+"""
+    KDynamicsModel(systemData)
 
-# TBP dynamics model object
+Keplerian dynamics model object
 
-# # Arguments
-# - `systemData::TBPSystemData`: TBP system object
-# """
-# struct TBPDynamicsModel <: AbstractDynamicsModel
-#     systemData::TBPSystemData                               # CR3BP system object
+# Arguments
+- `systemData::KSystemData`: Keplerian system data object
+"""
+struct KDynamicsModel
+    systemData::KSystemData                                             # Keplerian system data object
 
-#     function TBPDynamicsModel(systemData::TBPSystemData)
-#         return new(systemData)
-#     end
-# end
-# Base.:(==)(dynamicsModel1::TBPDynamicsModel, dynamicsModel2::TBPDynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
+    function KDynamicsModel(systemData::KSystemData)
+        this = new(systemData)
 
-# """
-#     TBPEquationsOfMotion(equationType, dynamicsModel)
+        checkSTM(this)
 
-# TBP EOM object
+        return this
+    end
+end
+Base.:(==)(dynamicsModel1::KDynamicsModel, dynamicsModel2::KDynamicsModel) = (dynamicsModel1.systemData == dynamicsModel2.systemData)
 
-# # Arguments
-# - `equationType::EquationType`: EOM type
-# - `dynamicsModel::TBPDynamicsModel`: TBP dynamics model object
-# """
-# struct TBPEquationsOfMotion <: AbstractEquationsOfMotion
-#     dim::Int64                                              # State vector dimension
-#     equationType::EquationType                              # EOM type
-#     mu::Float64                                             # TBP gravitational parameter
+"""
+    KEquationsOfMotion(equationType, dynamicsModel)
 
-#     function TBPEquationsOfMotion(equationType::EquationType, dynamicsModel::TBPDynamicsModel)
-#         return new(getStateSize(dynamicsModel, equationType), equationType, dynamicsModel.systemData.gravParam)
-#     end
-# end
-# Base.:(==)(EOMs1::TBPEquationsOfMotion, EOMs2::TBPEquationsOfMotion) = ((EOMs1.equationType == EOMs2.equationType) && (EOMs1.mu == EOMs2.mu))
+Keplerian EOM object
+
+# Arguments
+- `equationType::EquationType`: EOM type
+- `dynamicsModel::KDynamicsModel`: Keplerian dynamics model object
+"""
+struct KEquationsOfMotion
+    dynamicsModel::KDynamicsModel                                       # Keplerian dynamics model object
+    equationType::EquationType                                          # EOM type
+
+    function KEquationsOfMotion(equationType::EquationType, dynamicsModel::KDynamicsModel)
+        this = new(dynamicsModel, equationType)
+
+        return this
+    end
+end
+Base.:(==)(EOMs1::KEquationsOfMotion, EOMs2::KEquationsOfMotion) = ((EOMs1.dynamicsModel == EOMs2.dynamicsModel) && (EOMs1.equationType == EOMs2.equationType))
+
+"""
+    KArc(dynamicsModel)
+
+Keplerian arc object
+
+# Arguments
+- `dynamicsModel::KDynamicsModel`: Keplerian dynamics model object
+"""
+mutable struct KArc
+    dynamicsModel::KDynamicsModel                                       # Keplerian dynamics model object
+    states::Vector{Vector{Float64}}                                     # State vectors along arc [ndim]
+    times::Vector{Float64}                                              # Times along arc [ndim]
+
+    function KArc(dynamicsModel::CR3BPDynamicsModel)
+        this = new()
+
+        this.dynamicsModel = dynamicsModel
+        this.states = []
+        this.times = []
+
+        return this
+    end
+end
+Base.:(==)(arc1::KArc, arc2::KArc) = ((arc1.dynamicsModel == arc2.dynamicsModel) && (arc1.states == arc2.states) && (arc1.times == arc2.times))
 
 # """
 #     TBPTrajectory(initialCondition, dynamicsModel)
@@ -2022,13 +2045,14 @@ include("CR3BP/StateConstraint.jl")
 include("CR3BP/StateMatchConstraint.jl")
 include("CR3BP/SystemData.jl")
 include("CR3BP/TimeConstraint.jl")
+include("Keplerian/DynamicsModel.jl")
+include("Keplerian/EquationsOfMotion.jl")
+include("Keplerian/SystemData.jl")
+include("Keplerian/Arc.jl")
 include("propagation/EventFunctions.jl")
 include("propagation/Propagator.jl")
 include("spice/BodyName.jl")
 include("spice/SpiceFunctions.jl")
-# include("TBP/DynamicsModel.jl")
-# include("TBP/EquationsOfMotion.jl")
-# include("TBP/Trajectory.jl")
 include("utilities/UtilityFunctions.jl")
 
 end # module MBD
