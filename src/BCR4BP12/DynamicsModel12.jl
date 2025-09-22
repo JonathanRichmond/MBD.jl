@@ -346,7 +346,7 @@ function getPrimaryState(dynamicsModel::BCR4BP12DynamicsModel, primary::Int64, t
 end
 
 """
-    getPsuedopotentialJacobian(dynamicsModel, q)
+    getPseudopotentialJacobian(dynamicsModel, q)
 
 Return second derivative of pseudopotential function at given location and P4 angle
 
