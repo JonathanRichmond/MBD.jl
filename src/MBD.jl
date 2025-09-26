@@ -27,7 +27,7 @@ Enumerated type for integrators
 """
 Enumerated type for models
 """
-@enum ModelType CR3BP BCR4BP TBP
+@enum ModelType CR3BP BCR4BP EMPTY KP
 
 
 """
@@ -130,12 +130,31 @@ mutable struct SystemData
 
     function SystemData(modelType::ModelType, primaryNames::Vararg{String})
         numPrimaries::Int64 = length(primaryNames)
+        expectedPrimaries::Dict{MBD.ModelType, Int64} = Dict{MBD.ModelType, Int64}(
+            MBD.EMPTY => 0,
+            MBD.KP => 1,
+            MBD.CR3BP => 2,
+            MBD.BCR4BP => 3
+        )
+        if haskey(expectedPrimaries, modelType)
+            expectedNumPrimaries::Int64 = expectedPrimaries[modelType]
+            if numPrimaries != expectedNumPrimaries
+                Logging.@error "Model type $modelType requires $expectedNumPrimaries primary bodies, got $numPrimaries"
+                throw(ArgumentError("Model type requires $expectedNumPrimaries, got $numPrimaries"))
+            end
+        else
+            Logging.@error "Model type $modelType not found in expected primaries dictionary"
+            throw(ArgumentError("Model type not found in expected primaries dictionary"))
+        end
+
         Logging.@info "Creating $(numPrimaries+1)-body system with primaries: $(join(primaryNames, ", "))"
 
         primaryData::Vector{BodyData} = [BodyData(name) for name in primaryNames]
         primarySPICEIDs::Vector{Int16} = [data.SPICEID for data in primaryData]
-        for j in 2:numPrimaries
-            (primaryData[j].parentSPICEID != primaryData[j-1].SPICEID) && Logging.@warn "$(primaryData[j].name) does not have $(primaryData[j-1].name) as parent"
+        if numPrimaries > 1
+            for j in 2:numPrimaries
+                (primaryData[j].parentSPICEID != primaryData[j-1].SPICEID) && Logging.@warn "$(primaryData[j].name) does not have $(primaryData[j-1].name) as parent"
+            end
         end
 
         return new(modelType, primaryData, collect(primaryNames), primarySPICEIDs)
@@ -302,15 +321,14 @@ Base.show(io::IO, arc::Arc) = print(io, "Arc for ", arc.dynamicsModel.systemData
 Base.show(io::IO, ::MIME"text/plain", arc::Arc) = begin
     println(io, "Arc")
     println(io, "\tDynamics model: ", arc.dynamicsModel)
-    if isempty(arc.times)
-        println(io, "\tEmpty")
-    else
-        println(io, "\tInitial state: ", arc.states[1])
-        println(io, "\tInitial time: ", arc.times[1])
-        println(io, "\tFinal state: ", arc.states[end])
-        println(io, "\tFinal time: ", arc.times[end])
-    end
+    isempty(arc.times) && return println(io, "\tNo states/times available") 
+    println(io, "\tInitial state: ", arc.states[1])
+    println(io, "\tInitial time: ", arc.times[1])
+    println(io, "\tFinal state: ", arc.states[end])
+    println(io, "\tFinal time: ", arc.times[end])
 end
+
+include("dynamics/SystemData.jl")
 
 
 end # module MBD

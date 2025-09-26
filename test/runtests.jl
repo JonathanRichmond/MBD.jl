@@ -146,6 +146,18 @@ end
         @test occursin("no method matching", sprint(showerror, err)) || occursin("not found in", sprint(showerror, err)) || occursin("Failure in parsing", sprint(showerror, err))
     end
 
+    @testset "Invalid number of primaries" begin
+        err = try
+            MBD.SystemData(MBD.CR3BP, "Earth")
+            nothing
+        catch e
+            e
+        end
+
+        @test err isa ArgumentError
+        @test occursin("Model type requires", sprint(showerror, err))
+    end
+
     @testset "Improper parent relationship" begin
         @test_logs match_mode = :any min_level = Logging.Info (
             (:warn, r".* does not have .* as parent")
@@ -155,10 +167,10 @@ end
     end
 
     @testset "Empty system" begin
-        systemData = MBD.SystemData(MBD.TBP)
+        systemData = MBD.SystemData(MBD.EMPTY)
 
         @test typeof(systemData) == MBD.SystemData
-        @test systemData.modelType == MBD.TBP
+        @test systemData.modelType == MBD.EMPTY
         @test isempty(systemData.primaryNames)
         @test isempty(systemData.primaryData)
         @test isempty(systemData.primarySPICEIDs)
@@ -171,6 +183,113 @@ end
 
         @test systemData1 == systemData2
         @test systemData1 != systemData3
+    end
+
+    @testset "Functions" begin
+        systemData1 = MBD.SystemData(MBD.CR3BP, "Earth", "Moon")
+        systemData2 = MBD.SystemData(MBD.BCR4BP, "Sun", "Earth", "Moon")
+        systemData3 = MBD.SystemData(MBD.KP, "Earth")
+
+        @testset "getCharLengths()" begin
+            @testset "Valid function calls" begin
+                @test isapprox(getCharLengths(systemData1), [384747.9920113], rtol = 1E-6)
+                @test isapprox(getCharLengths(systemData2), [384747.9920113, 1.495978921754503E8], rtol = 1E-6)
+            end
+
+            @testset "Too few primaries" begin
+                err = try
+                    getCharLengths(systemData3)
+                    nothing
+                catch e
+                    e
+                end
+
+                @test err isa ArgumentError
+                @test occursin("must have at least", sprint(showerror, err))
+            end
+        end
+
+        @testset "getCharMasses()" begin
+            @testset "Valid function calls" begin
+                @test isapprox(getCharMasses(systemData1), [6.0460429903E24], rtol = 1E15)
+                @test isapprox(getCharMasses(systemData2), [6.0460429903E24, 1.9885529701817064E30], rtol = 1E15)
+            end
+
+            @testset "Too few primaries" begin
+                err = try
+                    getCharMasses(systemData3)
+                    nothing
+                catch e
+                    e
+                end
+
+                @test err isa ArgumentError
+                @test occursin("must have at least", sprint(showerror, err))
+            end
+        end
+
+        @testset "getCharTimes()" begin
+            @testset "Valid function calls" begin
+                @test isapprox(getCharTimes(systemData1), [375699.8590850], rtol = 1E-6)
+                @test isapprox(getCharTimes(systemData2), [375699.8590850, 5.0226363369597E6], rtol = 1E-6)
+            end
+
+            @testset "Too few primaries" begin
+                err = try
+                    getCharTimes(systemData3)
+                    nothing
+                catch e
+                    e
+                end
+
+                @test err isa ArgumentError
+                @test occursin("must have at least", sprint(showerror, err))
+            end
+        end
+
+        @testset "getMassParams()" begin
+            @testset "Valid function calls" begin
+                @test isapprox(getMassParams(systemData1), [0.0121505842699404], rtol = 1E-12)
+                @test isapprox(getMassParams(systemData2), [0.0121505842699404, 3.040423403820062E-6], rtol = 1E-12)
+            end
+
+            @testset "Too few primaries" begin
+                err = try
+                    getMassParams(systemData3)
+                    nothing
+                catch e
+                    e
+                end
+
+                @test err isa ErrorException
+                @test occursin("Unsupported number", sprint(showerror, err))
+            end
+        end
+
+        @testset "getNumPrimaries()" begin
+            @testset "Valid function calls" begin
+                @test getNumPrimaries(systemData1) == 2
+                @test getNumPrimaries(systemData3) == 1
+            end
+        end
+
+        @testset "getsupParams()" begin
+            @testset "Valid function calls" begin
+                @test isapprox(getSupParams(systemData2), [388.8204624368, 328900.5598102473], rtol = 1E-9)
+            end
+
+            @testset "No supplemental parameters" begin
+                err = try
+                    getSupParams(systemData1)
+                    nothing
+                catch e
+                    e
+                end
+
+                @test err isa ErrorException
+                @test occursin("no supplemental parameters", sprint(showerror, err))
+            end
+        end
     end
 end
 
