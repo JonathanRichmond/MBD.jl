@@ -240,15 +240,15 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP41DynamicsModel, 
     omm12::Float64 = 1-mu12
     omm41::Float64 = 1-mu41
     a4::Float64 = get4Distance(dynamicsModel)
-    x1::Float64 = omm41-mu12*cos(q[7])/a4
-    y1::Float64 = -mu12*sin(q[7])/a4
-    x2::Float64 = omm41+omm12*cos(q[7])/a4
-    y2::Float64 = omm12*sin(q[7])/a4
     CR3BPSystemData = MBD.CR3BPSystemData(dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4])
     CR3BPDynamicsModel = MBD.CR3BPDynamicsModel(CR3BPSystemData)
     pos::Vector{Float64} = zeros(Float64, 3)
     theta2::Float64 = 0.0
     X::Vector{Float64} = getEquilibriumPoint(CR3BPDynamicsModel, point)[1:2]
+    x1::Float64 = omm41-mu12*cos(theta2)/a4
+    y1::Float64 = -mu12*sin(theta2)/a4
+    x2::Float64 = omm41+omm12*cos(theta2)/a4
+    y2::Float64 = omm12*sin(theta2)/a4
     r_13::Float64 = sqrt((X[1]-x1)^2+(X[2]-y1)^2)
     r_23::Float64 = sqrt((X[1]-x2)^2+(X[2]-y2)^2)
     r_43::Float64 = sqrt((X[1]+mu41)^2+X[2]^2)
@@ -274,6 +274,10 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP41DynamicsModel, 
             solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
             dX::Vector{Float64} = solver\FX
             X = X+dX
+            x1 = omm41-mu12*cos(theta2)/a4
+            y1 = -mu12*sin(theta2)/a4
+            x2 = omm41+omm12*cos(theta2)/a4
+            y2 = omm12*sin(theta2)/a4
             r_13 = sqrt((X[1]-x1)^2+(X[2]-y1)^2)
             r_23 = sqrt((X[1]-x2)^2+(X[2]-y2)^2)
             r_43 = sqrt((X[1]+mu41)^2+X[2]^2)
@@ -288,6 +292,10 @@ function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP41DynamicsModel, 
         end
         (count >= maxCount) && throw(ErrorException("Could not converge on instantaneous equilibrium point location for P2 angle $theta2"))
         theta2 = (abs(theta2f-theta2) > 0.1) ? theta2-0.1 : theta2f
+        x1 = omm41-mu12*cos(theta2)/a4
+        y1 = -mu12*sin(theta2)/a4
+        x2 = omm41+omm12*cos(theta2)/a4
+        y2 = omm12*sin(theta2)/a4
         r_13 = sqrt((X[1]-x1)^2+(X[2]-y1)^2)
         r_23 = sqrt((X[1]-x2)^2+(X[2]-y2)^2)
         r_13_3 = r_13^3
