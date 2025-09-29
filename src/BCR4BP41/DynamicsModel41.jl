@@ -3,18 +3,19 @@ BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
-U: 6/18/25
+U: 9/29/25
 """
 
 import StaticArrays
 import MBD: BCR4BP41DynamicsModel
 
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
-export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian, getParameterDependencies
-export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
-export gettheta2, get12MassRatio, get2BApproximation, get4Distance, get4Mass, get41CharLength
-export get41CharTime, get41MassRatio, isEpochIndependent, primaryEclipticToRotating41
-export rotating41ToPrimaryEcliptic, rotating41ToRotating12
+export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian
+export getInstantaneousEquilibriumPoint, getParameterDependencies, getPrimaryState
+export getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix, gettheta2
+export get12MassRatio, get2BApproximation, get4Distance, get4Mass, get41CharLength, get41CharTime
+export get41MassRatio, isEpochIndependent, primaryEclipticToRotating41, rotating41ToPrimaryEcliptic
+export rotating41ToRotating12
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -133,7 +134,7 @@ Return next corresponding epoch time
 - `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 - `frame::String`: Fixed ecliptic frame
 - `initialEpochGuess::String`: Initial epoch guess
-- `theta40::Float64`: P2 angle [ndim]
+- `theta20::Float64`: P2 angle [ndim]
 """
 function getEpochTime(dynamicsModel::BCR4BP41DynamicsModel, frame::String, initialEpochGuess::String, theta20::Float64)
     tstar41::Float64 = get41CharTime(dynamicsModel)
@@ -218,6 +219,87 @@ function getHamiltonian(dynamicsModel::BCR4BP41DynamicsModel, q::Vector{Float64}
     U::Float64 = mu41*omm12/r_13+mu41*mu12/r_23+omm41/r_43+(1/2)*(q[1]^2+q[2]^2)
 
     return 2*U-v_2
+end
+
+"""
+    getInstantaneousEquilibriumPoint(dynamicsModel, point, theta4f)
+
+Return location of BCR4BP P4-B1 instantaneous equilibrium point in rotating frame
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `point::Int64`: Equilibrium point identifier
+- `theta2f::Float64`: Desired P2 angle [ndim]
+"""
+function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP41DynamicsModel, point::Int64, theta2f::Float64)
+    tol::Float64 = 1E-12
+    (1 <= point <= 2) || throw(ArgumentError("(Currently) Invalid equilibrium point $point"))
+    theta2f = (theta2f <= 0) ? theta42 : theta2f-2*pi
+    mu12::Float64 = get12MassRatio(dynamicsModel)
+    mu41::Float64 = get41MassRatio(dynamicsModel)
+    omm12::Float64 = 1-mu12
+    omm41::Float64 = 1-mu41
+    a4::Float64 = get4Distance(dynamicsModel)
+    x1::Float64 = omm41-mu12*cos(q[7])/a4
+    y1::Float64 = -mu12*sin(q[7])/a4
+    x2::Float64 = omm41+omm12*cos(q[7])/a4
+    y2::Float64 = omm12*sin(q[7])/a4
+    CR3BPSystemData = MBD.CR3BPSystemData(dynamicsModel.systemData.primaryNames[3], dynamicsModel.systemData.primaryNames[4])
+    CR3BPDynamicsModel = MBD.CR3BPDynamicsModel(CR3BPSystemData)
+    pos::Vector{Float64} = zeros(Float64, 3)
+    theta2::Float64 = 0.0
+    X::Vector{Float64} = getEquilibriumPoint(CR3BPDynamicsModel, point)[1:2]
+    r_13::Float64 = sqrt((X[1]-x1)^2+(X[2]-y1)^2)
+    r_23::Float64 = sqrt((X[1]-x2)^2+(X[2]-y2)^2)
+    r_43::Float64 = sqrt((X[1]+mu41)^2+X[2]^2)
+    r_13_3::Float64 = r_13^3
+    r_23_3::Float64 = r_23^3
+    r_43_3::Float64 = r_43^3
+    r_13_5::Float64 = r_13_3*r_13^2
+    r_23_5::Float64 = r_23_3*r_23^2
+    r_43_5::Float64 = r_43_3*r_43^2
+    F::Vector{Float64} = [X[1]-mu41*omm12*(X[1]-x1)/r_13_3-mu41*mu12*(X[1]-x2)/r_23_3-omm41*(X[1]+mu41)/r_43_3, X[2]-mu41*omm12*(X[2]-y1)/r_13_3-mu41*mu12*(X[2]-y2)/r_23_3-omm41*X[2]/r_43_3]
+    count::Int16 = 0
+    maxCount::Int16 = 20
+    isDone::Bool = false
+    while !isDone
+        (abs(theta2f-theta2) <= tol) && (isDone = true)
+        while (LinearAlgebra.norm(F) > tol) && (count < maxCount)
+            jacobian::Matrix{Float64} = Matrix{Float64}(undef, 2, 2)
+            jacobian[1,1] = 1-mu41*omm12/r_13_3-mu41*mu12/r_23_3-omm41/r_43_3+3*mu41*omm12*(X[1]-x1)^2/r_13_5+3*mu41*mu12*(X[1]-x2)^2/r_23_5+3*omm41*(X[1]+mu41)^2/r_43_5
+            jacobian[1,2] = 3*mu41*omm12*(X[1]-x1)*(X[2]-y1)/r_13_5+3*mu41*mu12*(X[1]-x2)*(X[2]-y2)/r_23_5+3*omm41*(X[1]+mu41)*X[2]/r_43_5
+            jacobian[2,1] = jacobian[1,2]
+            jacobian[2,2] = 1-mu41*omm12/r_13_3-mu41*mu12/r_23_3-omm41/r_43_3+3*mu41*omm12*(X[2]-y1)^2/r_13_5+3*mu41*mu12*(X[2]-y2)^2/r_23_5+3*omm41*X[2]^2/r_43_5
+            FX::Vector{Float64} = -1.0.*F
+            solver = LinearAlgebra.qr(jacobian, LinearAlgebra.ColumnNorm())
+            dX::Vector{Float64} = solver\FX
+            X = X+dX
+            r_13 = sqrt((X[1]-x1)^2+(X[2]-y1)^2)
+            r_23 = sqrt((X[1]-x2)^2+(X[2]-y2)^2)
+            r_43 = sqrt((X[1]+mu41)^2+X[2]^2)
+            r_13_3 = r_13^3
+            r_23_3 = r_23^3
+            r_43_3 = r_43^3
+            r_13_5 = r_13_3*r_13^2
+            r_23_5 = r_23_3*r_23^2
+            r_43_5 = r_43_3*r_43^2
+            F = [X[1]-mu41*omm12*(X[1]-x1)/r_13_3-mu41*mu12*(X[1]-x2)/r_23_3-omm41*(X[1]+mu41)/r_43_3, X[2]-mu41*omm12*(X[2]-y1)/r_13_3-mu41*mu12*(X[2]-y2)/r_23_3-omm41*X[2]/r_43_3]
+            count += 1
+        end
+        (count >= maxCount) && throw(ErrorException("Could not converge on instantaneous equilibrium point location for P2 angle $theta2"))
+        theta2 = (abs(theta2f-theta2) > 0.1) ? theta2-0.1 : theta2f
+        r_13 = sqrt((X[1]-x1)^2+(X[2]-y1)^2)
+        r_23 = sqrt((X[1]-x2)^2+(X[2]-y2)^2)
+        r_13_3 = r_13^3
+        r_23_3 = r_23^3
+        r_13_5 = r_13_3*r_13^2
+        r_23_5 = r_23_3*r_23^2
+        F = [X[1]-mu41*omm12*(X[1]-x1)/r_13_3-mu41*mu12*(X[1]-x2)/r_23_3-omm41*(X[1]+mu41)/r_43_3, X[2]-mu41*omm12*(X[2]-y1)/r_13_3-mu41*mu12*(X[2]-y2)/r_23_3-omm41*X[2]/r_43_3]
+        count = 0
+    end
+    pos[1:2] = X
+
+    return pos
 end
 
 """
