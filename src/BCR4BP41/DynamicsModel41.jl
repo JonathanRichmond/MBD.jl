@@ -234,7 +234,7 @@ Return location of BCR4BP P4-B1 instantaneous equilibrium point in rotating fram
 function getInstantaneousEquilibriumPoint(dynamicsModel::BCR4BP41DynamicsModel, point::Int64, theta2f::Float64)
     tol::Float64 = 1E-12
     (1 <= point <= 2) || throw(ArgumentError("(Currently) Invalid equilibrium point $point"))
-    theta2f = (theta2f <= 0) ? theta42 : theta2f-2*pi
+    theta2f = (theta2f <= 0) ? theta2f : theta2f-2*pi
     mu12::Float64 = get12MassRatio(dynamicsModel)
     mu41::Float64 = get41MassRatio(dynamicsModel)
     omm12::Float64 = 1-mu12
