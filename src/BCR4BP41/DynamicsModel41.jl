@@ -421,7 +421,7 @@ Return quadrant number
 - `q::Vector{Float64}`: State vector [ndim]
 """
 function getQuadrant(dynamicsModel::BCR4BP41DynamicsModel, q::Vector{Float64})
-    x_B1::Vector{Float64} = 1-get41MassRatio(dynamicsModel)
+    x_B1::Float64 = 1-get41MassRatio(dynamicsModel)
     if q[1] >= x_B1
         if q[2] >= 0
 
