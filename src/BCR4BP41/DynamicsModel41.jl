@@ -3,7 +3,7 @@ BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
-U: 9/29/25
+U: 9/30/25
 """
 
 import StaticArrays
@@ -12,7 +12,7 @@ import MBD: BCR4BP41DynamicsModel
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getEpochDependencies
 export getEpochTime, getEquationsOfMotion, getExcursion, getHamiltonian
 export getInstantaneousEquilibriumPoint, getParameterDependencies, getPrimaryState
-export getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix, gettheta2
+export getPseudopotentialJacobian, getQuadrant, getStateSize, getStateTransitionMatrix, gettheta2
 export get12MassRatio, get2BApproximation, get4Distance, get4Mass, get41CharLength, get41CharTime
 export get41MassRatio, isEpochIndependent, primaryEclipticToRotating41, rotating41ToPrimaryEcliptic
 export rotating41ToRotating12
@@ -409,6 +409,36 @@ function getPseudopotentialJacobian(dynamicsModel::BCR4BP41DynamicsModel, q::Vec
     ddUdr[9] = -3*mu41*mu12*omm12*q[3]*((q[1]-x1)*sin(q[7])-(q[2]-y1)*cos(q[7]))/(a4*r_13_5)+3*mu41*mu12*omm12*q[3]*((q[1]-x2)*sin(q[7])-(q[2]-y2)*cos(q[7]))/(a4*r_23_5)
 
     return ddUdr
+end
+
+"""
+    getQuadrant(dynamicsModel, q)
+
+Return quadrant number
+
+# Arguments
+- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `q::Vector{Float64}`: State vector [ndim]
+"""
+function getQuadrant(dynamicsModel::BCR4BP41DynamicsModel, q::Vector{Float64})
+    x_B1::Vector{Float64} = 1-get41MassRatio(dynamicsModel)
+    if q[1] >= x_B1
+        if q[2] >= 0
+
+            return 1
+        else
+
+            return 4
+        end
+    else
+        if q[2] >= 0
+
+            return 2
+        else
+
+            return 3
+        end
+    end
 end
 
 """
