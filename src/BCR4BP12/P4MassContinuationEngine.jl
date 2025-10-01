@@ -193,7 +193,7 @@ function tryConverging!(p4MassContinuationEngine::P4MassContinuationEngine)
             for jumpCheck::MBD.AbstractContinuationJumpCheck in p4MassContinuationEngine.jumpChecks
                 if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
                     for (index::MBD.Variable, value::Int16) in p4MassContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
-                        println("Made it here")
+                        println(index.name)
                         if index.name == jumpCheck.paramName
                             println("Name matches")
                             addBounds!(jumpCheck, p4MassContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
