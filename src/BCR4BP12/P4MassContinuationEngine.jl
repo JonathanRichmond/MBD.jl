@@ -194,6 +194,7 @@ function tryConverging!(p4MassContinuationEngine::P4MassContinuationEngine)
                 if typeof(jumpCheck) == MBD.BoundingBoxJumpCheck
                     for (index::MBD.Variable, value::Int16) in p4MassContinuationEngine.dataInProgress.previousSolution.freeVariableIndexMap
                         if index.name == jumpCheck.paramName
+                            println("Name matches")
                             addBounds!(jumpCheck, p4MassContinuationEngine.dataInProgress.previousSolution, index, jumpCheck.paramBounds)
                             p4MassContinuationEngine.dataInProgress.converging = isFamilyMember(jumpCheck, p4MassContinuationEngine.dataInProgress)
                             (!p4MassContinuationEngine.dataInProgress.converging && p4MassContinuationEngine.printProgress) && println("Solution jumped")
