@@ -3,15 +3,16 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 7/9/25
+U: 10/8/25
 """
 
 import DifferentialEquations, LinearAlgebra, Logging
 
-export arclengthCondition, momentumDifferenceConditionBCR4BP12, momentumDifferenceConditionBCR4BP41
-export momentumDifferenceConditionCR3BP, primaryDistanceCondition2, primaryDistanceCondition3
-export p1BCR4BP12DistanceCondition, p1CR3BPDistanceCondition, p2DistanceCondition, renormalize!
-export terminateAffect!, xzPlaneCrossingCondition, zValueCondition
+export arclengthCondition, b1BCR4BP12DistanceCondition, momentumDifferenceConditionBCR4BP12
+export momentumDifferenceConditionBCR4BP41, momentumDifferenceConditionCR3BP
+export primaryDistanceCondition2, primaryDistanceCondition3, p1BCR4BP12DistanceCondition
+export p1CR3BPDistanceCondition, p2DistanceCondition, renormalize!, terminateAffect!
+export xzPlaneCrossingCondition, zValueCondition
 
 """
     arclengthCondition(state, time, integrator)
@@ -26,6 +27,20 @@ Return event condition for specified arclength
 function arclengthCondition(state::Vector{Float64}, time::Float64, integrator)
     n_arclength::Int16 = getStateSize(integrator.p[2], MBD.ARCLENGTH)
     state[n_arclength]-integrator.p[3]
+end
+
+"""
+    b1BCR4BP12DistanceCondition(state, time, integrator)
+
+Return event condition for specified distance from B1 in BCR4BP P1-P2
+
+# Arguments
+- `state::Vector{Float64}`: State vector [ndim]
+- `time::Float64`: Time [ndim]
+- `integrator`: Integrator object with params: [p1Distance]
+"""
+function b1BCR4BP12DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
+    LinearAlgebra.norm(state[1:3])-integrator.p[2]
 end
 
 """
