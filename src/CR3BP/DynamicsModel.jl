@@ -3,7 +3,7 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 7/9/25
+U: 10/20/25
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -12,10 +12,10 @@ import MBD: CR3BPDynamicsModel
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getCharLength, getCharTime
 export getEpochDependencies, getEquationsOfMotion, getEquilibriumPoint, getExcursion
 export getJacobiConstant, getLinearVariation, getMassRatio, getParameterDependencies
-export getPrimaryState, getPseudopotentialJacobian, getStateSize, getStateTransitionMatrix
-export getTidalAcceleration, get2BApproximation, isEpochIndependent, primaryInertialToRotating
-export rotatingToPrimaryEclipJ2000, rotatingToPrimaryInertial, rotatingToSunEclipJ2000
-export secondaryEclipJ2000ToRotating
+export getPrimaryState, getPseudopotential, getPseudopotentialJacobian, getStateSize
+export getStateTransitionMatrix, getTidalAcceleration, get2BApproximation, isEpochIndependent
+export primaryInertialToRotating, rotatingToPrimaryEclipJ2000, rotatingToPrimaryInertial
+export rotatingToSunEclipJ2000, secondaryEclipJ2000ToRotating
 
 """
     appendExtraInitialConditions(dynamicsModel, q0_simple, outputEquationType)
@@ -346,6 +346,23 @@ function getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64)
     q[1] = (primary == 1 ? -mu : (1-mu))
 
     return q
+end
+
+"""
+    getPsuedopotential(dynamicsModel, r)
+
+Return pseudopotential function at given location
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `r::Vector{Float64}`: Position vector [ndim]
+"""
+function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, r::Vector{Float64})
+    mu::Float64 = getMassRatio(dynamicsModel)
+    r_13::Float64 = sqrt((r[1]+mu)^2+r[2]^2+r[3]^2)
+    r_23::Float64 = sqrt((r[1]-1+mu)^2+r[2]^2+r[3]^2)
+
+    return (1-mu)/r_13+mu/r_23+(1/2)*(r[1]^2+r[2]^2)
 end
 
 """
