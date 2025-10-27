@@ -305,6 +305,10 @@ Return propagated arc
 - `params::Vector{Any}`: Propagation parameters (optional)
 """
 function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP41DynamicsModel, params = [])
+    mutable struct Event
+        flag::Symbol
+    end
+    
     arcOut = MBD.BCR4BP41Arc(dynamicsModel)
     EOMs::MBD.BCR4BP41EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
@@ -314,13 +318,14 @@ function propagateWithEvents(propagator::Propagator, callbackEvent::Differential
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem = DifferentialEquations.ODEProblem(computeDerivatives!, copy(q0), (t0, tf), (EOMs, :none, params...))
+        event = Event(:none)
+        problem = DifferentialEquations.ODEProblem(computeDerivatives!, copy(q0), (t0, tf), (EOMs, event, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         append!(arcOut.states, sol.u)
         append!(arcOut.times, sol.t)
     end
 
-    return (arcOut, sol.prob.p[2])
+    return (arcOut, event.flag)
 end
 
 """
