@@ -3,7 +3,7 @@ BCR4BP P4-B1 dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 2/20/25
-U: 9/30/25
+U: 10/27/25
 """
 
 import StaticArrays
@@ -665,12 +665,12 @@ Return BCR4BP P1-P2 rotating frame states and times [ndim]
 - `times41::Vector{Float64}`: BCR4BP P4-B1 rotating frame times [ndim]
 """
 function rotating41ToRotating12(dynamicsModel::BCR4BP41DynamicsModel, states41::Vector{Vector{Float64}}, times41::Vector{Float64})
-    numTimes::Int16 = Int16(length(times41))
+    numTimes::Int64 = length(times41)
     m4::Float64 = get4Mass(dynamicsModel.systemData)
     a4::Float64 = get4Distance(dynamicsModel.systemData)
     theta2dot::Float64 = sqrt((a4^3)/(m4+1))-1
     states12::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
-    for t::Int16 = Int16(1):numTimes
+    for t::Int64 = 1:numTimes
         state::StaticArrays.SVector{7, Float64} = StaticArrays.SVector{7, Float64}(states41[t])
         theta2::Float64 = state[7]
         C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([cos(theta2) sin(theta2) 0; -sin(theta2) cos(theta2) 0; 0 0 1])
