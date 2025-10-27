@@ -11,6 +11,10 @@ import MBD: Propagator
 
 export propagate, propagateWithEvent, propagateWithEvents, propagateWithPeriodicEvent
 
+mutable struct Event
+    flag::Symbol
+end
+
 """
     propagate(propagator, q0, tSpan, dynamicsModel)
 
@@ -304,11 +308,7 @@ Return propagated arc
 - `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
 - `params::Vector{Any}`: Propagation parameters (optional)
 """
-function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP41DynamicsModel, params = [])
-    mutable struct Event
-        flag::Symbol
-    end
-    
+function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP41DynamicsModel, params = [])    
     arcOut = MBD.BCR4BP41Arc(dynamicsModel)
     EOMs::MBD.BCR4BP41EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
@@ -319,7 +319,7 @@ function propagateWithEvents(propagator::Propagator, callbackEvent::Differential
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
         event = Event(:none)
-        problem = DifferentialEquations.ODEProblem(computeDerivatives!, copy(q0), (t0, tf), (EOMs, event, params...))
+        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, event, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         append!(arcOut.states, sol.u)
         append!(arcOut.times, sol.t)
