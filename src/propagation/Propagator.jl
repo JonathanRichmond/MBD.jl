@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 10/27/25
+U: 11/3/25
 """
 
 import DifferentialEquations
@@ -293,6 +293,39 @@ function propagateWithEvent(propagator::Propagator, callbackEvent::DifferentialE
     end
 
     return arcOut
+end
+
+"""
+    propagateWithEvents(propagator, callbackEvent, q0, tSpan, dynamicsModel, params)
+
+Return propagated arc
+
+# Arguments
+- `propagator::Propagator`: Propagator object
+- `callbackEvent::VectorContinuousCallback`: Propagation callback
+- `q0::Vector{Float64}`: Initial state vector [ndim]
+- `tSpan::Vector{Float64}`: Time span [ndim]
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `params::Vector{Any}`: Propagation parameters (optional)
+"""
+function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.CR3BPDynamicsModel, params = [])    
+    arcOut = MBD.CR3BPArc(dynamicsModel)
+    EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
+    event = Event(:none)
+    for tIndex::Int16 in Int16(2):Int16(length(tSpan))
+        if tIndex > Int16(2)
+            q0 = copy(getStateByIndex(arcOut, -1))
+            deleteStateAndTime!(arcOut, -1)
+        end
+        t0::Float64 = tSpan[tIndex-1]
+        tf::Float64 = tSpan[tIndex]
+        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, event, params...))
+        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
+        append!(arcOut.states, sol.u)
+        append!(arcOut.times, sol.t)
+    end
+
+    return (arcOut, event.flag)
 end
 
 """
