@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 11/3/25
+U: 11/12/25
 """
 
 import DifferentialEquations
@@ -338,12 +338,12 @@ Return propagated arc
 - `callbackEvent::VectorContinuousCallback`: Propagation callback
 - `q0::Vector{Float64}`: Initial state vector [ndim]
 - `tSpan::Vector{Float64}`: Time span [ndim]
-- `dynamicsModel::BCR4BP41DynamicsModel`: BCR4BP P4-B1 dynamics model object
+- `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 - `params::Vector{Any}`: Propagation parameters (optional)
 """
-function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP41DynamicsModel, params = [])    
-    arcOut = MBD.BCR4BP41Arc(dynamicsModel)
-    EOMs::MBD.BCR4BP41EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
+function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP12DynamicsModel, params = [])    
+    arcOut = MBD.BCR4BP12Arc(dynamicsModel)
+    EOMs::MBD.BCR4BP12EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     event = Event(:none)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
