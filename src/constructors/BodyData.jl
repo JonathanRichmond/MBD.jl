@@ -1,5 +1,5 @@
 """
-BodyData functions
+BodyData constructors
 
 Author: Jonathan Richmond
 C: 11/14/25
@@ -161,9 +161,9 @@ function load_bodyData(name::String, fileName::String)::BodyData
             parentSPICEID::Int16 = Int16(MBD.UNINITIALIZED_INDEX)
         else
             parentSPICEID = try
-                v = parse(Int16, parentText)
+                val = parse(Int16, parentText)
                 Logging.@debug "Parsed parentId" parentSPICEID=v name=name
-                v
+                val
             catch err
                 Logging.@error "Invalid <parentId> value" parentText=parentText name=name err=err
                 throw(ErrorException("Invalid <parentId> for body '$(name)': '$(parentText)'"))

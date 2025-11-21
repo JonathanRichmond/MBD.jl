@@ -2,7 +2,7 @@
 Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
-C: 11/14/25
+C: 11/21/25
 """
 
 using MBD, Test
@@ -58,6 +58,37 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
             # Restore original getIDCode and remove temp file
             MBD._getIDCode_func[] = orig_getIDCode
             isfile(tmpfile) && rm(tmpfile)
+        end
+    end
+
+    @testset "SystemData constructors" begin
+        # Map names to the IDs present in src/body_data.xml
+        orig_resolver = MBD._getIDCode_func[]
+        MBD._getIDCode_func[] = name -> begin
+            n = lowercase(strip(name))
+            if n == "earth"
+                return 399
+            elseif n == "moon"
+                return 301
+            else
+                return 0
+            end
+        end
+
+        try
+            sys = MBD.init_systemData(["Earth", "Moon"])
+            @test isa(sys, MBD.SystemData)
+            @test length(sys.bodyData) == 2
+            @test sys.names == ["Earth", "Moon"]
+            @test sys.SPICEIDs[1] == Int16(399)
+            @test sys.SPICEIDs[2] == Int16(301)
+
+            # Ensure the pretty-print shows the name
+            s = sprint(show, sys)
+            @test occursin("SystemData:", s) && occursin("Earth", s)
+        finally
+            # Restore original resolver and package body file
+            MBD._getIDCode_func[] = orig_resolver
         end
     end
 end

@@ -2,7 +2,7 @@
 Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
-C: 11/14/25
+C: 11/21/25
 """
 module MBD
 
@@ -67,8 +67,47 @@ function Base.show(io::IO, data::BodyData)
     Base.show(io, MIME"text/plain"(), data)
 end
 
+"""
+Container type representing a multi-body system composed of loaded bodies.
+
+Fields
+- `bodyData::Vector{BodyData}`: Vector of `BodyData` objects loaded for the
+    system (one per name in `names`).
+- `names::Vector{String}`: The original list of body names used to construct
+    the system; order corresponds to `bodyData`.
+- `SPICEIDs::Vector{Int16}`: The SPICE integer identifiers for each body in the
+    same order as `names` and `bodyData`.
+
+Notes
+- Construct instances using `SystemData(names::Vector{String})`, which calls
+    `init_systemData(names)` to validate inputs and load each `BodyData`.
+
+Example
+```
+sys = SystemData(["Earth", "Moon"])
+```
+"""
+struct SystemData
+    bodyData::Vector{BodyData}
+    names::Vector{String}
+    SPICEIDs::Vector{Int16}
+end
+SystemData(names::Vector{String}) = init_systemData(names)
+Base.:(==)(sys1::SystemData, sys2::SystemData) = (sys1.names == sys2.names) && (sys1.bodyData == sys2.bodyData) && (sys1.SPICEIDs == sys2.SPICEIDs)
+function Base.show(io::IO, ::MIME"text/plain", sys::SystemData)
+    println(io, "SystemData: ", length(sys.bodyData), " bodies")
+    println(io, "  Names and SPICE IDs:")
+    for (idx, bd) in enumerate(sys.bodyData)
+        Printf.@printf(io, "    %2d) %-19s  SPICEID=%6d  parent=%6d\n", idx, sys.names[idx], sys.SPICEIDs[idx], bd.parentSPICEID)
+    end
+end
+function Base.show(io::IO, sys::SystemData)
+    Base.show(io, MIME"text/plain"(), sys)
+end
+
 
 include("constructors/BodyData.jl")
+include("constructors/SystemData.jl")
 include("utilities/SPICE.jl")
 
 
