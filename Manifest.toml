@@ -2,7 +2,7 @@
 
 julia_version = "1.12.2"
 manifest_format = "2.0"
-project_hash = "e66f2d92a9d5d4ba78408562ea2af52926026eb4"
+project_hash = "463903d9bdf0a681481186b71e320071fd64ebb8"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -112,7 +112,7 @@ version = "1.11.0"
 deps = ["LightXML", "Logging", "Printf", "SPICE", "UpdateJulia"]
 path = "."
 uuid = "994ce0ec-d6e5-428b-b4b3-7b10f5a0848a"
-version = "0.2.0"
+version = "0.3.0"
 
 [[deps.Markdown]]
 deps = ["Base64", "JuliaSyntaxHighlighting", "StyledStrings"]
