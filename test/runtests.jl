@@ -2,7 +2,7 @@
 Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
-C: 11/21/25
+C: 12/12/25
 """
 
 using MBD, Test
@@ -86,6 +86,51 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
             # Ensure the pretty-print shows the name
             s = sprint(show, sys)
             @test occursin("SystemData:", s) && occursin("Earth", s)
+        finally
+            # Restore original resolver and package body file
+            MBD._getIDCode_func[] = orig_resolver
+        end
+    end
+
+    @testset "DynamicsModel constructors" begin
+        # Reuse packaged body_data.xml with resolver injection
+        orig_resolver = MBD._getIDCode_func[]
+        MBD._getIDCode_func[] = name -> begin
+            n = lowercase(strip(name))
+            if n == "earth"
+                return 399
+            elseif n == "moon"
+                return 301
+            else
+                return 0
+            end
+        end
+
+        try
+            sys = MBD.init_systemData(["Earth", "Moon"])
+
+            # Happy path: Earth (primary), Moon (secondary)
+            model = MBD.init_dynamicsModel(sys, [1, 2], MBD.CR3BP)
+            @test isa(model, MBD.CR3BPDynamicsModel)
+            @test length(model.primaryData) == 2
+            @test model.primaryData[1].name == "Earth"
+            @test model.primaryData[2].name == "Moon"
+
+            # Ensure the pretty-print shows the name
+            s = sprint(show, model)
+            @test occursin("DynamicsModel:", s) && occursin("Earth", s)
+
+            # Empty indices -> ArgumentError
+            @test_throws ArgumentError MBD.init_dynamicsModel(sys, Int64[], MBD.CR3BP)
+
+            # Duplicate indices -> ArgumentError
+            @test_throws ArgumentError MBD.init_dynamicsModel(sys, [1, 1], MBD.CR3BP)
+
+            # Out-of-bounds index -> BoundsError
+            @test_throws BoundsError MBD.init_dynamicsModel(sys, [1, 3], MBD.CR3BP)
+
+            # Parent mismatch (secondary parent SPICEID != primary SPICEID) -> ArgumentError
+            @test_throws ArgumentError MBD.init_dynamicsModel(sys, [2, 1], MBD.CR3BP)
         finally
             # Restore original resolver and package body file
             MBD._getIDCode_func[] = orig_resolver

@@ -1,47 +1,51 @@
 """
-BodyData constructors
+Body data types
 
 Author: Jonathan Richmond
-C: 11/14/25
+C: 12/12/25
 """
-
-import MBD:BodyData
-import LightXML, Logging
-
-export load_bodyData
 
 
 """
-Load BodyData for a named body from an XML body data file.
+    load_bodyData(name::String, fileName::String) -> BodyData
+
+Load physical and orbital properties for a celestial body from an XML data file.
 
 Arguments
-- `name::String`: The case-insensitive body name (as used by SPICE) to load.
-- `fileName::String`: Path to an XML file containing `<body>` entries. When omitted
-    callers often use the convenience constructor `BodyData(name::String)` which
-    supplies the package's `body_data.xml`.
+- `name::String`: The canonical name of the body (e.g., "Earth", "Moon"). This name
+  is resolved to a SPICE ID using `getIDCode(name)` and must match a `<body>` entry
+  in the XML file with the corresponding `<id>` element.
+- `fileName::String`: Absolute path to the XML data file containing body definitions.
+  Each `<body>` element must include tags: `<id>`, `<circ_r>`, `<ecc>`, `<inc>`,
+  `<parentId>`, `<radius>`, `<gm>`, and `<raan>`.
 
 Returns
-- `BodyData`: A fully-populated `BodyData` instance for the requested body.
+- `BodyData`: A populated `BodyData` struct with the body's orbital elements, mass,
+  radius, SPICE IDs, and gravitational parameter.
 
 Errors
-- Throws `ArgumentError` if `name` or `fileName` are empty, or if the file does
-    not exist.
-- Throws `ErrorException` for SPICE lookup failures, XML parse errors, missing
-    or empty required tags, invalid numeric fields, or when the requested body
-    entry cannot be found in the XML.
+- Throws `ArgumentError` if:
+  - `name` or `fileName` is empty or contains only whitespace
+  - The specified file does not exist
+- Throws `ErrorException` if:
+  - SPICE ID resolution fails for the given `name`
+  - XML parsing fails
+  - Required XML elements are missing or contain invalid/empty values
+  - No `<body>` element with matching SPICE ID is found in the file
 
 Notes
-- A `<parentId>` value of the literal string `"NaN"` (case-insensitive) is
-    treated as "no parent" and is represented using `MBD.UNINITIALIZED_INDEX`.
-- The function emits `Logging` messages at `@debug`, `@info`, `@warn`, and
-    `@error` levels to aid troubleshooting.
+- The function emits `Logging` messages at `@debug`, `@info`, and `@error` levels
+  to aid troubleshooting.
+- The `<parentId>` field may be "NaN" (case-insensitive) to indicate no parent;
+  in this case `parentSPICEID` is set to `MBD.UNINITIALIZED_INDEX`.
+- Mass is computed as `μ / MBD.GRAVITY` where `μ` is read from `<gm>`.
 
 Example
 ```
-bd = load_bodyData("Earth", joinpath(@__DIR__, "body_data.xml"))
+bodyData = load_bodyData("Earth", "/path/to/body_data.xml")
 ```
 """
-function load_bodyData(name::String, fileName::String)::BodyData
+function load_bodyData(name::String, fileName::String)::MBD.BodyData
     Logging.@debug "load_bodyData called" name=name fileName=fileName
 
     # Validate inputs
@@ -201,4 +205,61 @@ function load_bodyData(name::String, fileName::String)::BodyData
 
     # If we fall through, no matching body was found
     throw(ErrorException("No body with SPICE ID $(SPICEID) (name='$(name)') found in '$(fileName)'"))
+end
+
+
+"""
+    BodyData
+
+Container type describing the physical and orbital properties of a celestial body.
+
+Fields
+- `a::Float64`: Mean (circular) orbital radius, typically the semimajor axis or
+  equivalent circular radius, in kilometers.
+- `e::Float64`: Orbital eccentricity (dimensionless).
+- `i::Float64`: Orbital inclination in radians.
+- `m::Float64`: Mass of the body in kilograms, computed as `μ / MBD.GRAVITY`.
+- `name::String`: Canonical body name as used with SPICE and the XML data file
+  (e.g., "Earth", "Moon").
+- `parentSPICEID::Int16`: SPICE integer ID of the parent body. Set to
+  `MBD.UNINITIALIZED_INDEX` if the body has no parent (e.g., the Sun).
+- `r::Float64`: Physical radius of the body in kilometers.
+- `SPICEID::Int16`: SPICE integer identifier uniquely identifying this body.
+- `μ::Float64`: Standard gravitational parameter (GM) for the body, in km³/s².
+- `Ω::Float64`: Right ascension of the ascending node (RAAN) in radians.
+
+Construction
+- Direct construction: `BodyData(a, e, i, m, name, parentSPICEID, r, SPICEID, μ, Ω)`
+- Convenience constructor: `BodyData(name::String)` loads data from the packaged
+  XML file `body_data.xml` via `load_bodyData`.
+
+Example
+```
+bd = BodyData("Earth")
+println(bd)  # displays formatted body information
+```
+"""
+struct BodyData
+    a::Float64
+    e::Float64
+    i::Float64
+    m::Float64
+    name::String
+    parentSPICEID::Int16
+    r::Float64
+    SPICEID::Int16
+    μ::Float64
+    Ω::Float64
+end
+BodyData(name::String) = load_bodyData(name, joinpath(@__DIR__, "../body_data.xml"))
+Base.:(==)(data1::MBD.BodyData, data2::MBD.BodyData) = (data1.SPICEID == data2.SPICEID) && (data1.a == data2.a) && (data1.e == data2.e) && (data1.i == data2.i) && (data1.m == data2.m) && (data1.name == data2.name) && (data1.parentSPICEID == data2.parentSPICEID) && (data1.r == data2.r) && (data1.μ == data2.μ) && (data1.Ω == data2.Ω)
+function Base.show(io::IO, ::MIME"text/plain", data::MBD.BodyData)
+    println(io, "BodyData: ", data.name)
+    println(io, "  SPICEID: ", data.SPICEID, "   Parent SPICEID: ", data.parentSPICEID)
+    Printf.@printf(io, "  a: %0.6g km   e: %0.6g   i: %0.6g rad\n", data.a, data.e, data.i)
+    Printf.@printf(io, "  radius: %0.6g km   μ (GM): %0.6g km^3/s^2   mass: %0.6g kg\n", data.r, data.μ, data.m)
+    Printf.@printf(io, "  Ω (RAAN): %0.6g rad\n", data.Ω)
+end
+function Base.show(io::IO, data::MBD.BodyData)
+    Base.show(io, MIME"text/plain"(), data)
 end

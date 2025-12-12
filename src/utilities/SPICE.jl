@@ -3,11 +3,8 @@ SPICE utility functions
 
 Author: Jonathan Richmond
 C: 11/14/25
+U: 12/12/25
 """
-
-import Logging, SPICE
-
-export getIDCode
 
 
 """
