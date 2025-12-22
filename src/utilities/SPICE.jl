@@ -23,7 +23,8 @@ Errors
   returns no code.
 
 Logging
-- Emits `@error` logs for invalid input or SPICE failures to aid debugging.
+- This function emits `@error` logs for invalid input or SPICE failures to aid
+  debugging.
 
 Example
 ```
@@ -55,5 +56,6 @@ function getIDCode(name::String)
         Logging.@error "SPICE.bods2c returned no code" name=name
         throw(ErrorException("SPICE lookup returned no code for name '$(name)'") )
     end
+
     return code
 end

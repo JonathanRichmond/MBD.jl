@@ -95,6 +95,7 @@ function init_dynamicsModel(systemData::MBD.SystemData, indices::Vector{Int64}, 
             Logging.@error "CR3BP primary/secondary parent mismatch" primary=primary.name primarySPICE=primary.SPICEID secondary=secondary.name secondaryParent=secondary.parentSPICEID
             throw(ArgumentError("CR3BP requires the secondary's parent SPICE ID to equal the primary's SPICE ID"))
         end
+        
         Logging.@info "Initializing CR3BP dynamics model" primary=primary.name secondary=secondary.name
         return CR3BPDynamicsModel(primaryData)
     end
