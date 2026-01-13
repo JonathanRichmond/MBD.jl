@@ -3,6 +3,7 @@ Package exports
 
 Author: Jonathan Richmond
 C: 12/22/25
+U: 12/24/25
 """
 
 
@@ -16,7 +17,8 @@ export
     # SystemData methods
     getNumPrimaries,
     # DynamicsModel methods
-    getCharLengths, getCharMasses, getCharTimes, getMassRatios, getNumPrimaries,
+    appendExtraInitialConditions, getCharLengths, getCharMasses, getCharTimes,
+    getMassRatios, getNumPrimaries, getStateSize,
 
     # Utilities
     # SPICE methods

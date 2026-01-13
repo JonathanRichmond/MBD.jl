@@ -7,6 +7,44 @@ C: 12/22/25
 
 
 """
+    appendExtraInitialConditions(mod::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+
+Append extra initial conditions for a given dynamics model and equation type to
+the simple initial state vector.
+
+Arguments
+- `mod::AbstractDynamicsModel`: A dynamics model instance.
+- `q0_simple::Vector{Float64}`: A simple initial state vector.
+- `outputEquationType::EquationType`: The output equation formulation to use
+  (e.g., `SIMPLE`, `STM`).
+
+Returns
+- The initial state vector with extra conditions.
+
+Errors
+- Throws `ErrorException` if not implemented for the model type.
+
+Notes
+- This is a generic method that dispatches on model type.
+- The function emits `Logging` messages at `@debug` and `@error` levels to aid
+  troubleshooting.
+- See the dynamics model specialization for a concrete implementation.
+
+Example
+```
+model = CR3BPDynamicsModel(sys, [1, 2])
+q0_simple = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+q0 = appendExtraInitialConditions(model, q0_simple, STM)
+```
+"""
+function appendExtraInitialConditions(mod::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+    Logging.@debug "appendExtraInitialConditions(Abstract) called" type=typeof(mod)
+
+    Logging.@error "appendExtraInitialConditions not implemented for abstract DynamicsModel" type=typeof(mod)
+    throw(ErrorException("appendExtraInitialConditions not implemented for abstract DynamicsModel"))
+end
+
+"""
     getCharLengths(mod::AbstractDynamicsModel)
 
 Compute the characteristic length scales for a dynamics model.
@@ -142,6 +180,40 @@ function getMassRatios(mod::AbstractDynamicsModel)
 end
 
 """
+    getStateSize(mod::AbstractDynamicsModel, equationType::EquationType)
+
+Return the size of the state vector for a dynamics model and equation type.
+
+Arguments
+- `mod::AbstractDynamicsModel`: A dynamics model instance.
+- `equationType::EquationType`: The equation formulation to use (e.g., `SIMPLE`, `STM`).
+
+Returns
+- The number of state variables for the given model and equation type.
+
+Errors
+- Throws `ErrorException` if not implemented for the model type.
+
+Notes
+- This is a generic method that dispatches on model type.
+- The function emits `Logging` messages at `@debug` and `@error` levels to aid
+  troubleshooting.
+- See the dynamics model specialization for a concrete mapping.
+
+Example
+```
+model = CR3BPDynamicsModel(sys, [1, 2])
+n = getStateSize(model, SIMPLE)
+```
+"""
+function getStateSize(mod::AbstractDynamicsModel, equationType::EquationType)
+    Logging.@debug "getStateSize(Abstract) called" type=typeof(mod)
+
+    Logging.@error "getStateSize not implemented for abstract DynamicsModel" type=typeof(mod)
+    throw(ErrorException("getStateSize not implemented for abstract DynamicsModel"))
+end
+
+"""
     shallowClone(mod::AbstractDynamicsModel)
 
 Create a shallow clone of a dynamics model.
@@ -226,6 +298,81 @@ function getNumPrimaries(mod::AbstractDynamicsModel)
 
     Logging.@info "Computed number of primaries" count=n
     return n
+end
+
+
+"""
+    appendExtraInitialConditions(mod::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType) -> Vector{Float64}
+
+Append extra initial conditions for a given equation type to a simple initial state vector.
+
+Arguments
+- `mod::CR3BPDynamicsModel`: A valid CR3BP dynamics model with exactly 2 primaries.
+- `q0_simple::Vector{Float64}`: A simple initial state vector.
+- `outputEquationType::EquationType`: The output equation formulation (e.g., `SIMPLE`, `STM`, `ARCLENGTH`).
+
+Returns
+- `Vector{Float64}`: The initial state vector expanded to the required size for the output equation type.
+  - For `SIMPLE`: returns the input vector unchanged.
+  - For other types: returns the input vector followed by additional initial conditions.
+
+Errors
+- Throws `ArgumentError` if `mod` is not a valid `CR3BPDynamicsModel` or does not
+  contain exactly 2 primary bodies.
+- Throws `ArgumentError` if `q0_simple` is not a non-empty `Vector{Float64}`.
+- Throws `ArgumentError` if the input vector size does not match the SIMPLE state size.
+
+Notes
+- Supported output equation types: `SIMPLE`, `STM`, `ARCLENGTH`, `MOMENTUM`, `FULL`.
+- When expanding to STM or higher, diagonal identity-like patterns may be used for
+  state transition matrix initialization.
+- The function emits `Logging` messages at `@debug`, `@error`, and `@info` levels
+  to aid troubleshooting.
+
+Example
+```
+model = CR3BPDynamicsModel(sys, [1, 2])
+q0_simple = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+q0 = appendExtraInitialConditions(model, q0_simple, STM)
+```
+"""
+function appendExtraInitialConditions(mod::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+    Logging.@debug "appendExtraInitialConditions(CR3BP) called"
+
+    if mod === nothing || !isa(mod, CR3BPDynamicsModel)
+        Logging.@error "Invalid model supplied to appendExtraInitialConditions" type=typeof(mod)
+        throw(ArgumentError("mod must be a CR3BPDynamicsModel instance"))
+    end
+    if length(mod.primaryData) != 2
+        Logging.@error "CR3BP requires exactly two primaries" n=length(mod.primaryData)
+        throw(ArgumentError("CR3BPDynamicsModel must contain exactly two primary bodies"))
+    end
+    if !isa(q0_simple, AbstractVector)
+        Logging.@error "q0_simple must be a vector" type=typeof(q0_simple)
+        throw(ArgumentError("q0_simple must be a vector"))
+    end
+    if isempty(q0_simple)
+        Logging.@error "q0_simple is empty"
+        throw(ArgumentError("q0_simple must be non-empty"))
+    end
+
+    n_in::Int16 = Int16(length(q0_simple))
+    n_simple::Int16 = Int16(getStateSize(mod, SIMPLE))
+    if n_in != n_simple
+        Logging.@error "Input state vector size does not match SIMPLE size" n_in=n_in expected=n_simple
+        throw(ArgumentError("Input state vector size ($(n_in)) does not match SIMPLE state size ($(n_simple))"))
+    end
+
+    n_out::Int16 = Int16(getStateSize(mod, outputEquationType))
+    q0::Vector{Float64} = zeros(Float64, n_out)
+    q0[1:n_simple] = q0_simple
+    if n_out > n_simple
+        n_STM::Int16 = Int16(getStateSize(mod, STM))
+        [q0[j] = 1.0 for j in n_simple+1:n_simple+1:n_STM]
+    end
+
+    Logging.@info "Appended extra initial conditions" n_in=n_in n_out=n_out
+    return q0
 end
 
 """
@@ -435,6 +582,70 @@ function getMassRatios(mod::CR3BPDynamicsModel)
 
     Logging.@info "Computed mass ratio" μ=μ
     return μ
+end
+
+"""
+    getStateSize(mod::CR3BPDynamicsModel, equationType::EquationType) -> Int64
+
+Return the size of the state vector for a CR3BP dynamics model and equation type.
+
+Arguments
+- `mod::CR3BPDynamicsModel`: A valid CR3BP dynamics model with exactly 2 primaries.
+- `equationType::EquationType`: The equation formulation to use (e.g., `SIMPLE`, `STM`).
+
+Returns
+- `Int64`: The number of state variables for a CR3BP dynamics model and given equation type.
+
+Errors
+- Throws `ArgumentError` if `mod` is not a valid `CR3BPDynamicsModel` or does not
+    contain exactly 2 primary bodies.
+- Throws `ArgumentError` if `equationType` is unsupported for CR3BP.
+- Throws `ArgumentError` if the computed state size is not a positive integer.
+
+Notes
+- Supported `EquationType → size` mapping:
+    - `SIMPLE → 6`
+    - `STM → 42`
+    - `ARCLENGTH → 43`
+    - `MOMENTUM → 43`
+    - `FULL → 44`
+- Returned value is normalized to `Int64` and validated.
+- The function emits `Logging` messages at `@debug`, `@info`, and `@error` levels
+  to aid troubleshooting.
+
+Example
+```
+model = CR3BPDynamicsModel(sys, [1, 2])
+n = getStateSize(model, SIMPLE)
+```
+"""
+function getStateSize(mod::CR3BPDynamicsModel, equationType::EquationType)
+    Logging.@debug "getStateSize(CR3BP) called"
+
+    if mod === nothing || !isa(mod, CR3BPDynamicsModel)
+        Logging.@error "Invalid model supplied to getStateSize" type=typeof(mod)
+        throw(ArgumentError("mod must be a CR3BPDynamicsModel instance"))
+    end
+    if length(mod.primaryData) != 2
+        Logging.@error "CR3BP requires exactly two primaries" n=length(mod.primaryData)
+        throw(ArgumentError("CR3BPDynamicsModel must contain exactly two primary bodies"))
+    end
+
+    sizeMap = Dict(SIMPLE => 6, STM => 42, ARCLENGTH => 43, MOMENTUM => 43, FULL => 44)
+    if !haskey(sizeMap, equationType)
+        Logging.@error "Unsupported equation type for CR3BP" equationType=equationType
+        throw(ArgumentError("Unsupported equation type for CR3BPDynamicsModel"))
+    end
+
+    size = sizeMap[equationType]
+    if !(isa(size, Integer) && (size > 0))
+        Logging.@error "Invalid state size computed" equationType=equationType size=size
+        throw(ArgumentError("State size must be a positive integer"))
+    end
+    size64::Int64 = Int64(size)
+
+    Logging.@info "Computed state size for CR3BPDynamicsModel" equationType=equationType size=size64
+    return size64
 end
 
 """

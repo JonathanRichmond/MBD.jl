@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan Richmond
 C: 12/12/25
-U: 12/22/25
+U: 12/24/25
 """
 
 using MBD, Test
@@ -204,6 +204,32 @@ end
         # Test getNumPrimaries
         @test MBD.getNumPrimaries(model) == 2
 
+        # Test appendExtraInitialConditions for CR3BP happy path - SIMPLE input
+        q0_simple = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+        q0_simple_out = MBD.appendExtraInitialConditions(model, q0_simple, MBD.SIMPLE)
+        @test isa(q0_simple_out, Vector{Float64})
+        @test length(q0_simple_out) == 6
+        @test isapprox(q0_simple_out, q0_simple; atol=1e-12)
+
+        # Test appendExtraInitialConditions for CR3BP with STM
+        q0_stm = MBD.appendExtraInitialConditions(model, q0_simple, MBD.STM)
+        @test isa(q0_stm, Vector{Float64})
+        @test length(q0_stm) == 42
+        @test isapprox(q0_stm[1:6], q0_simple; atol=1e-12)
+        @test isapprox(q0_stm[8:13], zeros(Float64, 6); atol=1e-12)
+        @test isapprox(q0_stm[14], 1.0; atol=1e-12)
+
+        # Test appendExtraInitialConditions for CR3BP with ARCLENGTH
+        q0_arclen = MBD.appendExtraInitialConditions(model, q0_simple, MBD.ARCLENGTH)
+        @test isa(q0_arclen, Vector{Float64})
+        @test length(q0_arclen) == 43
+        @test isapprox(q0_arclen[1:6], q0_simple; atol=1e-12)
+        @test isapprox(q0_arclen[43], 0.0, atol=1e-12)
+
+        # Error cases: invalid input state vectors
+        @test_throws ArgumentError MBD.appendExtraInitialConditions(model, Float64[], MBD.SIMPLE)  # empty
+        @test_throws ArgumentError MBD.appendExtraInitialConditions(model, [1.0, 0.0, 0.0, 0.0, 1.0], MBD.SIMPLE)  # wrong size
+
         # Test getCharLengths (secondary's orbital radius)
         lstar = MBD.getCharLengths(model)
         @test isa(lstar, Float64)
@@ -232,6 +258,17 @@ end
         expected_μ = model.primaryData[2].μ/totalGM
         @test isapprox(μ, expected_μ; rtol=1e-12)
 
+        # Test getStateSize for CR3BP with all equation types
+        @test MBD.getStateSize(model, MBD.SIMPLE) == 6
+        @test MBD.getStateSize(model, MBD.STM) == 42
+        @test MBD.getStateSize(model, MBD.ARCLENGTH) == 43
+        @test MBD.getStateSize(model, MBD.MOMENTUM) == 43
+        @test MBD.getStateSize(model, MBD.FULL) == 44
+
+        # Verify all return Int64
+        @test isa(MBD.getStateSize(model, MBD.SIMPLE), Int64)
+        @test isa(MBD.getStateSize(model, MBD.STM), Int64)
+
         # Test shallowClone
         clone = MBD.shallowClone(model)
         @test isa(clone, MBD.CR3BPDynamicsModel)
@@ -242,10 +279,12 @@ end
         # Error cases: abstract methods throw on non-CR3BP model
         struct testModel <: MBD.AbstractDynamicsModel end
         tm = testModel()
+        @test_throws ErrorException MBD.appendExtraInitialConditions(tm, [1.0, 0.0, 0.0, 0.0, 1.0, 0.0], MBD.SIMPLE)
         @test_throws ErrorException MBD.getCharLengths(tm)
         @test_throws ErrorException MBD.getCharMasses(tm)
         @test_throws ErrorException MBD.getCharTimes(tm)
         @test_throws ErrorException MBD.getMassRatios(tm)
+        @test_throws ErrorException MBD.getStateSize(tm, MBD.SIMPLE)
         @test_throws ErrorException MBD.shallowClone(tm)
 
         # Error cases: getNumPrimaries with no primaryData field
@@ -254,10 +293,12 @@ end
         # Error cases: CR3BP methods with wrong primary count
         # Create a malformed model with only 1 body (for testing purposes)
         bad_model = MBD.CR3BPDynamicsModel([model.primaryData[1]])
+        @test_throws ArgumentError MBD.appendExtraInitialConditions(bad_model, q0_simple, MBD.SIMPLE)
         @test_throws ArgumentError MBD.getCharLengths(bad_model)
         @test_throws ArgumentError MBD.getCharMasses(bad_model)
         @test_throws ArgumentError MBD.getCharTimes(bad_model)
         @test_throws ArgumentError MBD.getMassRatios(bad_model)
+        @test_throws ArgumentError MBD.getStateSize(bad_model, MBD.SIMPLE)
     finally
         MBD._getIDCode_func[] = orig_resolver
     end
