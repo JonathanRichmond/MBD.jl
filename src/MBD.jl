@@ -3,13 +3,13 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
 C: 11/21/25
-U: 12/22/25
+U: 1/15/26
 """
 module MBD
 
 
 import Base: show, ==
-import LightXML, Logging, Printf, SPICE
+import LightXML, LinearAlgebra, Logging, Printf, SPICE
 
 
 const GRAVITY = 6.67384E-20

@@ -3,7 +3,7 @@ Package exports
 
 Author: Jonathan Richmond
 C: 12/22/25
-U: 12/24/25
+U: 1/15/26
 """
 
 
@@ -17,8 +17,11 @@ export
     # SystemData methods
     getNumPrimaries,
     # DynamicsModel methods
-    appendExtraInitialConditions, getCharLengths, getCharMasses, getCharTimes,
-    getMassRatios, getNumPrimaries, getStateSize,
+    appendExtraInitialConditions, extractStateTransitionMatrix, getCharLengths, getCharMasses,
+    getCharTimes, getDistance2Primary, getEnergy, getEpochDependencies, getEquilibriumPoint,
+    getLinearVariationState, getMassRatios, getNumPrimaries, getParameterDependencies,
+    getPrimaryState, getPseudopotential, getPseudopotentialGradient, getPseudopotentialHessian,
+    getStateSize, isEpochIndependent,
 
     # Utilities
     # SPICE methods
