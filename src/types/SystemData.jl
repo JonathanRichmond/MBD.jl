@@ -1,7 +1,7 @@
 """
 System data types
 
-Author: Jonathan Richmond
+Author: Jonathan LeFevre Richmond
 C: 12/12/25
 """
 

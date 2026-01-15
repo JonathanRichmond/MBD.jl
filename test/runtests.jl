@@ -1,7 +1,7 @@
 """
 Multi-Body Dynamics astrodynamics package tests
 
-Author: Jonathan Richmond
+Author: Jonathan LeFevre Richmond
 C: 12/12/25
 U: 1/15/26
 """
@@ -55,6 +55,10 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
             # Ensure the pretty-print shows the name
             s = sprint(show, bd)
             @test occursin("BodyData:", s) && occursin("TestBody", s)
+
+            # Test equality comparison between instances
+            bd2 = MBD.load_bodyData("TestBody", tmpfile)
+            @test bd == bd2
         finally
             # Restore original getIDCode and remove temp file
             MBD._getIDCode_func[] = orig_getIDCode
@@ -87,6 +91,10 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
             # Ensure the pretty-print shows the name
             s = sprint(show, sys)
             @test occursin("SystemData:", s) && occursin("Earth", s)
+
+            # Test equality comparison between instances
+            sys2 = MBD.init_systemData(["Earth", "Moon"])
+            @test sys == sys2
         finally
             # Restore original resolver and package body file
             MBD._getIDCode_func[] = orig_resolver
@@ -121,6 +129,10 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
             s = sprint(show, model)
             @test occursin("DynamicsModel:", s) && occursin("Earth", s)
 
+            # Test equality comparison between instances
+            model2 = MBD.init_dynamicsModel(sys, [1, 2], MBD.CR3BP)
+            @test model == model2
+
             # Empty indices -> ArgumentError
             @test_throws ArgumentError MBD.init_dynamicsModel(sys, Int64[], MBD.CR3BP)
 
@@ -132,6 +144,47 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
 
             # Parent mismatch (secondary parent SPICEID != primary SPICEID) -> ArgumentError
             @test_throws ArgumentError MBD.init_dynamicsModel(sys, [2, 1], MBD.CR3BP)
+        finally
+            # Restore original resolver and package body file
+            MBD._getIDCode_func[] = orig_resolver
+        end
+    end
+
+    @testset "EquationsOfMotion constructors" begin
+        # Reuse packaged body_data.xml with resolver injection
+        orig_resolver = MBD._getIDCode_func[]
+        MBD._getIDCode_func[] = name -> begin
+            n = lowercase(strip(name))
+            if n == "earth"
+                return 399
+            elseif n == "moon"
+                return 301
+            else
+                return 0
+            end
+        end
+
+        try
+            # Build a valid CR3BP model for testing
+            sys = MBD.init_systemData(["Earth", "Moon"])
+            model = MBD.init_dynamicsModel(sys, [1, 2], MBD.CR3BP)
+
+            # Happy path: Create valid CR3BPEquationsOfMotion instance
+            eom = MBD.CR3BPEquationsOfMotion(model)
+            @test isa(eom, MBD.CR3BPEquationsOfMotion)
+            @test eom.dynamicsModel === model
+
+            # Ensure the pretty-print shows the name
+            s = sprint(show, eom)
+            @test occursin("EquationsOfMotion:", s) && occursin("DynamicsModel", s)
+
+            # Test equality comparison between instances
+            eom2 = MBD.CR3BPEquationsOfMotion(model)
+            @test eom == eom2
+
+            # Model with wrong number of primaries (only 1 primary) -> ArgumentError
+            model_bad = MBD.CR3BPDynamicsModel([sys.bodyData[1]])
+            @test_throws ArgumentError MBD.CR3BPEquationsOfMotion(model_bad)
         finally
             # Restore original resolver and package body file
             MBD._getIDCode_func[] = orig_resolver

@@ -1,7 +1,7 @@
 """
 Core types
 
-Author: Jonathan Richmond
+Author: Jonathan LeFevre Richmond
 C: 12/12/25
 U: 12/24/25
 """

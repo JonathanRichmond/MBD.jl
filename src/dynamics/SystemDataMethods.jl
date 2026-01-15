@@ -1,7 +1,7 @@
 """
 SystemData methods
 
-Author: Jonathan Richmond
+Author: Jonathan LeFevre Richmond
 C: 12/22/25
 """
 

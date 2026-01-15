@@ -1,7 +1,7 @@
 """
 SPICE utility functions
 
-Author: Jonathan Richmond
+Author: Jonathan LeFevre Richmond
 C: 11/14/25
 U: 12/12/25
 """
