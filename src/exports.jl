@@ -19,10 +19,10 @@ export
     getNumPrimaries,
     # DynamicsModel methods
     appendExtraInitialConditions, extractStateTransitionMatrix, getCharLengths, getCharMasses,
-    getCharTimes, getDistance2Primary, getEnergy, getEpochDependencies, getEquilibriumPoint,
-    getLinearVariationState, getMassRatios, getNumPrimaries, getParameterDependencies,
-    getPrimaryState, getPseudopotential, getPseudopotentialGradient, getPseudopotentialHessian,
-    getStateSize, isEpochIndependent,
+    getCharTimes, getDistance2Primary, getEnergy, getEpochDependencies, getEquationsOfMotion,
+    getEquilibriumPoint, getLinearVariationState, getMassRatios, getNumPrimaries,
+    getParameterDependencies, getPrimaryState, getPseudopotential, getPseudopotentialGradient,
+    getPseudopotentialHessian, getStateSize, isEpochIndependent,
 
     # Utilities
     # SPICE methods

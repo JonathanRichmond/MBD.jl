@@ -5,8 +5,7 @@ Author: Jonathan LeFevre Richmond
 C: 12/22/25
 U: 1/15/26
 
-ON HOLD: checkSTM (Propagator), evaluateEquations (getEquationsOfMotion),
-    getEquationsOfMotion (CR3BPEquationsOfMotion)
+ON HOLD: checkSTM (Propagator), evaluateEquations (computeDerivatives)
 
 TO DO: getTidalAcceleration, get2BApproximation, primaryInertial2Rotating,
     rotating2PrimaryEclipJ2000, rotating2PrimaryInertial,
@@ -254,6 +253,38 @@ function getEnergy(mod::AbstractDynamicsModel, q::Vector{Float64})
 
     Logging.@error "getEnergy not implemented for abstract DynamicsModel" type=typeof(mod)
     throw(ErrorException("getEnergy not implemented for abstract DynamicsModel"))
+end
+
+"""
+    getEquationsOfMotion(mod::AbstractDynamicsModel) -> AbstractEquationsOfMotion
+
+Construct the equations of motion for a dynamics model.
+
+Arguments
+- `mod::AbstractDynamicsModel`: A dynamics model instance.
+
+Returns
+- `AbstractEquationsOfMotion`: An equations of motion instance encapsulating the dynamics equations for the model.
+
+Errors
+- Throws `ErrorException` if not implemented for the model type.
+
+Notes
+- This is a generic method that dispatches on model type.
+- The function emits `Logging` messages at `@debug` and `@error` levels to aid
+  troubleshooting.
+
+Example
+```
+model = CR3BPDynamicsModel(sys, [1, 2])
+eom = getEquationsOfMotion(model)
+```
+"""
+function getEquationsOfMotion(mod::AbstractDynamicsModel)
+    Logging.@debug "getEquationsOfMotion(Abstract) called" type=typeof(mod)
+
+    Logging.@error "getEquationsOfMotion not implemented for abstract DynamicsModel" type=typeof(mod)
+    throw(ErrorException("getEquationsOfMotion not implemented for abstract DynamicsModel"))
 end
 
 """
@@ -1259,6 +1290,60 @@ function getEnergy(mod::CR3BPDynamicsModel, q::Vector{Float64})
 
     Logging.@info "Computed CR3BP energy" JC=JC pseudopotential=U velocity_sq=v2
     return JC
+end
+
+"""
+    getEquationsOfMotion(mod::CR3BPDynamicsModel) -> CR3BPEquationsOfMotion
+
+Construct the equations of motion for a CR3BP dynamics model.
+
+Arguments
+- `mod::CR3BPDynamicsModel`: A valid CR3BP dynamics model with exactly 2 primaries.
+
+Returns
+- `CR3BPEquationsOfMotion`: An equations of motion instance encapsulating the CR3BP differential equations
+  for the given dynamics model.
+
+Errors
+- Throws `ArgumentError` if `mod` is not a valid `CR3BPDynamicsModel` or does not
+  contain exactly 2 primary bodies.
+- Throws `ErrorException` if construction of the equations of motion fails (e.g., invalid primary data).
+
+Notes
+- The CR3BP equations describe the motion of a massless test particle in the gravitational field
+  of two massive bodies in circular orbits, as viewed from a rotating reference frame.
+- All model parameters (masses, scales, etc.) are accessed through the supplied `mod` instance.
+- The returned equations of motion object can be used for numerical integration and trajectory analysis.
+- The function emits `Logging` messages at `@debug`, `@info`, and `@error` levels
+  to aid troubleshooting.
+
+Example
+```
+model = CR3BPDynamicsModel(sys, [1, 2])
+eom = getEquationsOfMotion(model)
+```
+"""
+function getEquationsOfMotion(mod::CR3BPDynamicsModel)
+    Logging.@debug "getEquationsOfMotion(CR3BP) called"
+    
+    if mod === nothing || !isa(mod, CR3BPDynamicsModel)
+        Logging.@error "Invalid model supplied to getEnergy" type=typeof(mod)
+        throw(ArgumentError("mod must be a CR3BPDynamicsModel instance"))
+    end
+    if length(mod.primaryData) != 2
+        Logging.@error "CR3BP requires exactly two primaries" n=length(mod.primaryData)
+        throw(ArgumentError("CR3BPDynamicsModel must contain exactly two primary bodies"))
+    end
+    
+    try
+        eom = CR3BPEquationsOfMotion(mod)
+
+        Logging.@info "Successfully created CR3BPEquationsOfMotion" primary=mod.primaryData[1].name secondary=mod.primaryData[2].name
+        return eom
+    catch e
+        Logging.@error "Failed to create CR3BPEquationsOfMotion" exception=e
+        rethrow()
+    end
 end
 
 """

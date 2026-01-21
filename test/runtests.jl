@@ -538,6 +538,12 @@ end
         @test_throws ArgumentError MBD.getEpochDependencies(model, [NaN; zeros(Float64, 41)])
         @test_throws ArgumentError MBD.getEpochDependencies(model, [Inf; zeros(Float64, 41)])
         @test_throws ArgumentError MBD.getEpochDependencies(model, ones(Float64, 45))
+
+        # Test getEquationsOfMotion for CR3BP with valid model
+        eom = MBD.getEquationsOfMotion(model)
+        @test isa(eom, MBD.CR3BPEquationsOfMotion)
+        @test eom.dynamicsModel === model
+        @test isa(eom.dynamicsModel, MBD.CR3BPDynamicsModel)
         
         # Error cases: abstract methods throw on non-CR3BP model
         struct testModel <: MBD.AbstractDynamicsModel end
@@ -549,6 +555,7 @@ end
         @test_throws ErrorException MBD.getCharMasses(tm)
         @test_throws ErrorException MBD.getCharTimes(tm)
         @test_throws ErrorException MBD.getDistance2Primary(tm, 1, [1.0, 0.0, 0.0])
+        @test_throws ErrorException MBD.getEquationsOfMotion(tm)
         @test_throws ErrorException MBD.getEquilibriumPoint(tm, 1)
         @test_throws ErrorException MBD.getMassRatios(tm)
         @test_throws ErrorException MBD.getPrimaryState(tm, 1)
@@ -567,13 +574,15 @@ end
         # Error cases: CR3BP methods with wrong primary count
         # Create a malformed model with only 1 body (for testing purposes)
         bad_model = MBD.CR3BPDynamicsModel([model.primaryData[1]])
-        @test_throws ArgumentError MBD.appendExtraInitialConditions(bad_model, q0_simple, MBD.SIMPLE)
+        @test_throws ArgumentError MBD.appendExtraInitialConditions(bad_model, [1.0, 0.0, 0.0, 0.0, 1.0, 0.0], MBD.SIMPLE)
         @test_throws ArgumentError MBD.extractStateTransitionMatrix(bad_model, ones(Float64, 42))
         @test_throws ArgumentError MBD.isEpochIndependent(bad_model)
         @test_throws ArgumentError MBD.getCharLengths(bad_model)
         @test_throws ArgumentError MBD.getCharMasses(bad_model)
         @test_throws ArgumentError MBD.getCharTimes(bad_model)
         @test_throws ArgumentError MBD.getDistance2Primary(bad_model, 1, [1.0, 0.0, 0.0])
+        @test_throws ArgumentError MBD.getEnergy(bad_model, [1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+        @test_throws ArgumentError MBD.getEquationsOfMotion(bad_model)
         @test_throws ArgumentError MBD.getEquilibriumPoint(bad_model, 1)
         @test_throws ArgumentError MBD.getLinearVariationState(bad_model, 1, [0.01, 0.01, 0.0])
         @test_throws ArgumentError MBD.getMassRatios(bad_model)
