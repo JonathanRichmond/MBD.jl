@@ -3,7 +3,7 @@ CR3BP manifold wrapper
 
 Author: Jonathan Richmond
 C: 1/25/25
-U: 6/17/25
+U: 1/27/26
 """
 
 import DifferentialEquations
@@ -34,11 +34,11 @@ Return manifold arcs, stopping propagation when a primary is encountered
 function stopCrashes(manifold::CR3BPManifold)
     propagator = MBD.Propagator()
     crashEvent = DifferentialEquations.VectorContinuousCallback(primaryDistanceCondition2, terminateAffectIndex!, 2)
-    EarthRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[1].bodyRadius/getCharLength(manifold.periodicOrbit.dynamicsModel)
-    MoonRadius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[2].bodyRadius/getCharLength(manifold.periodicOrbit.dynamicsModel)
+    P1Radius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[1].bodyRadius/getCharLength(manifold.periodicOrbit.dynamicsModel)
+    P2Radius::Float64 = manifold.periodicOrbit.dynamicsModel.systemData.primaryData[2].bodyRadius/getCharLength(manifold.periodicOrbit.dynamicsModel)
     manifoldArcs::Vector{MBD.CR3BPManifoldArc} = Vector{MBD.CR3BPManifoldArc}(undef, length(manifold.initialConditions))
     for a::Int64 = 1:length(manifold.initialConditions)
-        arc::MBD.CR3BPArc = propagateWithEvent(propagator, crashEvent, real(manifold.initialConditions[a]), [0.0, manifold.TOF], manifold.periodicOrbit.dynamicsModel, [manifold.periodicOrbit.dynamicsModel, EarthRadius, MoonRadius])
+        arc::MBD.CR3BPArc = propagateWithEvent(propagator, crashEvent, real(manifold.initialConditions[a]), [0.0, manifold.TOF], manifold.periodicOrbit.dynamicsModel, [manifold.periodicOrbit.dynamicsModel, P1Radius, P2Radius])
         manifoldArcs[a] = MBD.CR3BPManifoldArc(manifold.periodicOrbit, manifold.orbitTimes[a], manifold.ds[a], manifold.initialConditions[a], getTimeByIndex(arc, -1))
     end
 
