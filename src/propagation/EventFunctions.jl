@@ -3,7 +3,7 @@ Event functions
 
 Author: Jonathan Richmond
 C: 9/20/23
-U: 10/8/25
+U: 1/27/26
 """
 
 import DifferentialEquations, LinearAlgebra, Logging
@@ -11,7 +11,7 @@ import DifferentialEquations, LinearAlgebra, Logging
 export arclengthCondition, b1BCR4BP12DistanceCondition, momentumDifferenceConditionBCR4BP12
 export momentumDifferenceConditionBCR4BP41, momentumDifferenceConditionCR3BP
 export primaryDistanceCondition2, primaryDistanceCondition3, p1BCR4BP12DistanceCondition
-export p1CR3BPDistanceCondition, p2DistanceCondition, renormalize!, terminateAffect!
+export p1CR3BPDistanceCondition, p2CR3BPDistanceCondition, renormalize!, terminateAffect!
 export xzPlaneCrossingCondition, zValueCondition
 
 """
@@ -162,16 +162,16 @@ function p1BCR4BP12DistanceCondition(state::Vector{Float64}, time::Float64, inte
 end
 
 """
-    p2DistanceCondition(state, time, integrator)
+    p2CR3BPDistanceCondition(state, time, integrator)
 
-Return event condition for specified distance from P2
+Return event condition for specified distance from P2 in CR3BP
 
 # Arguments
 - `state::Vector{Float64}`: State vector [ndim]
 - `time::Float64`: Time [ndim]
 - `integrator`: Integrator object with params: [p2Distance]
 """
-function p2DistanceCondition(state::Vector{Float64}, time::Float64, integrator)
+function p2CR3BPDistanceCondition(state::Vector{Float64}, time::Float64, integrator)
     mu::Float64 = getMassRatio(integrator.p[1])
     sqrt((state[1]-1+mu)^2+state[2]^2+state[3]^2)-integrator.p[2]
 end
