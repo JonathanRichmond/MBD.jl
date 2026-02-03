@@ -90,7 +90,7 @@ function getSunEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime:
     for et::Int64 in 1:length(ephemerisTimes)
         bodyState::Vector{Float64} = Ephemerides.ephem_vector6(eph, firstdigit(targetBodyID), Int64(targetBodyID), ephemerisTimes[et])
         barycenterState::Vector{Float64} = Ephemerides.ephem_vector6(eph, 0, firstdigit(targetBodyID), ephemerisTimes[et])
-        SunState::Vector{Float64} = Ephemerides.ephem_vector6(eph, observerBodyID, 0, ephemerisTimes[et])
+        SunState::Vector{Float64} = Ephemerides.ephem_vector6(eph, Int64(observerBodyID), 0, ephemerisTimes[et])
         eqState::Vector{Float64} = bodyState-barycenterState-SunState
         if frame == "ECLIPJ2000"
             i::Float64 = 23.43929111*pi/180
@@ -103,7 +103,7 @@ function getSunEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime:
             throw(ArgumentError("Frame not supported"))
         end
     end
-    
+
     return (ephemerisStates, ephemerisTimes)
 end
 
