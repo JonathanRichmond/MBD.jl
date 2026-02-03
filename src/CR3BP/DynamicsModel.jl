@@ -678,7 +678,7 @@ Return Sun-centered Ecliptic J2000 inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, eph::Ephemerides.EphemerisProvider, initialEpochTime::Float64, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    SSystemData = MBD.SystemData("Sun")
+    SSystemData = MBD.KSystemData("Sun")
     SDynamicsModel = MBD.KDynamicsModel(SSystemData)
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
