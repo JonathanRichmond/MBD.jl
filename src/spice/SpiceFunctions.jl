@@ -59,7 +59,7 @@ function getEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime::Fl
         N::Matrix{Float64} = [R zeros(Float64, (3,3)); zeros(Float64, (3,3)) R]
         ephemerisStates::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(ephemerisTimes))
         for et::Int64 in 1:length(ephemerisTimes)
-            eqState::Vector{Float64} = Ephemerides.ephem_vector6(eph, referenceBodyID, targetBodyID, ephemerisTimes[et])-Ephemerides.ephem_vector6(eph, referenceBodyID, observerBodyID, ephemerisTimes[et])
+            eqState::Vector{Float64} = Ephemerides.ephem_vector6(eph, referenceBodyID, Int64(targetBodyID), ephemerisTimes[et])-Ephemerides.ephem_vector6(eph, referenceBodyID, Int64(observerBodyID), ephemerisTimes[et])
             ephemerisStates[et] = N*eqState
         end
     elseif frame == "J2000"
