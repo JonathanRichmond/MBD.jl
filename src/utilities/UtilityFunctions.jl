@@ -50,7 +50,7 @@ Return first digit
 # Arguments
 - `n::Int64`: Number
 """
-function firstdigit(n::Int64)
+function firstdigit(n::Int)
     n = abs(n)
     while n >= 10
         n ÷= 10
