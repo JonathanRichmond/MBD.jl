@@ -56,7 +56,7 @@ function firstdigit(n::Int64)
         n /= 10
     end
 
-    return n
+    return Int(n)
 end
 
 """
