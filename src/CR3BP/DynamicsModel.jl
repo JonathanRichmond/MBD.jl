@@ -684,7 +684,7 @@ function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, eph::Ephemer
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
-    bodyInitialStateDim::Vector{Float64} = getEphemerides(eph, initialEpochTime, [0.0], dynamicsModel.systemData.primaryData[2].spiceID, dynamicsModel.systemData.primaryData[1].spiceID, firstdigit(dynamicsModel.systemData.primaryData[2].spiceID))[1][1]
+    bodyInitialStateDim::Vector{Float64} = getSunEphemerides(eph, initialEpochTime, [0.0], dynamicsModel.systemData.primaryData[2].spiceID, dynamicsModel.systemData.primaryData[1].spiceID)[1][1]
     Sun = MBD.BodyData("Sun")
     bodyOrbitalElements::StaticArrays.MVector{6, Float64} = StaticArrays.MVector{6, Float64}(getOrbitalElements(SDynamicsModel, bodyInitialStateDim))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodyOrbitalElements[3] = 0.0)
