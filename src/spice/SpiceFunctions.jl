@@ -3,7 +3,7 @@ SPICE functions
 
 Author: Jonathan Richmond
 C: 9/14/23
-U: 2/2/26
+U: 2/3/26
 """
 
 import Ephemerides, SPICE
@@ -63,7 +63,7 @@ function getEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime::Fl
             ephemerisStates[et] = N*eqState
         end
     elseif frame == "J2000"
-        ephemerisStates::Vector{Vector{Float64}} = [Ephemerides.ephem_vector6(eph, referenceBodyID, targetBodyID, et)-Ephemerides.ephem_vector6(eph, referenceBodyID, observerBodyID, et) for et in ephemerisTimes]
+        ephemerisStates = [Ephemerides.ephem_vector6(eph, referenceBodyID, targetBodyID, et)-Ephemerides.ephem_vector6(eph, referenceBodyID, observerBodyID, et) for et in ephemerisTimes]
     else
         throw(ArgumentError("Frame not supported"))
     end
