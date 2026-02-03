@@ -3,12 +3,12 @@ Utility functions
 
 Author: Jonathan Richmond
 C: 9/7/22
-U: 6/16/25
+U: 2/3/26
 """
 
 import Logging
 
-export Cartesian2Cylindrical, checkIndices, isApproxSigFigs, maskData, updatePointer
+export Cartesian2Cylindrical, checkIndices, firstdigit, isApproxSigFigs, maskData, updatePointer
 
 """
     Cartesian2Cylindrical(pos, c)
@@ -43,7 +43,26 @@ function checkIndices(stateIndices::Vector{Int64}, stateSize::Int64)
 end
 
 """
+    firstdigit(n)
+
+Return first digit
+
+# Arguments
+- `n::Int64`: Number
+"""
+function firstdigit(n::Int64)
+    n = abs(n)
+    while n >= 0
+        n /= 10
+    end
+    
+    return n
+end
+
+"""
     isApproxSigFigs(a, b, sigFigs)
+
+Return true if significant figures is approximately equal
 
 # Arguments
 - `a::Vector{Float64}`: First number
