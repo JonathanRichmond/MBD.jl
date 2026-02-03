@@ -686,7 +686,10 @@ function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, eph::Ephemer
     tstar::Float64 = getCharTime(dynamicsModel)
     bodyInitialStateDim::Vector{Float64} = getSunEphemerides(eph, initialEpochTime, [0.0], dynamicsModel.systemData.primaryData[2].spiceID, dynamicsModel.systemData.primaryData[1].spiceID)[1][1]
     Sun = MBD.BodyData("Sun")
+    bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, Sun.gravParam))
+    println(bodySPICEElements[1:6])
     bodyOrbitalElements::StaticArrays.MVector{6, Float64} = StaticArrays.MVector{6, Float64}(getOrbitalElements(SDynamicsModel, bodyInitialStateDim))
+    println(bodyOrbitalElements[1:6])
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodyOrbitalElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
