@@ -54,7 +54,7 @@ Return ephemerides
 function getEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime::Float64, times::Vector{Float64}, targetBodyID::Int16, observerBodyID::Int16, referenceBodyID::Int64; frame::String = "ECLIPJ2000")
     ephemerisTimes::Vector{Float64} = initialEpochTime .+ times
     if frame == "ECLIPJ2000"
-        i::Float64 = 23.43929111*pi/180
+        i::Float64 = 23.439291111*pi/180
         R::Matrix{Float64} = [1 0 0; 0 cos(i) sin(i); 0 -sin(i) cos(i)]
         N::Matrix{Float64} = [R zeros(Float64, (3,3)); zeros(Float64, (3,3)) R]
         ephemerisStates::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(ephemerisTimes))
@@ -93,7 +93,7 @@ function getSunEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime:
         SunState::Vector{Float64} = Ephemerides.ephem_vector6(eph, 0, Int64(observerBodyID), ephemerisTimes[et])
         eqState::Vector{Float64} = bodyState-barycenterState-SunState
         if frame == "ECLIPJ2000"
-            i::Float64 = 23.43929111*pi/180
+            i::Float64 = 23.439291111*pi/180
             R::Matrix{Float64} = [1 0 0; 0 cos(i) sin(i); 0 -sin(i) cos(i)]
             N::Matrix{Float64} = [R zeros(Float64, (3,3)); zeros(Float64, (3,3)) R]
             ephemerisStates[et] = N*eqState
