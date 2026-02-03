@@ -51,7 +51,7 @@ Return ephemerides
 - `referenceBodyID::Int16`: Body SPICE ID for ephemerides reference (common to both)
 - `frame::String`: Reference frame (default = "ECLIPJ2000")
 """
-function getEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime::Float64, times::Vector{Float64}, targetBodyID::Int16, observerBodyID::Int16, referenceBodyID::Int16; frame::String = "ECLIPJ2000")
+function getEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime::Float64, times::Vector{Float64}, targetBodyID::Int16, observerBodyID::Int16, referenceBodyID::Int64; frame::String = "ECLIPJ2000")
     ephemerisTimes::Vector{Float64} = initialEpochTime .+ times
     if frame == "ECLIPJ2000"
         i::Float64 = 23.43929111*pi/180
