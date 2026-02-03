@@ -52,10 +52,10 @@ Return first digit
 """
 function firstdigit(n::Int64)
     n = abs(n)
-    while n >= 0
+    while n >= 10
         n /= 10
     end
-    
+
     return n
 end
 
