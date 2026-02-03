@@ -48,9 +48,9 @@ end
 Return first digit
 
 # Arguments
-- `n::Int64`: Number
+- `n`: Number
 """
-function firstdigit(n::Int)
+function firstdigit(n)
     n = abs(n)
     while n >= 10
         n ÷= 10
