@@ -3,10 +3,10 @@ CR3BP dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 10/20/25
+U: 2/3/26
 """
 
-import LinearAlgebra, SPICE, StaticArrays
+import Ephemerides, LinearAlgebra, SPICE, StaticArrays
 import MBD: CR3BPDynamicsModel
 
 export appendExtraInitialConditions, checkSTM, evaluateEquations, getCharLength, getCharTime
@@ -531,6 +531,48 @@ function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, initialE
     bodyInitialStateDim::Vector{Float64} = getEphemerides(initialEpoch, [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     initialEpochTime::Float64 = SPICE.str2et(initialEpoch)
+    bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
+    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
+    timesDim::Vector{Float64} = times.*tstar
+    thetadotDim::Float64 = 1/tstar
+    states_primaryInertial::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, numTimes)
+    for i in Int16(1):numTimes
+        state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[i]-getPrimaryState(dynamicsModel, 1))
+        state_primaryDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_primary[1:3].*lstar, state_primary[4:6].*lstar./tstar))
+        bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
+        bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements, initialEpochTime+timesDim[i]))
+        xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
+        zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
+        yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat))
+        C::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([xhat yhat zhat])
+        Cdot::StaticArrays.SMatrix{3, 3, Float64} = StaticArrays.SMatrix{3, 3, Float64}([thetadotDim.*yhat -thetadotDim.*xhat zeros(Float64, 3)])
+        N::StaticArrays.SMatrix{6, 6, Float64} = StaticArrays.SMatrix{6, 6, Float64}([C zeros(Float64, (3,3)); Cdot C])
+        state_primaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(N*state_primaryDim)
+        states_primaryInertial[i] = append!(state_primaryInertialDim[1:3]./lstar, state_primaryInertialDim[4:6].*tstar./lstar)
+    end
+
+    return states_primaryInertial
+end
+
+"""
+    rotatingToPrimaryEclipJ2000(dynamicsModel, eph, initialEpochTime, states, times)
+
+Return primary-centered Ecliptic J2000 inertial frame states [ndim]
+
+# Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
+- `eph::EphemerisProvider`: Ephemeris provider object
+- `initialEpochTime::Float64`: Initial epoch time [s]
+- `states::Vector{Vector{Float64}}`: Rotating states [ndim]
+- `times::Vector{Float64}`: Epochs [ndim]
+"""
+function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, eph::Ephemerides.EphemerisProvider, initialEpochTime::Float64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    numTimes::Int16 = Int16(length(times))
+    (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
+    lstar::Float64 = getCharLength(dynamicsModel)
+    tstar::Float64 = getCharTime(dynamicsModel)
+    bodyInitialStateDim::Vector{Float64} = getEphemerides(eph, initialEpochTime, [0.0], dynamicsModel.systemData.primaryData[2].spiceID, dynamicsModel.systemData.primaryData[1].spiceID)[1][1]
+    primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar

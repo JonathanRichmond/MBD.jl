@@ -3,10 +3,10 @@ SPICE functions
 
 Author: Jonathan Richmond
 C: 9/14/23
-U: 1/23/25
+U: 2/2/26
 """
 
-import SPICE
+import Ephemerides, SPICE
 
 export getEphemerides
 
@@ -33,6 +33,25 @@ function getEphemerides(initialEpoch::String, times::Vector{Float64}, targetBody
         ephemerisStates[e] = state
         ephemerisTimes[e] = time
     end
+    
+    return (ephemerisStates, ephemerisTimes)
+end
+
+"""
+    getEphemerides(eph, initialEpochTime, times, targetBodyID, observerBodyID)
+
+Return ephemerides in ECLIPJ2000 frame?
+
+# Arguments
+- `eph::EphemerisProvider`: Ephemeris provider object
+- `initialEpochTime::Float64`: Initial epoch time [s]
+- `times::Vector{Float64}`: Times since initial epoch
+- `targetBodyID::Int64`: Target body SPICE ID for ephemerides
+- `observerBodyID::Int64`: Body SPICE ID for ephemerides reference
+"""
+function getEphemerides(eph::Ephemerides.EphemerisProvider, initialEpochTime::Float64, times::Vector{Float64}, targetBodyID::Int64, observerBodyID::Int64)
+    ephemerisTimes::Vector{Float64} = initialEpochTime .+ times
+    ephemerisStates::Vector{Vector{Float64}} = [Ephemerides.ephem_vector6(eph, observerBodyID, targetBodyID, et) for et in ephemerisTimes]
     
     return (ephemerisStates, ephemerisTimes)
 end
