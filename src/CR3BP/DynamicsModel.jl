@@ -587,7 +587,7 @@ function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::F
         # bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements_old[3:5], [bodySPICEElements_old[6]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements[8]])
         bodyElements::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/lstar]))
         # bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements, initialEpochTime+timesDim[i]))
-        bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(getCartesianState(bodyElements, initialEpochTime+timesDim[i]))
+        bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(getCartesianState(KModel, append!(bodyElements[1:5], initialEpochTime+timesDim[i])))
         xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
         zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
         yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat))
