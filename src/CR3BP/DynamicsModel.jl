@@ -567,13 +567,17 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::FrameTransformations.FrameSystem, initialEpochTime::Float64, states::Vector{Vector{Float64}}, times::Vector{Float64})
+    KModel = MBD.KDynamicsModel(dynamicsModel.systemData.primaryData[1].name)
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
     bodyInitialStateDim::Vector{Float64} = FrameTransformations.vector6(frame, Int64(dynamicsModel.systemData.primaryData[1].spiceID), Int64(dynamicsModel.systemData.primaryData[2].spiceID), 17, initialEpochTime)
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
-    bodySPICEElements::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
+    bodySPICEElements_old::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
+    println(bodySPICEElements_old)
+    bodySPICEElements::StaticArrays.MVector{6, Float64} = StaticArrays.MVector{6, Float64}(getOrbitalElements(KModel, bodyInitialStateDim))
+    println(bodySPICEElements)
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
