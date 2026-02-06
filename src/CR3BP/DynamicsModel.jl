@@ -576,7 +576,7 @@ function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::F
     bodyInitialStateDim::Vector{Float64} = FrameTransformations.vector6(frame, Int64(dynamicsModel.systemData.primaryData[1].spiceID), Int64(dynamicsModel.systemData.primaryData[2].spiceID), 17, initialEpochTime)
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     bodySPICEElements_old::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim, initialEpochTime, primary.gravParam))
-    println(bodySPICEElements_old)
+    println(bodySPICEElements_old[1:6])
     bodySPICEElements::StaticArrays.MVector{6, Float64} = StaticArrays.MVector{6, Float64}(getOrbitalElements(KModel, bodyInitialStateDim))
     println(bodySPICEElements)
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
