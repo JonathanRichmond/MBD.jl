@@ -567,7 +567,8 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::FrameTransformations.FrameSystem, initialEpochTime::Float64, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    KModel = MBD.KDynamicsModel(dynamicsModel.systemData.primaryData[1].name)
+    KSystem = MBD.KSystemData(dynamicsModel.systemData.primaryData[1].name)
+    KModel = MBD.KDynamicsModel(KSystem)
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
