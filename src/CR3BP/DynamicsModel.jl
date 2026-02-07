@@ -567,7 +567,7 @@ Return primary-centered Ecliptic J2000 inertial frame states [ndim]
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::FrameTransformations.FrameSystem, initialEpochTime::Float64, states::Vector{Vector{Float64}}, times::Vector{Float64})
-    KSystem = MBD.KSystemData(dynamicsModel.systemData.primaryData[1].name)
+    KSystem = MBD.KSystemData(dynamicsModel.systemData.primaryNames[1])
     KModel = MBD.KDynamicsModel(KSystem)
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
@@ -769,13 +769,13 @@ Return rotating frame states
 - `times::Vector{Float64}`: Epochs [ndim]
 """
 function secondaryEclipJ2000ToRotating(dynamicsModel::CR3BPDynamicsModel, frame::FrameTransformations.FrameSystem, initialEpochTime::Float64, states_secondaryInertial::Vector{Vector{Float64}}, times::Vector{Float64})
-    KSystem = MBD.KSystemData(dynamicsModel.systemData.primaryData[1].name)
+    KSystem = MBD.KSystemData(dynamicsModel.systemData.primaryNames[1])
     KModel = MBD.KDynamicsModel(KSystem)
     numTimes::Int16 = Int16(length(times))
     (Int16(length(states_secondaryInertial)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states_primaryInertial)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
-    bodyInitialStateDim_old::Vector{Float64} = getSunEphemerides(eph, initialEpochTime, [0.0], dynamicsModel.systemData.primaryData[2].spiceID, dynamicsModel.systemData.primaryData[1].spiceID)[1][1]
+    bodyInitialStateDim_old::Vector{Float64} = getEphemerides(SPICE.et2utc(initialEpochTime, "C", 0), [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
     println(bodyInitialStateDim_old)
     bodyInitialStateDim::Vector{Float64} = FrameTransformations.vector6(frame, Int64(dynamicsModel.systemData.primaryData[1].spiceID), Int64(dynamicsModel.systemData.primaryData[2].spiceID), 17, initialEpochTime)
     println(bodyInitialStateDim)
