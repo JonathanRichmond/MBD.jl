@@ -779,9 +779,7 @@ function secondaryEclipJ2000ToRotating(dynamicsModel::CR3BPDynamicsModel, frame:
     bodyInitialStateDim::Vector{Float64} = FrameTransformations.vector6(frame, Int64(dynamicsModel.systemData.primaryData[1].spiceID), Int64(dynamicsModel.systemData.primaryData[2].spiceID), 17, initialEpochTime)
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     bodySPICEElements_old::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim_old, initialEpochTime, primary.gravParam))
-    println(bodySPICEElements_old[1:6])
     bodySPICEElements::Vector{Float64} = getOrbitalElements(KModel, bodyInitialStateDim)
-    println(bodySPICEElements)
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements_old[3] = 0.0)
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
@@ -790,12 +788,11 @@ function secondaryEclipJ2000ToRotating(dynamicsModel::CR3BPDynamicsModel, frame:
     for i in Int16(1):numTimes
         state_secondaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(states_secondaryInertial[i][1:3].*lstar, states_secondaryInertial[i][4:6].*lstar./tstar))
         bodyElements_old::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements_old[3:5], [bodySPICEElements_old[9]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements_old[8]])
-        println(bodyElements_old[1:6])
         bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], bodySPICEElements[6]+timesDim[i]/tstar)
-        println(bodyElements)
         bodyStateDim_old::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements_old, initialEpochTime+timesDim[i]))
         println(bodyStateDim_old)
         bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(getCartesianState(KModel, bodyElements))
+        println(bodyStateDim)
         state_primaryInertialDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(bodyStateDim+state_secondaryInertialDim)
         xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
         zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
