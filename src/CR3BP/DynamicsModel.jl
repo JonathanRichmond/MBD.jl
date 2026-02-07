@@ -776,15 +776,14 @@ function secondaryEclipJ2000ToRotating(dynamicsModel::CR3BPDynamicsModel, frame:
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
     bodyInitialStateDim_old::Vector{Float64} = getEphemerides(SPICE.et2utc(initialEpochTime, "C", 0), [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
-    println(bodyInitialStateDim_old)
     bodyInitialStateDim::Vector{Float64} = FrameTransformations.vector6(frame, Int64(dynamicsModel.systemData.primaryData[1].spiceID), Int64(dynamicsModel.systemData.primaryData[2].spiceID), 17, initialEpochTime)
-    println(bodyInitialStateDim)
     primary::MBD.BodyData = dynamicsModel.systemData.primaryData[1]
     bodySPICEElements_old::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim_old, initialEpochTime, primary.gravParam))
     println(bodySPICEElements_old[1:6])
     bodySPICEElements::Vector{Float64} = getOrbitalElements(KModel, bodyInitialStateDim)
     println(bodySPICEElements)
-    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements_old[3] = 0.0) && (bodySPICEElements[3] = 0.0)
+    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements_old[3] = 0.0)
+    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
     states::Vector{Vector{Float64}} = Vector{Vector{Float64}}(undef, length(times))
