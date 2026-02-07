@@ -585,7 +585,7 @@ function rotatingToPrimaryEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::F
         state_primaryDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_primary[1:3].*lstar, state_primary[4:6].*lstar./tstar))
         bodyElements_old::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements_old[3:5], [bodySPICEElements_old[9]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements_old[8]])
         println(bodyElements_old[1:6])
-        bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/lstar])
+        bodyElements::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements[3:5], [bodySPICEElements[6]+timesDim[i]/tstar])
         println(bodyElements)
         bodyStateDim_old::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements_old, initialEpochTime+timesDim[i]))
         println(bodyStateDim_old)
