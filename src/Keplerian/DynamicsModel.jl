@@ -3,7 +3,7 @@ Keplerian dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/18/25
-U: 9/22/25
+U: 2/7/26
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -123,6 +123,26 @@ function getCartesianState(dynamicsModel::KDynamicsModel, elementState::Vector{F
     r_c::Float64 = a*(1-e*cos(E))
     r_E::Vector{Float64} = [r_c*cos(theta), r_c*sin(theta), 0]
     v_E::Vector{Float64} = (sqrt(getMassParameter(dynamicsModel)*a)/r_c).*[-sin(E), sqrt(1-e^2)*cos(E), 0]
+    C::Matrix{Float64} = [cos(omega)*cos(Omega)-sin(omega)*cos(i)*sin(Omega) -sin(omega)*cos(Omega)-cos(omega)*cos(i)*sin(Omega) 0; cos(omega)*sin(Omega)+sin(omega)*cos(i)*cos(Omega) -sin(omega)*sin(Omega)+cos(omega)*cos(i)*cos(Omega) 0; sin(omega)*sin(i) cos(omega)*sin(i) 0]
+    
+    return [C*r_E; C*v_E]
+end
+
+"""
+    getCartesianState(gravParam, elementState)
+
+Return Cartesian state from Keplerian orbital elements
+
+# Arguments
+- `gravParam::Float64`: Gravitational parameter
+- `elementState::Vector{Float64}`: Orbital elements
+"""
+function getCartesianState(gravParam::Float64, elementState::Vector{Float64})
+    (a::Float64, e::Float64, i::Float64, Omega::Float64, omega::Float64, theta::Float64) = [elementState...]
+    E::Float64 = atan(sqrt(1-e^2)*sin(theta), e+cos(theta))
+    r_c::Float64 = a*(1-e*cos(E))
+    r_E::Vector{Float64} = [r_c*cos(theta), r_c*sin(theta), 0]
+    v_E::Vector{Float64} = (sqrt(gravParam*a)/r_c).*[-sin(E), sqrt(1-e^2)*cos(E), 0]
     C::Matrix{Float64} = [cos(omega)*cos(Omega)-sin(omega)*cos(i)*sin(Omega) -sin(omega)*cos(Omega)-cos(omega)*cos(i)*sin(Omega) 0; cos(omega)*sin(Omega)+sin(omega)*cos(i)*cos(Omega) -sin(omega)*sin(Omega)+cos(omega)*cos(i)*cos(Omega) 0; sin(omega)*sin(i) cos(omega)*sin(i) 0]
     
     return [C*r_E; C*v_E]
@@ -268,18 +288,6 @@ end
 # end
 
 """
-    getMassParameter(dynamicsModel)
-
-Return Keplerian system mass parameter
-
-# Arguments
-- `dynamicsModel::KDynamicsModel`: Keplerian dynamics model object
-"""
-function getMassParameter(dynamicsModel::KDynamicsModel)
-    return getMassParameter(dynamicsModel.systemData)
-end
-
-"""
     getOrbitalElements(dynamicsModel, state_dim)
 
 Return Keplerian orbital elements from Cartesian state
@@ -299,6 +307,44 @@ function getOrbitalElements(dynamicsModel::KDynamicsModel, state_dim::Vector{Flo
     evec::Vector{Float64} = LinearAlgebra.cross(state_dim[4:6], hvec)./getMassParameter(dynamicsModel)-state_dim[1:3]./r
     e::Float64 = LinearAlgebra.norm(evec)
     a::Float64 = h^2/(getMassParameter(dynamicsModel)*(1-e^2))
+    omega::Float64 = (evec[3] < 0) ? 2*pi-acos(LinearAlgebra.dot(n, evec)/(LinearAlgebra.norm(n)*e)) : acos(LinearAlgebra.dot(n, evec)/(LinearAlgebra.norm(n)*e))
+    theta::Float64 = (v_r < 0) ? 2*pi-acos(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r)) : acos(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r))
+
+    return [a, e, i, Omega, omega, theta]
+end
+
+"""
+    getMassParameter(dynamicsModel)
+
+Return Keplerian system mass parameter
+
+# Arguments
+- `dynamicsModel::KDynamicsModel`: Keplerian dynamics model object
+"""
+function getMassParameter(dynamicsModel::KDynamicsModel)
+    return getMassParameter(dynamicsModel.systemData)
+end
+
+"""
+    getOrbitalElements(gravParam, state_dim)
+
+Return Keplerian orbital elements from Cartesian state
+
+# Arguments
+- `gravParam::Float64`: Gravitational parameter
+- `state_dim::Vector{Float64}`: Primary-centered inertial state [dim]
+"""
+function getOrbitalElements(gravParam::Float64, state_dim::Vector{Float64})
+    r::Float64 = LinearAlgebra.norm(state_dim[1:3])
+    v_r::Float64 = LinearAlgebra.dot(state_dim[4:6], state_dim[1:3])/r
+    hvec::Vector{Float64} = LinearAlgebra.cross(state_dim[1:3], state_dim[4:6])
+    h::Float64 = LinearAlgebra.norm(hvec)
+    i::Float64 = acos(hvec[3]/h)
+    n::Vector{Float64} = LinearAlgebra.cross([0, 0, 1], hvec)
+    Omega::Float64 = (n[2] < 0) ? 2*pi-acos(n[1]/LinearAlgebra.norm(n)) : acos(n[1]/LinearAlgebra.norm(n))
+    evec::Vector{Float64} = LinearAlgebra.cross(state_dim[4:6], hvec)./gravParam-state_dim[1:3]./r
+    e::Float64 = LinearAlgebra.norm(evec)
+    a::Float64 = h^2/(gravParam*(1-e^2))
     omega::Float64 = (evec[3] < 0) ? 2*pi-acos(LinearAlgebra.dot(n, evec)/(LinearAlgebra.norm(n)*e)) : acos(LinearAlgebra.dot(n, evec)/(LinearAlgebra.norm(n)*e))
     theta::Float64 = (v_r < 0) ? 2*pi-acos(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r)) : acos(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r))
 
