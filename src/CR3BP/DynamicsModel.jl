@@ -685,16 +685,8 @@ function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::Frame
     (Int16(length(states)) == numTimes) || throw(ArgumentError("Number of state vectors, $(length(states)), must match number of times, $(length(times))"))
     lstar::Float64 = getCharLength(dynamicsModel)
     tstar::Float64 = getCharTime(dynamicsModel)
-    bodyInitialStateDim_old::Vector{Float64} = getEphemerides(SPICE.et2utc(initialEpochTime, "C", 0), [0.0], dynamicsModel.systemData.primaryNames[2], dynamicsModel.systemData.primaryNames[1], "ECLIPJ2000")[1][1]
-    println(bodyInitialStateDim_old)
     bodyInitialStateDim::Vector{Float64} = FrameTransformations.vector6(frame, Int64(dynamicsModel.systemData.primaryData[1].spiceID), Int64(dynamicsModel.systemData.primaryData[2].spiceID), 17, initialEpochTime)
-    println(bodyInitialStateDim)
-    Sun = MBD.BodyData("Sun")
-    bodySPICEElements_old::StaticArrays.MVector{20, Float64} = StaticArrays.MVector{20, Float64}(SPICE.oscltx(bodyInitialStateDim_old, initialEpochTime, Sun.gravParam))
-    println(bodySPICEElements_old[1:6])
     bodyOrbitalElements::StaticArrays.MVector{6, Float64} = StaticArrays.MVector{6, Float64}(getOrbitalElements(SModel, bodyInitialStateDim))
-    println(bodyOrbitalElements)
-    (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodySPICEElements_old[3] = 0.0)
     (dynamicsModel.systemData.primaryNames[2] == "Earth") && (bodyOrbitalElements[3] = 0.0)
     timesDim::Vector{Float64} = times.*tstar
     thetadotDim::Float64 = 1/tstar
@@ -702,14 +694,8 @@ function rotatingToSunEclipJ2000(dynamicsModel::CR3BPDynamicsModel, frame::Frame
     for i in Int16(1):numTimes
         state_primary::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(states[i]-getPrimaryState(dynamicsModel, 1))
         state_primaryDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(append!(state_primary[1:3].*lstar, state_primary[4:6].*lstar./tstar))
-        bodyElements_old::Vector{Float64} = append!([lstar, 0.0], bodySPICEElements_old[3:5], [bodySPICEElements_old[9]+timesDim[i]/tstar, initialEpochTime+timesDim[i]], [bodySPICEElements_old[8]])
-        println(bodyElements_old[1:6])
         bodyElements::Vector{Float64} = append!([lstar, 0.0], bodyOrbitalElements[3:5], [bodyOrbitalElements[6]+timesDim[i]/tstar])
-        println(bodyElements)
-        bodyStateDim_old::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(SPICE.conics(bodyElements_old, initialEpochTime+timesDim[i]))
-        println(bodyStateDim_old)
         bodyStateDim::StaticArrays.SVector{6, Float64} = StaticArrays.SVector{6, Float64}(getCartesianState(SModel, bodyElements))
-        println(bodyStateDim)
         xhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(bodyStateDim[1:3]./lstar)
         zhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])./LinearAlgebra.norm(LinearAlgebra.cross(bodyStateDim[1:3], bodyStateDim[4:6])))
         yhat::StaticArrays.SVector{3, Float64} = StaticArrays.SVector{3, Float64}(LinearAlgebra.cross(zhat, xhat))
