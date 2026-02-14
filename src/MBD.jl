@@ -2,13 +2,16 @@
 Multi-body dynamics astrodynamics package
 
 Author: Jonathan Richmond
+
+NOTE: Some dependencies fail to precompile if updated, precompiles in Julia 1.12.4 (2/14/26)
+
 C: 9/1/22
-U: 9/22/25
+U: 2/14/26
 """
 module MBD
 
 import Base: ==
-import Combinatorics, DifferentialEquations, LightXML, LinearAlgebra, SPICE, StaticArrays
+import Combinatorics, DifferentialEquations, Ephemerides, FrameTransformations, LightXML, LinearAlgebra, SPICE, StaticArrays
 
 const GRAVITY = 6.67384E-20
 const UNINITIALIZED_INDEX = 0
