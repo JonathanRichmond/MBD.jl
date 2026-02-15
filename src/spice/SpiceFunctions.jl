@@ -6,7 +6,7 @@ C: 9/14/23
 U: 2/6/26
 """
 
-import Ephemerides, FrameTransformations, SPICE
+import SPICE
 
 export getEphemerides
 
