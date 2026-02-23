@@ -3,7 +3,7 @@ CR3BP periodic orbit wrapper
 
 Author: Jonathan Richmond
 C: 1/16/23
-U: 6/17/25
+U: 2/23/26
 """
 
 import DifferentialEquations, LinearAlgebra, StaticArrays
@@ -79,7 +79,7 @@ function getManifoldArcByTime(periodicOrbit::CR3BPPeriodicOrbit, stability::Stri
     arcEigenvector::StaticArrays.SVector{6, Complex{Float64}} = StaticArrays.SVector{6, Complex{Float64}}(Phi*eigenvector)
     normEigenvector::Vector{Complex{Float64}} = arcEigenvector./LinearAlgebra.norm(arcEigenvector[1:3])
     step::Int16 = (direction == "Negative") ? Int16(-1) : Int16(1)
-    manifoldArc = MBD.CR3BPManifoldArc(periodicOrbit, orbitTime, d, Vector{Complex{Float64}}(state+step*d.*normEigenvector))
+    manifoldArc = MBD.CR3BPManifoldArc(periodicOrbit, orbitTime, direction, d, Vector{Complex{Float64}}(state+step*d.*normEigenvector))
 
     return manifoldArc
 end

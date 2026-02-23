@@ -4,7 +4,7 @@ Multi-body dynamics astrodynamics package
 Author: Jonathan Richmond
 
 C: 9/1/22
-U: 2/14/26
+U: 2/23/26
 """
 module MBD
 
@@ -1133,29 +1133,32 @@ end
 Base.:(==)(orbitFamily1::CR3BPMSOrbitFamily, orbitFamily2::CR3BPMSOrbitFamily) = ((orbitFamily1.dynamicsModel == orbitFamily2.dynamicsModel) && (orbitFamily1.initialConditions == orbitFamily2.initialConditions)  && (orbitFamily1.monodromies == orbitFamily2.monodromies) && (orbitFamily1.periods == orbitFamily2.periods))
 
 """
-    CR3BPManifoldArc(periodicOrbit, orbitTime, d, initialCondition; TOF)
+    CR3BPManifoldArc(periodicOrbit, orbitTime, direction, d, initialCondition; TOF)
 
 CR3BP manifold arc object
 
 # Arguments
 - `periodicOrbit::CR3BPPeriodicOrbit`: Underlying CR3BP periodic orbit
 - `orbitTime::Float64`: Time along orbit from initial condition [ndim]
+- `direction::String`: Step-off direction
 - `d::Float64`: Step-off distance [ndim]
 - `initialCondition::Vector{Complex{Float64}}`: Initial conditions [ndim]
 - `TOF::Float64`: Time-of-flight [ndim] (default = 0.0)
 """
 mutable struct CR3BPManifoldArc
     d::Float64                                                          # Step-off distance [ndim]
+    direction::String                                                   # Step-off direction
     initialCondition::Vector{Complex{Float64}}                          # Initial conditions [ndim]
     orbitTime::Float64                                                  # Normalized time along orbit from initial condition
     periodicOrbit::CR3BPPeriodicOrbit                                   # Underlying periodic orbit
     TOF::Float64                                                        # Time-of-flight [ndim]
 
-    function CR3BPManifoldArc(periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64, d::Float64, initialCondition::Vector{Complex{Float64}}, TOF::Float64 = 0.0)
+    function CR3BPManifoldArc(periodicOrbit::CR3BPPeriodicOrbit, orbitTime::Float64, direction::String, d::Float64, initialCondition::Vector{Complex{Float64}}, TOF::Float64 = 0.0)
         this = new()
 
         this.periodicOrbit = periodicOrbit
         this.orbitTime = orbitTime
+        this.direction = direction
         this.d = d
         this.initialCondition = initialCondition
         this.TOF = TOF
