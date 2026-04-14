@@ -13,6 +13,9 @@ import LightXML, LinearAlgebra, Logging, SPICE
 Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/Warn/Error
 
 
+SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
+
+
 # @testset "Constructors" begin
 #     @testset "BodyData constructors" begin
 #         # Create a temporary XML file containing a single test body with a known ID
@@ -595,30 +598,140 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
 #     end
 # end
 
-# @testset "Utilities" begin
-#     @testset "SPICE" begin
-#         @testset "getIDCode behavior" begin
-#             # Use the injectable function reference in the MBD SPICE utility to avoid
-#             # touching the external SPICE module. Save and restore the original.
-#             orig_getIDCode = MBD._getIDCode_func[]
-#             try
-#                 # Empty name -> ArgumentError
-#                 @test_throws ArgumentError MBD.getIDCode("")
+@testset "Utilities" begin
+    @testset "SPICE" begin
+        @testset "getIDCode behavior" begin
+            function with_mock_getIDCode(body::Function, mock_fn::Function)
+                original = MBD._getIDCode_func[]
+                MBD._getIDCode_func[] = mock_fn
+                try
+                    body()
+                finally
+                    MBD._getIDCode_func[] = original
+                end
+            end
 
-#                 # Successful lookup
-#                 MBD._getIDCode_func[] = name -> 4242
-#                 @test MBD.getIDCode("Anything") == 4242
+            function clear_id_cache!()
+                empty!(MBD._id_cache)
+            end
 
-#                 # SPICE returns nothing -> ErrorException
-#                 MBD._getIDCode_func[] = name -> nothing
-#                 @test_throws ErrorException MBD.getIDCode("Anything")
+            @testset "Input validation" begin
+                # Empty string throws ArgumentError
+                err1 = try
+                    MBD.getIDCode("")
+                    nothing
+                catch e
+                    e
+                end
+                @test err1 isa ArgumentError
+                @test occursin("empty", err1.msg)
+                # Whitespace-only string throws ArgumentError
+                for ws in ("    ", "\t", "\n", " \t\n ")
+                    err2 = try
+                        MBD.getIDCode(ws)
+                        nothing
+                    catch e
+                        e
+                    end
+                    @test err2 isa ArgumentError
+                    @test occursin("whitespace", err2.msg)
+                end
+            end
 
-#                 # SPICE throws -> ErrorException
-#                 MBD._getIDCode_func[] = name -> throw(ErrorException("simulated failure"))
-#                 @test_throws ErrorException MBD.getIDCode("Anything")
-#             finally
-#                 MBD._getIDCode_func[] = orig_getIDCode
-#             end
-#         end
-#     end
-# end
+            @testset "Successful SPICE resolution" begin
+                clear_id_cache!()
+                # Known body returns correct ID
+                code = MBD.getIDCode("Earth")
+                @test code == 399
+                @test code isa Int64
+                # Case/whitespace is stripped before lookup
+                clear_id_cache!()
+                @test MBD.getIDCode(" EARTH ") == 399
+                clear_id_cache!()
+            end
+
+            @testset "Caching" begin
+                clear_id_cache!()
+                # Result is stored in _id_cache after first call
+                code = MBD.getIDCode("Earth")
+                @test haskey(MBD._id_cache, "Earth")
+                @test MBD._id_cache["Earth"] == 399
+                # Second call return cached value without hitting SPICE
+                clear_id_cache!()
+                callCount = Ref(0)
+                mock = function(name::String)
+                    normalized = strip(name)
+                    if haskey(MBD._id_cache, normalized)
+                        return MBD._id_cache[normalized]
+                    end
+                    local code::Int
+                    callCount[] += 1
+                    code = SPICE.bods2c(normalized)
+                    MBD._id_cache[normalized] = code
+                    return code
+                end
+                with_mock_getIDCode(mock) do 
+                    code1 = getIDCode("Earth")
+                    spiceCallsBefore = callCount[]
+                    code2 = getIDCode("Earth")
+                    @test callCount[] == spiceCallsBefore
+                end
+                # Whitespace-normalized name is cached under stripped key
+                clear_id_cache!()
+                code = MBD.getIDCode(" Earth ")
+                @test haskey(MBD._id_cache, "Earth")
+                @test !haskey(MBD._id_cache, " Earth ")
+                # Cache hit returns same value as original resolution
+                clear_id_cache!()
+                code1 = MBD.getIDCode("Earth")
+                code2 = MBD.getIDCode("Earth")
+                @test code1 == code2
+                clear_id_cache!()
+            end
+
+            @testset "Unknown body name" begin
+                clear_id_cache!()
+                # Unrecognized body throws KeyError
+                err = try
+                    MBD.getIDCode("Erid")
+                    nothing
+                catch e
+                    e
+                end
+                @test err isa KeyError
+                @test occursin("Erid", string(err.key))
+                # Unrecognized body is not stored in cache
+                @test !haskey(MBD._id_cache, "Erid")
+                clear_id_cache!()
+            end
+
+            @testset "SPICE exception propagation" begin
+                clear_id_cache!()
+                # Arbitrary SPICE error is re-thrown
+                mock = function(name::String)
+                    normalized = strip(name)
+                    if haskey(MBD._id_cache, normalized)
+                        return MBD._id_cache[normalized]
+                    end
+                    if normalized == "Mars"
+                        throw(DomainError("simulated SPICE kernel failure"))
+                    end
+                end
+                with_mock_getIDCode(mock) do
+                    caught = try
+                        MBD.getIDCode("Mars")
+                        nothing
+                    catch e
+                        e
+                    end
+                    @test caught === DomainError("simulated SPICE kernel failure")
+                    # Exception type is preserved
+                    @test_throws DomainError MBD.getIDCode("Mars")
+                end
+            end
+        end
+    end
+end
+
+
+SPICE.kclear()

@@ -24,7 +24,7 @@ include("types/Core.jl")
 # include("dynamics/SystemDataMethods.jl")
 # include("dynamics/DynamicsModelMethods.jl")
 # include("dynamics/EquationsOfMotionMethods.jl")
-# include("utilities/SPICE.jl")
+include("utilities/spice.jl")
 
 include("exports.jl")
 
