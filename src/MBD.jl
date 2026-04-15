@@ -16,7 +16,7 @@ const UNINITIALIZED_INDEX = 0
 
 
 include("types/Core.jl")
-# include("types/BodyData.jl")
+include("types/BodyData.jl")
 # include("types/SystemData.jl")
 # include("types/DynamicsModel.jl")
 # include("types/EquationsOfMotion.jl")

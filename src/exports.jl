@@ -8,7 +8,7 @@ C: 4/14/26
 
 export
     # Types
-    # BodyData,
+    BodyData,
     # SystemData,
     # AbstractDynamicsModel, CR3BPDynamicsModel,
     # AbstractEquationsOfMotion, CR3BPEquationsOfMotion,

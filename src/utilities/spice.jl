@@ -7,10 +7,12 @@ C: 4/14/26
 
 
 # Cache for memoization
-const _id_cache = Dict{String, Int}()
+const _id_cache = Dict{String, Int64}()
 
 
 """
+    getIDCode(name::String) -> Int64
+
 Get the SPICE ID for a given body name
 
 Arguments
@@ -27,8 +29,8 @@ Errors
 Logging
 - Emits `@error` logs for thrown errors
 - Emits `@warn` logs if no SPICE ID is returned
-- Emits `@info` logs when SPICE ID is resolved
-- Emits `@debug` logs when function is entered, if `name` is cached, and when
+- Emits `@info` logs when a SPICE ID is resolved
+- Emits `@debug` logs when function is entered, if `name` is cached, or when
     SPICE is queried
 
 Notes
@@ -40,6 +42,8 @@ id = getIDCode("Earth")
 ```
 """
 function getIDCode_func(name::String)
+    Logging.@debug "Entered getIDCode_func()" name
+
     # Input validation
     if isempty(strip(name))
         Logging.@error "Body name must be a non-empty string" name
