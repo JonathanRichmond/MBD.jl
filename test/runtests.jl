@@ -16,8 +16,107 @@ Logging.global_logger(Logging.ConsoleLogger(stderr, Logging.Info)) # Debug/Info/
 SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
 
 
-# @testset "Constructors" begin
-#     @testset "BodyData constructors" begin
+@testset "Constructors" begin
+    @testset "BodyData constructors" begin
+        function clear_body_cache!()
+            empty!(MBD._body_cache)
+        end
+
+        function write_xml(bodies::Vector{<:NamedTuple})::String
+            path = tempname()*".xml"
+            doc = LightXML.XMLDocument()
+            root = LightXML.create_root(doc, "bodies")
+            for b in bodies
+                body_el = LightXML.new_child(root, "body")
+                for (tag, val) in pairs(b)
+                    child = LightXML.new_child(body_el, string(tag))
+                    LightXML.set_contents(child, string(val))
+                end
+            end
+            LightXML.save_file(doc, path)
+            LightXML.free(doc)
+
+            return path
+        end
+
+        const EARTH_RECORD = (
+            id          = 399,
+            circ_r      = 1.4959789217545033e+08,
+            ecc         = 1.6735932113458880e-02,
+            inc         = 2.9806674094843888e-04,
+            radius      = 6.3710083666666660e+03,
+            gm          = 3.9860043543609593e+05,
+            raan        = 1.2204084798628088e+00,
+            parentId    = 10
+        )
+
+        @testset "Input validation" begin
+            mktempdir() do dir
+                xml = write_xml([EARTH_RECORD])
+                # Empty name throws ArgumentError
+                err1 = try
+                    MBD.load_bodyData("", xml)
+                    nothing
+                catch e
+                    e
+                end
+                @test err1 isa ArgumentError
+                @test occursin("empty", err1.msg)
+                # Whitespace-only name throws ArgumentError
+                for ws in ("    ", "\t", "\n", " \t\n ")
+                    err2 = try
+                        MBD.load_bodyData(ws, xml)
+                        nothing
+                    catch e
+                        e
+                    end
+                    @test err2 isa ArgumentError
+                    @test occursin("whitespace", err2.msg)
+                end
+                # Non-existent file throws SystemError
+                err3 = try
+                    MBD.load_bodyData("Earth", "/no/such/file.xml")
+                    nothing
+                catch e
+                    e
+                end
+                @test err3 isa SystemError
+                @test occursin("/no/such/file.xml", err3.msg)
+            end
+        end
+
+        @testset "Successful load" begin
+            clear_body_cache!()
+            mktempdir() do dir
+                xml = write_xml([EARTH_RECORD])
+                bd1 = MBD.load_bodyData("Earth", xml)
+                # Returns BodyData
+                @test bd1 isa MBD.BodyData
+                # SPICE ID is correct
+                @test bd1.spiceID == 399
+                # Numeric fields match XML
+                @test bd1.a ≈ EARTH_RECORD.circ_r
+                @test bd1.e ≈ EARTH_RECORD.ecc
+                @test bd1.i ≈ EARTH_RECORD.inc
+                @test bd1.r ≈ EARTH_RECORD.radius
+                @test bd1.μ ≈ EARTH_RECORD.gm
+                @test bd1.Ω ≈ EARTH_RECORD.raan
+                # Mass is derived from μ/G
+                @test bd1.m ≈ EARTH_RECORD.gm/MBD.GRAVITY
+                # Name is stripped input
+                clear_body_cache!()
+                bd2 = MBD.load_bodyData(" Earth ", xml)
+                @test bd2.name == "Earth"
+                # Parent SPICE ID set from XML
+                @test bd1.parentSpiceID == 10
+            end
+        end
+
+        @testset "Parent SPICE ID handling" begin
+            
+        end
+
+
 #         # Create a temporary XML file containing a single test body with a known ID
 #         xml = """<?xml version="1.0"?>
 #         <bodies>
@@ -66,7 +165,7 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
 #             MBD._getIDCode_func[] = orig_getIDCode
 #             isfile(tmpfile) && rm(tmpfile)
 #         end
-#     end
+    end
 
 #     @testset "SystemData constructors" begin
 #         # Map names to the IDs present in src/body_data.xml
@@ -192,7 +291,7 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
 #             MBD._getIDCode_func[] = orig_resolver
 #         end
 #     end
-# end
+end
 
 
 # @testset "SystemData methods" begin

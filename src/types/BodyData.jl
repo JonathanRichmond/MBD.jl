@@ -50,9 +50,9 @@ function load_bodyData(name::String, fileName::String)::BodyData
         Logging.@error "Body name must be a non-empty string" name
         throw(ArgumentError("Body name cannot be empty or whitespace"))
     end
-    if !isfile(filename)
+    if !isfile(fileName)
         Logging.@error "XML file not found"
-        throw(SystemError("File not found: \"$filename\""))
+        throw(SystemError("File not found: \"$fileName\""))
     end
 
     # Normalize name once to avoid redundant allocations
@@ -74,14 +74,14 @@ function load_bodyData(name::String, fileName::String)::BodyData
         Logging.@error "Failed to retrieve SPICE ID" name=normalized exception=(e, catch_backtrace())
         rethrow()
     end
-    Logging.@debug "Retrieved SPICE ID" name=normalized SPICEID
+    Logging.@debug "Retrieved SPICE ID" name=normalized spiceID
 
     # Parse XML file
     doc = nothing
     try
         doc = LightXML.parse_file(fileName)
     catch e
-        Logging.@error "Failed to parse XML file" fileName exception(e, catch_backtrace())
+        Logging.@error "Failed to parse XML file" fileName exception=(e, catch_backtrace())
         rethrow()
     end
 
@@ -120,7 +120,7 @@ function load_bodyData(name::String, fileName::String)::BodyData
                 continue
             end
             id != spiceID && continue
-            Logging.@debug "Matched body by SPICE ID" id SPICEID
+            Logging.@debug "Matched body by SPICE ID" id spiceID
 
             # Parse remaining fields only for the matched body
             local a::Float64, e::Float64, i::Float64, parentSpiceID::Int64, r::Float64, μ::Float64, Ω::Float64
@@ -132,30 +132,30 @@ function load_bodyData(name::String, fileName::String)::BodyData
                 μ = parse(Float64, getTagText(body, "gm"))
                 Ω = parse(Float64, getTagText(body, "raan"))
             catch err
-                Logging.@error "Failed to parse numeric field for body" name=normalized id exception(err, catch_backtrace())
+                Logging.@error "Failed to parse numeric field for body" name=normalized id exception=(err, catch_backtrace())
                 rethrow()
             end
             parentText = getTagText(body, "parentId")
             if lowercase(parentText) == "nan"
-                parentSPICEID = UNINITIALIZED_INDEX
+                parentSpiceID = UNINITIALIZED_INDEX
             else
                 try
-                    parentSPICEID = parse(Int64, parentText)
+                    parentSpiceID = parse(Int64, parentText)
                 catch e
-                    Logging.@error "Failed to parse <parentID> for body" name=normalized parentText exception(e, catch_backtrace())
+                    Logging.@error "Failed to parse <parentID> for body" name=normalized parentText exception=(e, catch_backtrace())
                     rethrow()
                 end
             end
             m = μ/GRAVITY
 
-            result = BodyData(a, e, i, m, normalized, parentSPICEID, r, SPICEID, μ, Ω)
+            result = BodyData(a, e, i, m, normalized, parentSpiceID, r, spiceID, μ, Ω)
             found = true
             break
         end
 
         if !found
-            Logging.@error "No matching body found in XML for SPICE ID" name=normalized SPICEID fileName
-            throw(KeyError("No body with SPICE ID $SPICEID (\"$normalized\") found in \"$fileName\"."))
+            Logging.@error "No matching body found in XML for SPICE ID" name=normalized spiceID fileName
+            throw(KeyError("No body with SPICE ID $spiceID (\"$normalized\") found in \"$fileName\"."))
         end
     finally
         # Free the XML document to prevent memory leaks
@@ -165,7 +165,7 @@ function load_bodyData(name::String, fileName::String)::BodyData
 
     # Store result in cache
     _body_cache[normalized] = result
-    Logging.@info "Loaded body data" name=normalized SPICEID fileName
+    Logging.@info "Loaded body data" name=normalized spiceID fileName
 
     return result
 end
@@ -215,11 +215,11 @@ BodyData(name::String) = load_bodyData(name, joinpath(@__DIR__, "../body_data.xm
 # Base functions
 Base.:(==)(bodyData1::BodyData, bodyData2::BodyData) = (bodyData1.SPICEID == bodyData2.SPICEID) && (bodyData1.a == bodyData2.a) && (bodyData1.e == bodyData2.e) && (bodyData1.i == bodyData2.i) && (bodyData1.m == bodyData2.m) && (bodyData1.name == bodyData2.name) && (bodyData1.parentSPICEID == bodyData2.parentSPICEID) && (bodyData1.r == bodyData2.r) && (bodyData1.μ == bodyData2.μ) && (bodyData1.Ω == bodyData2.Ω)
 function Base.show(io::IO, ::MIME"text/plain", bodyData::BodyData)
-    println(io, "BodyData: ", data.name)
-    println(io, "  SPICE ID: ", data.SPICEID, "   Parent SPICEID: ", data.parentSPICEID)
-    Printf.@printf(io, "  a: %0.6g km   e: %0.6g   i: %0.6g rad\n", data.a, data.e, data.i)
-    Printf.@printf(io, "  radius: %0.6g km   μ (GM): %0.6g km^3/s^2   mass: %0.6g kg\n", data.r, data.μ, data.m)
-    Printf.@printf(io, "  Ω (RAAN): %0.6g rad\n", data.Ω)
+    println(io, "BodyData: ", bodyData.name)
+    println(io, "  SPICE ID: ", bodyData.spiceID, "   Parent SPICE ID: ", bodyData.parentSpiceID)
+    Printf.@printf(io, "  a: %0.6g km   e: %0.6g   i: %0.6g rad\n", bodyData.a, bodyData.e, bodyData.i)
+    Printf.@printf(io, "  radius: %0.6g km   μ (GM): %0.6g km^3/s^2   mass: %0.6g kg\n", bodyData.r, bodyData.μ, bodyData.m)
+    Printf.@printf(io, "  Ω (RAAN): %0.6g rad\n", bodyData.Ω)
 end
 function Base.show(io::IO, bodyData::BodyData)
     Base.show(io, MIME"text/plain"(), bodyData)
