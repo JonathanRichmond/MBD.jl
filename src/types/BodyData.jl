@@ -3,11 +3,8 @@ Body data types
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
+U: 4/16/26
 """
-
-
-# Cache for memoization
-const _body_cache = Dict{String, BodyData}()
 
 
 """
@@ -56,7 +53,7 @@ function load_bodyData(name::String, fileName::String)::BodyData
     end
 
     # Normalize name once to avoid redundant allocations
-    normalized = strip(name)
+    normalized = String(strip(name))
 
     # Cache lookup (avoids redundant file parsing)
     if haskey(_body_cache, normalized)
@@ -112,11 +109,15 @@ function load_bodyData(name::String, fileName::String)::BodyData
         found = false
         for body in bodyList
             # Parse ID first and skip non-matching bodies immediately
-            local id::Int64
-            try
-                id = parse(Int64, getTagText(body, "id"))
+            idText = try
+                getTagText(body, "id")
             catch e
-                Logging.@warn "Skipping <body> with unparseable <id>" exception=(e, catch_backtrace())
+                Logging.@warn "Skipping <body> with missing <id>" exception=(e, catch_backtrace())
+                continue
+            end
+            id = tryparse(Int64, idText)
+            if isnothing(id)
+                Logging.@warn "Skipping <body> with unparseable <id>" idText
                 continue
             end
             id != spiceID && continue
@@ -142,7 +143,7 @@ function load_bodyData(name::String, fileName::String)::BodyData
                 try
                     parentSpiceID = parse(Int64, parentText)
                 catch e
-                    Logging.@error "Failed to parse <parentID> for body" name=normalized parentText exception=(e, catch_backtrace())
+                    Logging.@error "Failed to parse <parentId> for body" name=normalized parentText exception=(e, catch_backtrace())
                     rethrow()
                 end
             end
@@ -203,17 +204,21 @@ struct BodyData
     i::Float64
     m::Float64
     name::String
-    parentSPICEID::Int64
+    parentSpiceID::Int64
     r::Float64
-    SPICEID::Int64
+    spiceID::Int64
     μ::Float64
     Ω::Float64
 end
 BodyData(name::String) = load_bodyData(name, joinpath(@__DIR__, "../body_data.xml"))
 
 
+# Cache for memoization
+const _body_cache = Dict{String, BodyData}()
+
+
 # Base functions
-Base.:(==)(bodyData1::BodyData, bodyData2::BodyData) = (bodyData1.SPICEID == bodyData2.SPICEID) && (bodyData1.a == bodyData2.a) && (bodyData1.e == bodyData2.e) && (bodyData1.i == bodyData2.i) && (bodyData1.m == bodyData2.m) && (bodyData1.name == bodyData2.name) && (bodyData1.parentSPICEID == bodyData2.parentSPICEID) && (bodyData1.r == bodyData2.r) && (bodyData1.μ == bodyData2.μ) && (bodyData1.Ω == bodyData2.Ω)
+Base.:(==)(bodyData1::BodyData, bodyData2::BodyData) = (bodyData1.spiceID == bodyData2.spiceID) && (bodyData1.a == bodyData2.a) && (bodyData1.e == bodyData2.e) && (bodyData1.i == bodyData2.i) && (bodyData1.m == bodyData2.m) && (bodyData1.name == bodyData2.name) && (bodyData1.parentSpiceID == bodyData2.parentSpiceID) && (bodyData1.r == bodyData2.r) && (bodyData1.μ == bodyData2.μ) && (bodyData1.Ω == bodyData2.Ω)
 function Base.show(io::IO, ::MIME"text/plain", bodyData::BodyData)
     println(io, "BodyData: ", bodyData.name)
     println(io, "  SPICE ID: ", bodyData.spiceID, "   Parent SPICE ID: ", bodyData.parentSpiceID)

@@ -3,6 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
+U: 4/16/26
 """
 
 using MBD, Test
@@ -30,7 +31,7 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
                 body_el = LightXML.new_child(root, "body")
                 for (tag, val) in pairs(b)
                     child = LightXML.new_child(body_el, string(tag))
-                    LightXML.set_contents(child, string(val))
+                    LightXML.set_content(child, string(val))
                 end
             end
             LightXML.save_file(doc, path)
@@ -39,7 +40,17 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
             return path
         end
 
-        const EARTH_RECORD = (
+        function with_mock_getIDCode(body::Function, mock_fn::Function)
+            original = MBD._getIDCode_func[]
+            MBD._getIDCode_func[] = mock_fn
+            try
+                body()
+            finally
+                MBD._getIDCode_func[] = original
+            end
+        end
+
+        EARTH_RECORD = (
             id          = 399,
             circ_r      = 1.4959789217545033e+08,
             ecc         = 1.6735932113458880e-02,
@@ -81,7 +92,7 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
                     e
                 end
                 @test err3 isa SystemError
-                @test occursin("/no/such/file.xml", err3.msg)
+                @test occursin("/no/such/file.xml", String(err3.prefix))
             end
         end
 
@@ -113,58 +124,188 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
         end
 
         @testset "Parent SPICE ID handling" begin
-            
+            clear_body_cache!()
+            mktempdir() do dir
+                # NaN parentId maps to 0
+                record = merge(EARTH_RECORD, (parentId = "NaN",))
+                xml = write_xml([record])
+                bd = MBD.load_bodyData("Earth", xml)
+                @test bd.parentSpiceID == MBD.UNINITIALIZED_INDEX
+                clear_body_cache!()
+                # nan also maps to 0
+                record = merge(EARTH_RECORD, (parentId = "nan",))
+                xml = write_xml([record])
+                bd = MBD.load_bodyData("Earth", xml)
+                @test bd.parentSpiceID == MBD.UNINITIALIZED_INDEX
+                clear_body_cache!()
+                # Numeric parentId is parsed correctly
+                record = merge(EARTH_RECORD, (parentId = 10,))
+                xml = write_xml([record])
+                bd = MBD.load_bodyData("Earth", xml)
+                @test bd.parentSpiceID == 10
+                clear_body_cache!()
+                # Unparseable parentId rethrows
+                record = merge(EARTH_RECORD, (parentId = "not_a_number",))
+                xml = write_xml([record])
+                @test_throws Exception MBD.load_bodyData("Earth", xml)
+                clear_body_cache!()
+            end
         end
 
+        @testset "XML structure errors" begin
+            clear_body_cache!()
+            mktempdir() do dir
+                # No <body> elements throws KeyError
+                path = tempname()*".xml"
+                doc = LightXML.XMLDocument()
+                LightXML.create_root(doc, "bodies")
+                LightXML.save_file(doc, path)
+                LightXML.free(doc)
+                @test_throws KeyError MBD.load_bodyData("Earth", path)
+                # No body matches SPICE ID throws KeyError
+                mars = merge(EARTH_RECORD, (id = 499,))
+                xml = write_xml([mars])
+                err = try
+                    MBD.load_bodyData("Earth", xml)
+                    nothing
+                catch e
+                    e
+                end
+                @test err isa KeyError
+                @test occursin("Earth", string(err.key))
+                clear_body_cache!()
+                # Missing required XML tag throws KeyError
+                record = (id = 399, circ_r = 1.0, ecc = 0.0, inc = 0.0, radius = 1.0, raan = 0.0, parentId = 10)
+                xml = write_xml([record])
+                @test_throws KeyError MBD.load_bodyData("Earth", xml)
+                clear_body_cache!()
+                # Unparseable numeric field throws
+                record = merge(EARTH_RECORD, (gm = "not_a_float",))
+                xml = write_xml([record])
+                @test_throws Exception MBD.load_bodyData("Earth", xml)
+                clear_body_cache!()
+                # Body with unparseable <id> is skipped; throws if no other match
+                bad_id = merge(EARTH_RECORD, (id = "bad",))
+                xml = write_xml([bad_id])
+                @test_throws KeyError MBD.load_bodyData("Earth", xml)
+                clear_body_cache!()
+                # Body with unparseable <id> is skipped; valid subsequent body matches
+                bad_id = merge(EARTH_RECORD, (id = "bad",))
+                good_earth = EARTH_RECORD
+                xml = write_xml([bad_id, good_earth])
+                @test MBD.load_bodyData("Earth", xml) isa MBD.BodyData
+                clear_body_cache!()
+            end
+        end
 
-#         # Create a temporary XML file containing a single test body with a known ID
-#         xml = """<?xml version="1.0"?>
-#         <bodies>
-#         <body>
-#             <id>9999</id>
-#             <circ_r>7000.0</circ_r>
-#             <ecc>0.001</ecc>
-#             <inc>0.1</inc>
-#             <parentId>NaN</parentId>
-#             <radius>6371.0</radius>
-#             <gm>398600.4418</gm>
-#             <raan>0.5</raan>
-#         </body>
-#         </bodies>
-#         """
+        @testset "SPICE lookup failure propagates" begin
+            clear_body_cache!()
+            mktempdir() do dir
+                xml = write_xml([EARTH_RECORD])
+                spice_err = ErrorException("simulated SPICE failure")
+                with_mock_getIDCode((_) -> throw(spice_err)) do
+                    caught = try
+                        MBD.getIDCode("Earth")
+                        nothing
+                    catch e
+                        e
+                    end
+                    @test caught === spice_err
+                end
+            end
+        end
 
-#         tmpfile = tempname() * ".xml"
-#         open(tmpfile, "w") do io
-#             write(io, xml)
-#         end
+        @testset "Caching" begin
+            mktempdir() do dir
+                xml = write_xml([EARTH_RECORD])
+                # Result stored in _body_cache after first call
+                clear_body_cache!()
+                MBD.load_bodyData("Earth", xml)
+                @test haskey(MBD._body_cache, "Earth")
+                # Stripped name is used as cache key
+                clear_body_cache!()
+                MBD.load_bodyData(" Earth ", xml)
+                @test haskey(MBD._body_cache, "Earth")
+                @test !haskey(MBD._body_cache, " Earth ")
+                # Second call returns cached value without reparsing XML
+                clear_body_cache!()
+                MBD.load_bodyData("Earth", xml)
+                fake = MBD._body_cache["Earth"]
+                sentinel = MBD.BodyData(fake.a, fake.e, fake.i, fake.m, "SENTINEL", fake.parentSpiceID, fake.r, fake.spiceID, fake.μ, fake.Ω)
+                MBD._body_cache["Earth"] = sentinel
+                result = MBD.load_bodyData("Earth", xml)
+                @test result.name == "SENTINEL"
+                # Failed lookup is not cached
+                clear_body_cache!()
+                try
+                    MBD.load_bodyData("UNKNOWN_BODY_XYZ", xml)
+                catch
+                end
+                @test !haskey(MBD._body_cache, "UNKNOWN_BODY_XYZ")
+            end
+        end
 
-#         # Temporarily override MBD.getIDCode to return the test ID (avoids SPICE dependency)
-#         orig_getIDCode = MBD._getIDCode_func[]
-#         MBD._getIDCode_func[] = (_) -> 9999
+        @testset "BodyData convenience constructor" begin
+            clear_body_cache!()
+            # BodyData(name) returns BodyData
+            @test MBD.BodyData("Earth") isa MBD.BodyData
+            # BodyData(name) SPICE ID matches expected
+            clear_body_cache!()
+            @test MBD.BodyData("Earth").spiceID == 399
+            # BodyData(name) is consistent with load_bodyData on packaged file
+            clear_body_cache!()
+            via_constructor = MBD.BodyData("Earth")
+            clear_body_cache!()
+            via_loader = MBD.load_bodyData("Earth", "body_data.xml")
+            @test via_constructor == via_loader
+        end
 
-#         try
-#             bd = MBD.load_bodyData("TestBody", tmpfile)
-#             @test isa(bd, MBD.BodyData)
-#             @test isapprox(bd.a, 7000.0; atol=1e-12)
-#             @test isapprox(bd.e, 0.001; atol=1e-12)
-#             @test isapprox(bd.i, 0.1; atol=1e-12)
-#             @test bd.parentSPICEID == Int16(MBD.UNINITIALIZED_INDEX)
-#             @test isapprox(bd.r, 6371.0; atol=1e-12)
-#             @test isapprox(bd.μ, 398600.4418; atol=1e-9)
-#             @test bd.SPICEID == Int16(9999)
+        @testset "BodyData equality" begin
+            clear_body_cache!()
+            mktempdir() do dir
+                xml = write_xml([EARTH_RECORD])
+                bd1 = MBD.load_bodyData("Earth", xml)
+                clear_body_cache!()
+                bd2 = MBD.load_bodyData("Earth", xml)
+                # Same data compares equal
+                @test bd1 == bd2
+                # Different SPICE ID is not equal
+                mars_rec = merge(EARTH_RECORD, (id = 499,))
+                xml2 = write_xml([mars_rec])
+                clear_body_cache!()
+                bd_mars = MBD.load_bodyData("Mars", xml2)
+                @test bd1 != bd_mars
+                # Different numeric field is not equal
+                other_rec = merge(EARTH_RECORD, (radius = 999.0,))
+                xml3 = write_xml([other_rec])
+                clear_body_cache!()
+                bd_other = MBD.load_bodyData("Earth", xml3)
+                @test bd1 != bd_other
+            end
+        end
 
-#             # Ensure the pretty-print shows the name
-#             s = sprint(show, bd)
-#             @test occursin("BodyData:", s) && occursin("TestBody", s)
-
-#             # Test equality comparison between instances
-#             bd2 = MBD.load_bodyData("TestBody", tmpfile)
-#             @test bd == bd2
-#         finally
-#             # Restore original getIDCode and remove temp file
-#             MBD._getIDCode_func[] = orig_getIDCode
-#             isfile(tmpfile) && rm(tmpfile)
-#         end
+        @testset "Base.show" begin
+            clear_body_cache!()
+            mktempdir() do dir
+                xml = write_xml([EARTH_RECORD])
+                bd = MBD.load_bodyData("Earth", xml)
+                # show(io, MIME, bd) does not throw
+                buf = IOBuffer()
+                @test_nowarn show(buf, MIME"text/plain"(), bd)
+                # show output contains body name
+                buf = IOBuffer()
+                show(buf, MIME"text/plain"(), bd)
+                @test occursin("Earth", String(take!(buf)))
+                # show output contains SPICE ID
+                buf = IOBuffer()
+                show(buf, MIME"text/plain"(), bd)
+                @test occursin("399", String(take!(buf)))
+                # show(io, bd) delegates to MIME method without throwing
+                buf = IOBuffer()
+                @test_nowarn show(buf, bd)
+            end
+        end
+        clear_body_cache!()
     end
 
 #     @testset "SystemData constructors" begin
@@ -798,7 +939,7 @@ end
                     e
                 end
                 @test err isa KeyError
-                @test occursin("Erid", string(err.key))
+                @test occursin("Erid", String(err.key))
                 # Unrecognized body is not stored in cache
                 @test !haskey(MBD._id_cache, "Erid")
                 clear_id_cache!()

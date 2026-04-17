@@ -3,6 +3,7 @@ SPICE utility functions
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
+U: 4/16/26
 """
 
 
@@ -51,7 +52,7 @@ function getIDCode_func(name::String)
     end
 
     # Normalize name once to avoid redundant allocations
-    normalized = strip(name)
+    normalized = String(strip(name))
 
     # Cache lookup (avoids redundant SPICE calls)
     if haskey(_id_cache, normalized)
