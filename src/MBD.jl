@@ -3,6 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
+U: 4/17/26
 """
 module MBD
 
@@ -17,7 +18,7 @@ const UNINITIALIZED_INDEX = 0
 
 include("types/Core.jl")
 include("types/BodyData.jl")
-# include("types/SystemData.jl")
+include("types/SystemData.jl")
 # include("types/DynamicsModel.jl")
 # include("types/EquationsOfMotion.jl")
 
