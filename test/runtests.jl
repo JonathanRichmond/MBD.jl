@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/16/26
+U: 4/24/26
 """
 
 using MBD, Test
@@ -306,6 +306,185 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
             end
         end
         clear_body_cache!()
+    end
+
+    @testset "SystemData constructors" begin
+        function clear_all_caches!()
+            empty!(MBD._id_cache)
+            empty!(MBD._body_cache)
+        end
+
+        @testset "Input validation" begin
+            # Empty vector throws ArgumentError"
+            err1 = try
+                MBD.init_systemData(String[])
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa ArgumentError
+            @test occursin("empty", err1.msg)
+            # Vector with empty string element throws ArgumentError
+            err2 = try
+                MBD.init_systemData(["Earth", ""])
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa ArgumentError
+            @test occursin("2", err2.msg)
+            # Vector with whitespace-only element throws ArgumentError
+            for ws in ("    ", "\t", "\n")
+                err3 = try
+                    MBD.init_systemData(["Earth", ws])
+                    nothing
+                catch e
+                    e
+                end
+                @test err3 isa ArgumentError
+                @test occursin("whitespace", err3.msg)
+            end
+            # Empty element at index 1 reports index 1
+            err4 = try
+                MBD.init_systemData([""])
+                nothing
+            catch e
+                e
+            end
+            @test err4 isa ArgumentError
+            @test occursin("1", err4.msg)
+            # Duplicate SPICE IDs throw ArgumentError
+            err5 = try
+                MBD.init_systemData(["Earth", "Earth"])
+                nothing
+            catch e
+                e
+            end
+            @test err5 isa ArgumentError
+            @test occursin("duplicate", err5.msg)
+        end
+
+        @testset "Successful initialization" begin
+            clear_all_caches!()
+            # Single body returns SystemData
+            @test MBD.init_systemData(["Earth"]) isa MBD.SystemData
+            # Multiple bodies returns SystemData
+            clear_all_caches!()
+            @test MBD.init_systemData(["Earth", "Moon"]) isa MBD.SystemData
+            # names field matches normalized input
+            clear_all_caches!()
+            sd = MBD.init_systemData([" Earth ", "Moon"])
+            @test sd.names == ["Earth", "Moon"]
+            # bodyData length matches names length
+            @test length(sd.bodyData) == 2
+            # spiceIDs length matches names length
+            @test length(sd.spiceIDs) == 2
+            # spiceIDs values match BodyData SPICE IDs
+            @test sd.spiceIDs[1] == sd.bodyData[1].spiceID
+            @test sd.spiceIDs[2] == sd.bodyData[2].spiceID
+            # spiceIDs contains correct values
+            @test 399 in sd.spiceIDs
+            @test 301 in sd.spiceIDs
+            # bodyData entries are in same order as names
+            @test sd.bodyData[1].name == "Earth"
+            @test sd.bodyData[2].name == "Moon"
+        end
+
+        @testset "Duplicate name handling" begin
+            clear_all_caches!()
+            # Duplicate names from whitespace variants still throw ArgumentError
+            @test_throws ArgumentError MBD.init_systemData(["Earth", " Earth "])
+        end
+
+        @testset "BodyData loading failure propagates" begin
+            clear_all_caches!()
+            # Unknown body name rethrows from BodyData()
+            @test_throws Exception MBD.init_systemData(["Erid"])
+            # Valid body before invalid still throws on invalid
+            clear_all_caches!()
+            @test_throws Exception MBD.init_systemData(["Earth", "Erid"])
+            # Exception is preserved (not wrapped)
+            clear_all_caches!()
+            err = try
+                MBD.init_systemData(["Erid"])
+                nothing
+            catch e
+                e
+            end
+            @test !(err isa ArgumentError)
+        end
+
+        @testset "SystemData convenience constructor" begin
+            clear_all_caches!()
+            # SystemData(names) returns SystemData
+            @test MBD.SystemData(["Earth"]) isa MBD.SystemData
+            # SystemData(names) is consistent with init_systemData
+            clear_all_caches!()
+            via_constructor = MBD.SystemData(["Earth", "Moon"])
+            clear_all_caches!()
+            via_initializer = MBD.init_systemData(["Earth", "Moon"])
+            @test via_constructor == via_initializer
+            # SystemData(names) propagates ArgumentError for empty input
+            clear_all_caches!()
+            @test_throws ArgumentError MBD.SystemData(String[])
+        end
+
+        @testset "SystemData equality" begin
+            clear_all_caches!()
+            sd1 = MBD.SystemData(["Earth", "Moon"])
+            clear_all_caches!()
+            sd2 = MBD.SystemData(["Earth", "Moon"])
+            # Same data compares equal
+            @test sd1 == sd2
+            # Different body lists are not equal
+            clear_all_caches!()
+            sd_earth = MBD.SystemData(["Earth"])
+            @test sd1 != sd_earth
+            # Same bodies in different order are not equal
+            clear_all_caches!()
+            sd_order = MBD.SystemData(["Moon", "Earth"])
+            @test sd1 != sd_order
+        end
+
+        @testset "Base.show" begin
+            clear_all_caches!()
+            sd = MBD.SystemData(["Earth", "Moon"])
+            # show(io, MIME, sd) does not throw
+            buf = IOBuffer()
+            @test_nowarn show(buf, MIME"text/plain"(), sd)
+            # show output contains all body names
+            buf = IOBuffer()
+            show(buf, MIME"text/plain"(), sd)
+            out = String(take!(buf))
+            @test occursin("Earth", out)
+            @test occursin("Moon", out)
+            # show output contains SPICE IDs
+            buf = IOBuffer()
+            show(buf, MIME"text/plain"(), sd)
+            out = String(take!(buf))
+            @test occursin("399", out)
+            @test occursin("301", out)
+            # show output contains body count
+            buf = IOBuffer()
+            show(buf, MIME"text/plain"(), sd)
+            @test occursin("2", String(take!(buf)))
+            # show singular 'body' for single-element SystemData
+            clear_all_caches!()
+            sd_earth = MBD.SystemData(["Earth"])
+            buf = IOBuffer()
+            show(buf, MIME"text/plain"(), sd_earth)
+            out = String(take!(buf))
+            @test occursin("1 body", out)
+            @test !occursin("1 bodies", out)
+            # show plural 'bodies' for multiple-element SystemData
+            buf = IOBuffer()
+            show(buf, MIME"text/plain"(), sd)
+            @test occursin("bodies", String(take!(buf)))
+            # show(io, sd) delegates to MIME method without throwing
+            buf = IOBuffer()
+            @test_nowarn show(buf, sd)
+        end
+        clear_all_caches!()
     end
 
 #     @testset "SystemData constructors" begin

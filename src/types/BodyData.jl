@@ -3,7 +3,7 @@ Body data types
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/16/26
+U: 4/24/26
 """
 
 
@@ -36,7 +36,7 @@ Logging
 
 Example
 ```
-load_bodyData("Earth", "path/to/body_data.xml")
+bodyData = load_bodyData("Earth", "path/to/body_data.xml")
 ```
 """
 function load_bodyData(name::String, fileName::String)::BodyData
@@ -194,8 +194,8 @@ Construction
 
 Example
 ```
-data = BodyData("Earth")
-println(data)
+bodyData = BodyData("Earth")
+println(bodyData)
 ```
 """
 struct BodyData
