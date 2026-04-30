@@ -118,12 +118,23 @@ struct SystemData
     bodyData::Vector{BodyData}
     names::Vector{String}
     spiceIDs::Vector{Int64}
+
+    function SystemData(bodyData::Vector{BodyData}, names::Vector{String}, spiceIDs::Vector{Int64})
+        n::Int64 = length(bodyData)
+        if (length(names) != n) || (length(spiceIDs) != n)
+            Logging.@error "SystemData has inconsistent field lengths" bodyData_len=n names_len=length(names) spiceIDs_len=length(spiceIDs)
+            throw(ArgumentError("SystemData fields bodyData, names, and spiceIDs must have equal length"))
+        end
+        
+        new(bodyData, names, spiceIDs)
+    end
 end
 SystemData(names::Vector{String}) = init_systemData(names)
 
 
 # Base functions
 Base.:(==)(systemData1::SystemData, systemData2::SystemData) = (systemData1.bodyData == systemData2.bodyData) && (systemData1.names == systemData2.names) && (systemData1.spiceIDs == systemData2.spiceIDs)
+Base.isequal(systemData1::SystemData, systemData2::SystemData) = isequal(systemData1.bodyData, systemData2.bodyData) && isequal(systemData1.names, systemData2.names) && isequal(systemData1.spiceIDs, systemData2.spiceIDs)
 function Base.show(io::IO, ::MIME"text/plain", systemData::SystemData)
     nNames::Int64 = length(systemData.names)
     println(io, "SystemData: ", nNames, nNames == 1 ? " body" : " bodies")

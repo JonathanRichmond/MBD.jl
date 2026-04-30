@@ -219,6 +219,7 @@ const _body_cache = Dict{String, BodyData}()
 
 # Base functions
 Base.:(==)(bodyData1::BodyData, bodyData2::BodyData) = (bodyData1.spiceID == bodyData2.spiceID) && (bodyData1.a == bodyData2.a) && (bodyData1.e == bodyData2.e) && (bodyData1.i == bodyData2.i) && (bodyData1.m == bodyData2.m) && (bodyData1.name == bodyData2.name) && (bodyData1.parentSpiceID == bodyData2.parentSpiceID) && (bodyData1.r == bodyData2.r) && (bodyData1.μ == bodyData2.μ) && (bodyData1.Ω == bodyData2.Ω)
+Base.isequal(bodyData1::BodyData, bodyData2::BodyData) = isequal(bodyData1.spiceID, bodyData2.spiceID) && isequal(bodyData1.a, bodyData2.a) && isequal(bodyData1.e, bodyData2.e) && isequal(bodyData1.i, bodyData2.i) && isequal(bodyData1.m, bodyData2.m) && isequal(bodyData1.name, bodyData2.name) && isequal(bodyData1.parentSpiceID, bodyData2.parentSpiceID) && isequal(bodyData1.r, bodyData2.r) && isequal(bodyData1.μ, bodyData2.μ) && isequal(bodyData1.Ω, bodyData2.Ω)
 function Base.show(io::IO, ::MIME"text/plain", bodyData::BodyData)
     println(io, "BodyData: ", bodyData.name)
     println(io, "  SPICE ID: ", bodyData.spiceID, "   Parent SPICE ID: ", bodyData.parentSpiceID)

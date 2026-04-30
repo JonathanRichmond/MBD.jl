@@ -601,47 +601,46 @@ end
         push!(sd_incon1.spiceIDs, 1000)
         @test_throws ArgumentError getNumPrimaries(sd_incon1)
     end
+
+    @testset "shallowClone" begin
+        # Returns a SystemData object
+        sd = SystemData(["Earth", "Moon"])
+        sd_copy = MBD.shallowClone(sd)
+        @test sd_copy isa MBD.SystemData
+        # Copy has equal field value to original
+        @test isequal(sd_copy.bodyData, sd.bodyData)
+        @test sd_copy.names == sd.names
+        @test sd_copy.spiceIDs == sd.spiceIDs
+        # Copy is a distinct SystemData object
+        @test sd_copy !== sd
+        @test sd_copy.bodyData !== sd.bodyData
+        @test sd_copy.names !== sd.names
+        @test sd_copy.spiceIDs !== sd.spiceIDs
+        # Mutating copy vectors does not affect original
+        push!(sd_copy.bodyData, MBD.BodyData("Sun"))
+        push!(sd_copy.names, "Sun")
+        push!(sd_copy.spiceIDs, 10)
+        @test length(sd.bodyData) == 2
+        @test length(sd.names) == 2
+        @test length(sd.spiceIDs) == 2
+        # Mutating original vectors does not affect copy
+        push!(sd.bodyData, MBD.BodyData("Sun"), MBD.BodyData("Mars"))
+        push!(sd.names, "Sun", "Mars")
+        push!(sd.spiceIDs, 10, 499)
+        @test length(sd_copy.bodyData) == 3
+        @test length(sd_copy.names) == 3
+        @test length(sd_copy.spiceIDs) == 3
+        # bodyData elements are shared references (shallow, not deep)
+        @test sd_copy.bodyData[1] === sd.bodyData[1]
+        # Copying is idempotent across multiple calls
+        sd_copy1 = MBD.shallowClone(sd)
+        sd_copy2 = MBD.shallowClone(sd)
+        @test isequal(sd_copy1.bodyData, sd_copy2.bodyData)
+        @test sd_copy1.names == sd_copy2.names
+        @test sd_copy1.spiceIDs == sd_copy2.spiceIDs
+        @test sd_copy1 !== sd_copy2
+    end
 end
-# @testset "SystemData methods" begin
-#     # Use resolver injection to ensure packaged body_data.xml names resolve
-#     orig_resolver = MBD._getIDCode_func[]
-#     MBD._getIDCode_func[] = name -> begin
-#         n = lowercase(strip(name))
-#         if n == "earth"
-#             return 399
-#         elseif n == "moon"
-#             return 301
-#         else
-#             return 0
-#         end
-#     end
-
-#     try
-#         # Build a valid system
-#         sys = MBD.init_systemData(["Earth", "Moon"])
-#         @test isa(sys, MBD.SystemData)
-
-#         # Test getNumPrimaries
-#         @test MBD.getNumPrimaries(sys) == 2
-
-#         # Test shallowClone
-#         clone = MBD.shallowClone(sys)
-#         @test isa(clone, MBD.SystemData)
-#         @test clone == sys
-#         @test clone.bodyData !== sys.bodyData
-#         @test clone.SPICEIDs !== sys.SPICEIDs
-#         @test clone.names === sys.names
-
-#         # Error cases: inconsistent SystemData vector lengths
-#         earth_bd = MBD.BodyData("Earth")
-#         badSys = MBD.SystemData([earth_bd], ["Earth", "Moon"], Int16[399])
-#         @test_throws ErrorException MBD.getNumPrimaries(badSys)
-#         @test_throws ErrorException MBD.shallowClone(badSys)
-#     finally
-#         MBD._getIDCode_func[] = orig_resolver
-#     end
-# end
-
 
 # @testset "DynamicsModel methods" begin
 #     # Use resolver injection to ensure packaged body_data.xml names resolve

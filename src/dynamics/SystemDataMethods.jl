@@ -48,3 +48,36 @@ function getNumPrimaries(systemData::SystemData)::Int64
     
     return n
 end
+
+
+"""
+    shallowClone(systemData::SystemData) -> SystemData
+
+Return shallow copy of `SystemData` object
+
+Arguments
+- `systemData::SystemData`: `SystemData` object
+
+Returns
+- `SystemData`: Copy of `SystemData` object
+
+Errors
+- No additional error checking
+
+Logging
+- Emits `@debug` logs when function is entered or when shallow copy is created
+
+Example
+```
+systemData2::SystemData = shallowClone(systemData)
+```
+"""
+function shallowClone(systemData::SystemData)::SystemData
+    Logging.@debug "Entered shallowClone" systemData
+
+    clone = SystemData(copy(systemData.bodyData), copy(systemData.names), copy(systemData.spiceIDs))
+
+    Logging.@debug "Shallow copy created" nPrimaries=length(clone.bodyData)
+
+    return clone
+end
