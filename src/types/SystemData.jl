@@ -3,6 +3,7 @@ System data types
 
 Author: Jonathan LeFevre Richmond
 C: 4/24/26
+U: 4/30/26
 """
 
 
@@ -15,7 +16,7 @@ Arguments
 - `names::Vector{String}`: Body names (as accepted by SPICE)
 
 Returns
-- `SystemData`: SystemData struct
+- `SystemData`: SystemData object
 
 Errors
 - Throws `ArgumentError` if `names` is empty, if an element of `names` is

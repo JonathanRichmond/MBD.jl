@@ -3,7 +3,7 @@ Body data types
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/24/26
+U: 4/30/26
 """
 
 
@@ -17,7 +17,7 @@ Arguments
 - `fileName::String`: XML file path containing body definitions
 
 Returns
-- `BodyData`: BodyData struct
+- `BodyData`: BodyData object
 
 Errors
 - Throws `ArgumentError` if `name` is empty

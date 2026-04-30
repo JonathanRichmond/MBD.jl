@@ -3,7 +3,7 @@ Package exports
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/17/26
+U: 4/30/26
 """
 
 
@@ -16,7 +16,7 @@ export
 
     # Dynamics
     # SystemData methods
-    # getNumPrimaries,
+    getNumPrimaries,
     # DynamicsModel methods
     # appendExtraInitialConditions, extractStateTransitionMatrix, getCharLengths, getCharMasses,
     # getCharTimes, getDistance2Primary, getEnergy, getEpochDependencies, getEquationsOfMotion,

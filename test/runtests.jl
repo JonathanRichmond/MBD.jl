@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/24/26
+U: 4/30/26
 """
 
 using MBD, Test
@@ -487,41 +487,6 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
         clear_all_caches!()
     end
 
-#     @testset "SystemData constructors" begin
-#         # Map names to the IDs present in src/body_data.xml
-#         orig_resolver = MBD._getIDCode_func[]
-#         MBD._getIDCode_func[] = name -> begin
-#             n = lowercase(strip(name))
-#             if n == "earth"
-#                 return 399
-#             elseif n == "moon"
-#                 return 301
-#             else
-#                 return 0
-#             end
-#         end
-
-#         try
-#             sys = MBD.init_systemData(["Earth", "Moon"])
-#             @test isa(sys, MBD.SystemData)
-#             @test length(sys.bodyData) == 2
-#             @test sys.names == ["Earth", "Moon"]
-#             @test sys.SPICEIDs[1] == Int16(399)
-#             @test sys.SPICEIDs[2] == Int16(301)
-
-#             # Ensure the pretty-print shows the name
-#             s = sprint(show, sys)
-#             @test occursin("SystemData:", s) && occursin("Earth", s)
-
-#             # Test equality comparison between instances
-#             sys2 = MBD.init_systemData(["Earth", "Moon"])
-#             @test sys == sys2
-#         finally
-#             # Restore original resolver and package body file
-#             MBD._getIDCode_func[] = orig_resolver
-#         end
-#     end
-
 #     @testset "DynamicsModel constructors" begin
 #         # Reuse packaged body_data.xml with resolver injection
 #         orig_resolver = MBD._getIDCode_func[]
@@ -614,6 +579,29 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
 end
 
 
+@testset "SystemData methods" begin
+    @testset "getNumPrimaries" begin
+        # Returns correct count for populated SystemData
+        sd1 = MBD.SystemData(["Earth", "Moon"])
+        nPrimaries = getNumPrimaries(sd1)
+        @test nPrimaries == 2
+        @test nPrimaries isa Int64
+        # Returns correct count for single-body SystemData
+        sd2 = MBD.SystemData(["Earth"])
+        @test getNumPrimaries(sd2) == 1
+        # Throws ArgumentError when names length is inconsistent
+        sd_incon1 = MBD.SystemData(["Earth", "Moon"])
+        push!(sd_incon1.names, "Sun")
+        @test_throws ArgumentError getNumPrimaries(sd_incon1)
+        # Throws ArgumentError when spiceIDs length is inconsistent
+        sd_incon2 = MBD.SystemData(["Earth", "Moon"])
+        push!(sd_incon2.spiceIDs, 1000)
+        @test_throws ArgumentError getNumPrimaries(sd_incon2)
+        # Throws ArgumentError when both names and spiceIDs lengths are inconsistent
+        push!(sd_incon1.spiceIDs, 1000)
+        @test_throws ArgumentError getNumPrimaries(sd_incon1)
+    end
+end
 # @testset "SystemData methods" begin
 #     # Use resolver injection to ensure packaged body_data.xml names resolve
 #     orig_resolver = MBD._getIDCode_func[]

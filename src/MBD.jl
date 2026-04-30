@@ -3,7 +3,7 @@ Multi-body dynamics astrodynamics package
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/17/26
+U: 4/30/26
 """
 module MBD
 
@@ -22,7 +22,7 @@ include("types/SystemData.jl")
 # include("types/DynamicsModel.jl")
 # include("types/EquationsOfMotion.jl")
 
-# include("dynamics/SystemDataMethods.jl")
+include("dynamics/SystemDataMethods.jl")
 # include("dynamics/DynamicsModelMethods.jl")
 # include("dynamics/EquationsOfMotionMethods.jl")
 include("utilities/spice.jl")
