@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/30/26
+U: 5/1/26
 """
 
 using MBD, Test
@@ -589,6 +589,9 @@ end
         # Returns correct count for single-body SystemData
         sd2 = MBD.SystemData(["Earth"])
         @test getNumPrimaries(sd2) == 1
+        # Returns 0 for empty SystemData
+        sd_empty = MBD.SystemData(Vector{MBD.BodyData}(), Vector{String}(), Vector{Int64}())
+        @test getNumPrimaries(sd_empty) == 0
         # Throws ArgumentError when names length is inconsistent
         sd_incon1 = MBD.SystemData(["Earth", "Moon"])
         push!(sd_incon1.names, "Sun")
@@ -632,6 +635,13 @@ end
         @test length(sd_copy.spiceIDs) == 3
         # bodyData elements are shared references (shallow, not deep)
         @test sd_copy.bodyData[1] === sd.bodyData[1]
+        # Copy of empty SystemData returns empty SystemData
+        sd_empty = MBD.SystemData(Vector{MBD.BodyData}(), Vector{String}(), Vector{Int64}())
+        sd_emptyCopy = MBD.shallowClone(sd_empty)
+        @test sd_emptyCopy isa MBD.SystemData
+        @test isempty(sd_emptyCopy.bodyData)
+        @test isempty(sd_emptyCopy.names)
+        @test isempty(sd_emptyCopy.spiceIDs)
         # Copying is idempotent across multiple calls
         sd_copy1 = MBD.shallowClone(sd)
         sd_copy2 = MBD.shallowClone(sd)

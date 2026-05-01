@@ -3,7 +3,7 @@ System data types
 
 Author: Jonathan LeFevre Richmond
 C: 4/24/26
-U: 4/30/26
+U: 5/1/26
 """
 
 
@@ -124,6 +124,19 @@ struct SystemData
         if (length(names) != n) || (length(spiceIDs) != n)
             Logging.@error "SystemData has inconsistent field lengths" bodyData_len=n names_len=length(names) spiceIDs_len=length(spiceIDs)
             throw(ArgumentError("SystemData fields bodyData, names, and spiceIDs must have equal length"))
+        end
+        normalized = Vector{String}(undef, length(names))
+        for (idx::Int64, name::String) in enumerate(names)
+            normalized[idx] = String(strip(name))
+        end
+        uniqueNames::Vector{String} = unique(normalized)
+        if length(uniqueNames) < length(normalized)
+            duplicates::Vector{String} = filter(n -> count(==(n), normalized) > 1, uniqueNames)
+            Logging.@warn "Duplicate body names detected" duplicates
+        end
+        nNames::Int64 = length(normalized)
+        if length(unique(spiceIDs)) < nNames
+            Logging.@warn "Duplicate SPICE IDs detected" spiceIDs names=normalized
         end
         
         new(bodyData, names, spiceIDs)
