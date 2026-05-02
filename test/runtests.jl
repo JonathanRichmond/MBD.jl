@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 5/1/26
+U: 5/2/26
 """
 
 using MBD, Test
@@ -269,6 +269,7 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
                 bd2 = MBD.load_bodyData("Earth", xml)
                 # Same data compares equal
                 @test bd1 == bd2
+                @test isequal(bd1, bd2)
                 # Different SPICE ID is not equal
                 mars_rec = merge(EARTH_RECORD, (id = 499,))
                 xml2 = write_xml([mars_rec])
@@ -293,15 +294,11 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
                 buf = IOBuffer()
                 @test_nowarn show(buf, MIME"text/plain"(), bd)
                 # show output contains body name
-                buf = IOBuffer()
-                show(buf, MIME"text/plain"(), bd)
-                @test occursin("Earth", String(take!(buf)))
+                out = String(take!(buf))
+                @test occursin("Earth", out)
                 # show output contains SPICE ID
-                buf = IOBuffer()
-                show(buf, MIME"text/plain"(), bd)
-                @test occursin("399", String(take!(buf)))
+                @test occursin("399", out)
                 # show(io, bd) delegates to MIME method without throwing
-                buf = IOBuffer()
                 @test_nowarn show(buf, bd)
             end
         end
@@ -436,6 +433,7 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
             sd2 = MBD.SystemData(["Earth", "Moon"])
             # Same data compares equal
             @test sd1 == sd2
+            @test isequal(sd1, sd2)
             # Different body lists are not equal
             clear_all_caches!()
             sd_earth = MBD.SystemData(["Earth"])
@@ -453,129 +451,173 @@ SPICE.furnsh("SPICEKernels/naif0012.tls", "SPICEKernels/de430.bsp")
             buf = IOBuffer()
             @test_nowarn show(buf, MIME"text/plain"(), sd)
             # show output contains all body names
-            buf = IOBuffer()
-            show(buf, MIME"text/plain"(), sd)
             out = String(take!(buf))
             @test occursin("Earth", out)
             @test occursin("Moon", out)
             # show output contains SPICE IDs
-            buf = IOBuffer()
-            show(buf, MIME"text/plain"(), sd)
-            out = String(take!(buf))
             @test occursin("399", out)
             @test occursin("301", out)
             # show output contains body count
-            buf = IOBuffer()
-            show(buf, MIME"text/plain"(), sd)
-            @test occursin("2", String(take!(buf)))
+            @test occursin("2", out)
             # show singular 'body' for single-element SystemData
             clear_all_caches!()
             sd_earth = MBD.SystemData(["Earth"])
-            buf = IOBuffer()
             show(buf, MIME"text/plain"(), sd_earth)
             out = String(take!(buf))
             @test occursin("1 body", out)
             @test !occursin("1 bodies", out)
             # show plural 'bodies' for multiple-element SystemData
-            buf = IOBuffer()
             show(buf, MIME"text/plain"(), sd)
             @test occursin("bodies", String(take!(buf)))
             # show(io, sd) delegates to MIME method without throwing
-            buf = IOBuffer()
             @test_nowarn show(buf, sd)
         end
         clear_all_caches!()
     end
 
-#     @testset "DynamicsModel constructors" begin
-#         # Reuse packaged body_data.xml with resolver injection
-#         orig_resolver = MBD._getIDCode_func[]
-#         MBD._getIDCode_func[] = name -> begin
-#             n = lowercase(strip(name))
-#             if n == "earth"
-#                 return 399
-#             elseif n == "moon"
-#                 return 301
-#             else
-#                 return 0
-#             end
-#         end
+    @testset "DynamicsModel constructors" begin
+        function clear_all_caches!()
+            empty!(MBD._id_cache)
+            empty!(MBD._body_cache)
+        end
 
-#         try
-#             sys = MBD.init_systemData(["Earth", "Moon"])
+        EARTH_MOON_SYSTEM = let
+            clear_all_caches!()
+            MBD.SystemData(["Earth", "Moon"])
+        end
 
-#             # Happy path: Earth (primary), Moon (secondary)
-#             model = MBD.init_dynamicsModel(sys, [1, 2], MBD.CR3BP)
-#             @test isa(model, MBD.CR3BPDynamicsModel)
-#             @test length(model.primaryData) == 2
-#             @test model.primaryData[1].name == "Earth"
-#             @test model.primaryData[2].name == "Moon"
+        SUN_EARTH_MOON_SYSTEM = let
+            clear_all_caches!()
+            MBD.SystemData(["Sun", "Earth", "Moon"])
+        end
 
-#             # Ensure the pretty-print shows the name
-#             s = sprint(show, model)
-#             @test occursin("DynamicsModel:", s) && occursin("Earth", s)
+        EARTH_MOON_SUN_SYSTEM = let
+            clear_all_caches!()
+            MBD.SystemData(["Earth", "Moon", "Sun"])
+        end
 
-#             # Test equality comparison between instances
-#             model2 = MBD.init_dynamicsModel(sys, [1, 2], MBD.CR3BP)
-#             @test model == model2
+        @testset "Input validation" begin
+            # Empty indices throws ArgumentError
+            err1 = try
+                MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, Vector{Int64}(), MBD.CR3BPDynamicsModel)
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa ArgumentError
+            @test occursin("empty", err1.msg)
+            # Index of 0 throws BoundsError
+            @test_throws BoundsError MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [0, 1], MBD.CR3BPDynamicsModel)
+            # Index beyond length throws BoundsError
+            n = length(EARTH_MOON_SYSTEM.bodyData)
+            @test_throws BoundsError MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [1, n+1], MBD.CR3BPDynamicsModel)
+            # Negative index throws BoundsError
+            @test_throws BoundsError MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [-1, 1], MBD.CR3BPDynamicsModel)
+            # Duplicate indices throw ArgumentError
+            err2 = try
+                MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [1, 1], MBD.CR3BPDynamicsModel)
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa ArgumentError
+            @test occursin("duplicate", err2.msg)
+            # BoundsError is checked before duplicate check
+            @test_throws BoundsError MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [n+1, n+1], MBD.CR3BPDynamicsModel)
+        end
 
-#             # Empty indices -> ArgumentError
-#             @test_throws ArgumentError MBD.init_dynamicsModel(sys, Int64[], MBD.CR3BP)
+        @testset "CR3BP validation" begin
+            # Fewer than 2 bodies throws ArgumentError
+            err1 = try
+                MBD.build_dynamicsModel(MBD.CR3BPDynamicsModel, [EARTH_MOON_SYSTEM.bodyData[1]])
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa ArgumentError
+            @test occursin("2", err1.msg)
+            # More than 2 bodies throws ArgumentError
+            @test_throws ArgumentError MBD.build_dynamicsModel(MBD.CR3BPDynamicsModel, SUN_EARTH_MOON_SYSTEM.bodyData)
+            # Reversed body order (secondary not child of primary) throws ArgumentError
+            err2 = try
+                MBD.build_dynamicsModel(MBD.CR3BPDynamicsModel, reverse(EARTH_MOON_SYSTEM.bodyData))
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa ArgumentError
+            @test occursin("parent", err2.msg)
+            # Unrelated bodies throws ArgumentError
+            clear_all_caches!()
+            sd = MBD.SystemData(["Earth", "Mars"])
+            @test_throws ArgumentError MBD.build_dynamicsModel(MBD.CR3BPDynamicsModel, sd.bodyData)
+        end
 
-#             # Duplicate indices -> ArgumentError
-#             @test_throws ArgumentError MBD.init_dynamicsModel(sys, [1, 1], MBD.CR3BP)
+        @testset "Successful initialization" begin
+            # init_dynamicsModel returns CR3BPDynamicsModel
+            dm = MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [1, 2], MBD.CR3BPDynamicsModel)
+            @test dm isa MBD.CR3BPDynamicsModel
+            # primaryData has exactly 2 entries
+            @test length(dm.primaryData) == 2
+            # primaryData entries match selected indices
+            @test dm.primaryData[1] == EARTH_MOON_SYSTEM.bodyData[1]
+            @test dm.primaryData[2] == EARTH_MOON_SYSTEM.bodyData[2]
+            # Index order is preserved in primaryData
+            @test dm.primaryData[1].name == "Earth"
+            @test dm.primaryData[2].name == "Moon"
+            # Non-contiguous indices select correct bodies
+            dm_noncont = MBD.init_dynamicsModel(EARTH_MOON_SUN_SYSTEM, [3, 1], MBD.CR3BPDynamicsModel)
+            @test dm_noncont.primaryData[1].name == "Sun"
+            @test dm_noncont.primaryData[2].name == "Earth"
+        end
 
-#             # Out-of-bounds index -> BoundsError
-#             @test_throws BoundsError MBD.init_dynamicsModel(sys, [1, 3], MBD.CR3BP)
+        @testset "CR3BPDynamicsModel convenience constructor" begin
+            # CR3BPDynamicsModel(systemData, indices) returns CR3BPDynamicsModel
+            @test MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, [1, 2]) isa MBD.CR3BPDynamicsModel
+            # CR3BPDynamicsModel(systemData, indices) is consistent with init_dynamicsModel
+            dm_convenience = MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, [1, 2])
+            dm_initializer = MBD.init_dynamicsModel(EARTH_MOON_SYSTEM, [1, 2], MBD.CR3BPDynamicsModel)
+            @test dm_convenience == dm_initializer
+            # Convenience constructor propagates ArgumentError for empty indices
+            @test_throws ArgumentError MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, Vector{Int64}())
+        end
 
-#             # Parent mismatch (secondary parent SPICEID != primary SPICEID) -> ArgumentError
-#             @test_throws ArgumentError MBD.init_dynamicsModel(sys, [2, 1], MBD.CR3BP)
-#         finally
-#             # Restore original resolver and package body file
-#             MBD._getIDCode_func[] = orig_resolver
-#         end
-#     end
+        @testset "CR3BP Base.show" begin
+            dm = MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, [1, 2])
+            # show(io, MIME, sd) does not throw
+            buf = IOBuffer()
+            @test_nowarn show(buf, MIME"text/plain"(), dm)
+            # show output contains all body names
+            out = String(take!(buf))
+            @test occursin("Earth", out)
+            @test occursin("Moon", out)
+            # show output contains SPICE IDs
+            @test occursin("399", out)
+            @test occursin("301", out)
+            # show output contains model type name
+            @test occursin("CR3BP", out)
+            # show(io, sd) delegates to MIME method without throwing
+            @test_nowarn show(buf, dm)
+        end
 
-#     @testset "EquationsOfMotion constructors" begin
-#         # Reuse packaged body_data.xml with resolver injection
-#         orig_resolver = MBD._getIDCode_func[]
-#         MBD._getIDCode_func[] = name -> begin
-#             n = lowercase(strip(name))
-#             if n == "earth"
-#                 return 399
-#             elseif n == "moon"
-#                 return 301
-#             else
-#                 return 0
-#             end
-#         end
+        @testset "Type hierarchy" begin
+            # CR3BPDynamicsModel is a subtype of AbstractDynamicsModel
+            @test MBD.CR3BPDynamicsModel <: MBD.AbstractDynamicsModel
+            # Instance satisfies isa AbstractDynamicsModel
+            @test MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, [1, 2]) isa MBD.AbstractDynamicsModel
+        end
 
-#         try
-#             # Build a valid CR3BP model for testing
-#             sys = MBD.init_systemData(["Earth", "Moon"])
-#             model = MBD.init_dynamicsModel(sys, [1, 2], MBD.CR3BP)
-
-#             # Happy path: Create valid CR3BPEquationsOfMotion instance
-#             eom = MBD.CR3BPEquationsOfMotion(model)
-#             @test isa(eom, MBD.CR3BPEquationsOfMotion)
-#             @test eom.dynamicsModel === model
-
-#             # Ensure the pretty-print shows the name
-#             s = sprint(show, eom)
-#             @test occursin("EquationsOfMotion:", s) && occursin("DynamicsModel", s)
-
-#             # Test equality comparison between instances
-#             eom2 = MBD.CR3BPEquationsOfMotion(model)
-#             @test eom == eom2
-
-#             # Model with wrong number of primaries (only 1 primary) -> ArgumentError
-#             model_bad = MBD.CR3BPDynamicsModel([sys.bodyData[1]])
-#             @test_throws ArgumentError MBD.CR3BPEquationsOfMotion(model_bad)
-#         finally
-#             # Restore original resolver and package body file
-#             MBD._getIDCode_func[] = orig_resolver
-#         end
-#     end
+        @testset "AbstractDynamicsModel equality" begin
+            dm1 = MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, [1, 2])
+            dm2 = MBD.CR3BPDynamicsModel(EARTH_MOON_SYSTEM, [1, 2])
+            # Same model compares equal
+            @test dm1 == dm2
+            @test isequal(dm1, dm2)
+            # Different bodies are not equal
+            dm_diff = MBD.CR3BPDynamicsModel(SUN_EARTH_MOON_SYSTEM, [1, 2])
+            @test dm1 != dm_diff
+        end
+    end
 end
 
 

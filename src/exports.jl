@@ -3,7 +3,7 @@ Package exports
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/30/26
+U: 5/1/26
 """
 
 
@@ -11,7 +11,7 @@ export
     # Types
     BodyData,
     SystemData,
-    # AbstractDynamicsModel, CR3BPDynamicsModel,
+    AbstractDynamicsModel, CR3BPDynamicsModel,
     # AbstractEquationsOfMotion, CR3BPEquationsOfMotion,
 
     # Dynamics

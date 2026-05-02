@@ -3,6 +3,7 @@ Core types
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
+U: 5/1/26
 """
 
 
@@ -13,11 +14,4 @@ C: 4/14/26
 #     MOMENTUM
 #     SIMPLE
 #     STM
-# end
-
-# @enum ModelType begin
-#     BCR4BP
-#     CR3BP
-#     HFEM
-#     K
 # end
