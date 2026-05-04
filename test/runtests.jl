@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 5/2/26
+U: 5/4/26
 """
 
 using MBD, Test
@@ -691,6 +691,141 @@ end
         @test sd_copy1.names == sd_copy2.names
         @test sd_copy1.spiceIDs == sd_copy2.spiceIDs
         @test sd_copy1 !== sd_copy2
+    end
+end
+
+@testset "DynamicsModel methods" begin
+    @testset "Generic" begin
+        struct StubDynamicsModel <: MBD.AbstractDynamicsModel end
+        stub = StubDynamicsModel()
+
+        @testset "getCharLengths" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getCharLengths(stub)
+        end
+
+        @testset "getCharMasses" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getCharMasses(stub)
+        end
+    end
+
+    @testset "CR3BP" begin
+        @testset "getCharLengths" begin
+            # Returns secondary orbital radius for valid model
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            lstar = getCharLengths(dm)
+            @test lstar == sd.bodyData[2].a
+            # Return type is Float64
+            @test lstar isa Float64
+            # Return value is positive and finite
+            @test isfinite(lstar)
+            @test lstar > 0.0
+            # Throws DomainError when secondary a is NaN
+            bd_nan = MBD.BodyData(NaN, 1.0, 1.0, 1.0, "NaNBody", 399, 1.0, 1001, 1.0, 1.0)
+            dm_nan = MBD.CR3BPDynamicsModel([MBD.BodyData("Earth"), bd_nan])
+            err1 = try
+                getCharLengths(dm_nan)
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa DomainError
+            @test occursin("finite", err1.msg)
+            # Throws DomainError when secondary a is non-positive
+            bd_neg = MBD.BodyData(-1.0, 1.0, 1.0, 1.0, "NegBody", 399, 1.0, 1002, 1.0, 1.0)
+            dm_neg = MBD.CR3BPDynamicsModel([MBD.BodyData("Earth"), bd_neg])
+            err2 = try
+                getCharLengths(dm_neg)
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa DomainError
+            @test occursin("positive", err2.msg)
+        end
+
+        @testset "getCharMasses" begin
+            # Returns sum of gravitational parameters divided by the gravitational constant for valid model
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            mstar = getCharMasses(dm)
+            @test mstar == (sd.bodyData[1].μ+sd.bodyData[2].μ)/MBD.GRAVITY
+            # Return type is Float64
+            @test mstar isa Float64
+            # Return value is positive and finite
+            @test isfinite(mstar)
+            @test mstar > 0.0
+            # Throws DomainError when primary μ is NaN
+            bd_nan1 = MBD.BodyData(1.0, 1.0, 1.0, 1.0, "NaNPrimary", 10, 1.0, 399, NaN, 1.0)
+            dm_nan1 = MBD.CR3BPDynamicsModel([bd_nan1, MBD.BodyData("Moon")])
+            err1 = try
+                getCharMasses(dm_nan1)
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa DomainError
+            @test occursin("μ_1", err1.msg)
+            @test occursin("finite", err1.msg)
+            # Throws DomainError when secondary μ is NaN
+            bd_nan2 = MBD.BodyData(1.0, 1.0, 1.0, 1.0, "NaNSecondary", 399, 1.0, 1001, NaN, 1.0)
+            dm_nan2 = MBD.CR3BPDynamicsModel([MBD.BodyData("Earth"), bd_nan2])
+            err2 = try
+                getCharMasses(dm_nan2)
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa DomainError
+            @test occursin("μ_2", err2.msg)
+            @test occursin("finite", err2.msg)
+            # Throws DomainError when both μs are NaN
+            dm_nan_both = MBD.CR3BPDynamicsModel([bd_nan1, bd_nan2])
+            err3 = try
+                getCharMasses(dm_nan_both)
+                nothing
+            catch e
+                e
+            end
+            @test err3 isa DomainError
+            @test occursin("μ_1", err3.msg)
+            # Throws DomainError when primary μ is non-positive
+            bd_neg1 = MBD.BodyData(1.0, 1.0, 1.0, 1.0, "NegPrimary", 10, 1.0, 399, -1.0, 1.0)
+            dm_neg1 = MBD.CR3BPDynamicsModel([bd_neg1, MBD.BodyData("Moon")])
+            err4 = try
+                getCharMasses(dm_neg1)
+                nothing
+            catch e
+                e
+            end
+            @test err4 isa DomainError
+            @test occursin("μ_1", err4.msg)
+            @test occursin("positive", err4.msg)
+            # Throws DomainError when secondary μ is non-positive
+            bd_neg2 = MBD.BodyData(1.0, 1.0, 1.0, 1.0, "NegSecondary", 399, 1.0, 1001, -1.0, 1.0)
+            dm_neg2 = MBD.CR3BPDynamicsModel([MBD.BodyData("Earth"), bd_neg2])
+            err5 = try
+                getCharMasses(dm_neg2)
+                nothing
+            catch e
+                e
+            end
+            @test err5 isa DomainError
+            @test occursin("μ_2", err5.msg)
+            @test occursin("positive", err5.msg)
+            # Throws DomainError when both μs are non-positive
+            dm_neg_both = MBD.CR3BPDynamicsModel([bd_neg1, bd_neg2])
+            err6 = try
+                getCharMasses(dm_neg_both)
+                nothing
+            catch e
+                e
+            end
+            @test err6 isa DomainError
+            @test occursin("μ_1", err6.msg)
+        end
     end
 end
 

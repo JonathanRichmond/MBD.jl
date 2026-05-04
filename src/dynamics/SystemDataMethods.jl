@@ -3,6 +3,7 @@ SystemData methods
 
 Author: Jonathan LeFevre Richmond
 C: 4/30/26
+U: 5/4/26
 """
 
 
@@ -41,6 +42,7 @@ function getNumPrimaries(systemData::SystemData)::Int64
         Logging.@debug "SystemData contains primaries" count=n
     end
 
+    # Input validation
     if (length(systemData.names) != n) || (length(systemData.spiceIDs) != n)
         Logging.@error "SystemData has inconsistent field lengths" bodyData_len=n names_len=length(systemData.names) spiceIDs_len=length(systemData.spiceIDs)
         throw(ArgumentError("SystemData fields bodyData, names, and spiceIDs must have equal length"))
