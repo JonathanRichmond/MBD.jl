@@ -3,9 +3,86 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 5/5/26
+U: 5/6/26
 """
 
+
+"""
+    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)
+
+Return initial conditions for output equations of motion type
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q0::Vector{Float64}`: Initial conditions
+- `inputEquationType::EquationType`: Equations of motion type for `q0`
+- `outputEquationType::EquationType`: Output equations of motion type
+
+Returns
+- `Vector::Float64`: Initial conditions
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, the only non-zero values are in the simple state
+    and STM
+
+Example
+```
+q0_full::Vector{Float64} = adjustInitialConditions(dynamicsModel, q0_STM, STM, FULL)
+```
+"""
+function adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)::Vector{Float64}
+    Logging.@debug "Entered generic adjustInitialConditions" dynamicsModel inputEquationType outputEquationType
+
+    Logging.@error "adjustInitialConditions is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(adjustInitialConditions, (dynamicsModel, q0, inputEquationType, outputEquationType)))
+end
+
+"""
+    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+
+Return initial conditions for output equations of motion type
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q0_simple::Vector{Float64}`: Simple initial conditions
+- `outputEquationType::EquationType`: Output equations of motion type
+
+Returns
+- `Vector{Float64}`: Initial conditions
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- This is a common special case of `adjustInitialConditions` and forwards to
+    that method
+- For `CR3BPDynamicsModel`, the only non-zero values are in the simple state
+    and STM
+
+Example
+```
+q0_full::Vector{Float64} = appendExtraInitialConditions(dynamicsModel, q0_simple, FULL)
+```
+"""
+function appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)::Vector{Float64}
+    Logging.@debug "Entered generic appendExtraInitialConditions" dynamicsModel outputEquationType
+
+    Logging.@error "appendExtraInitialConditions is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(appendExtraInitialConditions, (dynamicsModel, q0_simple, outputEquationType)))
+end
 
 """
     getCharLengths(dynamicsModel::AbstractDynamicsModel)
@@ -111,6 +188,205 @@ function getCharTimes(dynamicsModel::AbstractDynamicsModel)
     throw(MethodError(getCharTimes, (dynamicsModel,)))
 end
 
+"""
+    getNumPrimaries(dynamicsModel::AbstractDynamicswModel) -> Int64
+
+Return number of primary bodies contained in an `AbstractDynamicsModel` object
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+
+Returns
+- `Int64`: Number of entries in `dynamicsModel.primaryData`
+
+Errors
+- None
+
+Logging
+- Emits `@warn` logs if `dynamicsModel.primaryData` is empty
+- Emits `@debug` logs when function is entered or when
+    `dynamicsModel.primaryData` contains entries
+
+Example
+```
+nPrimaries::Int64 = getNumPrimaries(dynamicsModel)
+```
+"""
+function getNumPrimaries(dynamicsModel::AbstractDynamicsModel)::Int64
+    Logging.@debug "Entered getNumPrimaries" dynamicsModel
+
+    n::Int64 = length(dynamicsModel.primaryData)
+    if n == 0
+        Logging.@warn "AbstractDynamicsModel contains no primaries (primaryData is empty)"
+    else
+        Logging.@debug "Returning primary count" count=n
+    end
+    
+    return n
+end
+
+"""
+    getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::EquationType)
+
+Return state vector size for equations of motion type
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `equationType::EquationType`: Equations of motion type
+
+Returns
+- `Int64`: State vector size
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+
+Example
+```
+n_full::Int64 = getStateSize(dynamicsModel, FULL)
+```
+"""
+function getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::EquationType)::Int64
+    Logging.@debug "Entered generic getStateSize" dynamicsModel equationType
+
+    Logging.@error "getStateSize is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getStateSize, (dynamicsModel, equationType)))
+end
+
+
+"""
+    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)
+
+Return initial conditions for CR3BP output equations of motion type
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q0::Vector{Float64}`: Initial conditions [ndim]
+- `inputEquationType::EquationType`: Equations of motion type for `q0`
+- `outputEquationType::EquationType`: Output equations of motion type
+
+Returns
+- `Vector::Float64`: Initial conditions [ndim]
+
+Errors
+- Throws `ArgumentError` if length of `q0` does not match that expected for
+    `inputEquationType`
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when truncating or extending
+    input initial conditions, when constructing STM initial conditions, or when
+    adjusted initial conditions are returned
+
+Example
+```
+q0_full::Vector{Float64} = adjustInitialConditions(dynamicsModel, q0_STM, STM, FULL)
+```
+"""
+function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)::Vector{Float64}
+    Logging.@debug "Entered appendExtraInitialConditions" dynamicsModel inputEquationType outputEquationType
+
+    # Validate input state vector length against expected size for inputEquationType
+    n_in::Int64 = getStateSize(dynamicsModel, inputEquationType)
+    if length(q0) != n_in
+        Logging.@error "Input state vector has incorrect length" expected=n_in actual=length(q0)
+        throw(ArgumentError("State vector length is $(length(q0)), but should be $n_in"))
+    end
+
+    n_out::Int64 = getStateSize(dynamicsModel, outputEquationType)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    n_STM::Int64 = getStateSize(dynamicsModel, STM)
+
+    # Direct truncation
+    if outputEquationType == SIMPLE
+        Logging.@debug "Truncating state vector directly" inputType=inputEquationType outputType=outputEquationType inputSize=n_in outputSize=n_out
+
+        return q0[1:n_out]
+    end
+    q0_out::Vector{Float64} = zeros(Float64, n_out)
+
+    if outputEquationType == FULL
+        # FULL layout must be handled explicitly
+        Logging.@debug "Constructing full state vector" inputSize=n_in outputSize=n_out
+
+        # Copy simple states from leading portion of input
+        q0_out[1:n_simple] .= q0[1:n_simple]
+
+        if n_in >= n_STM
+            # Input already contains full STM block - copy it directly
+            q0_out[n_simple+1:n_STM] .= q0[n_simple+1:n_STM]
+        else
+            # Input has no STM block - initialize it as a flattened identity matrix
+            for j in n_simple+1:n_simple+1:n_STM
+                q0_out[j] = 1.0
+            end
+        end
+    elseif n_in >= n_out
+        # Output is no larger than input - strip to SIMPLE, then build up
+        Logging.@debug "Truncating state vector indirectly" inputType=inputEquationType outputType=outputEquationType inputSize=n_in outputSize=n_out
+        q0_out[1:n_simple] .= q0[1:n_simple]
+    else
+        # Output is larger than input but is not FULL - extend with zeros, then populate
+        Logging.@debug "Extending state vector" inputSize=n_in outputSize=n_out
+
+        # Copy simple states into leading portion of output vector
+        q0_out[1:n_simple] .= q0[1:n_simple]
+
+        # Intiialize STM block as flattened identity matrix only when input doesn't already contain STM block but output does
+        if (n_in < n_STM) && (n_out >= n_STM)
+            Logging.@debug "Constructing STM initial conditions" inputSize=n_in outputSize=n_out
+            for j in n_simple+1:n_simple+1:n_STM
+                q0_out[j] = 1.0
+            end
+        end
+    end
+
+    Logging.@debug "Returning adjusted state vector" outputSize=n_out
+        
+    return q0_out
+end
+
+"""
+    appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+
+Return initial conditions for CR3BP output equations of motion type
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q0_simple::Vector{Float64}`: Simple initial conditions [ndim]
+- `outputEquationType::EquationType`: Output equations of motion type
+
+Returns
+- `Vector{Float64}`: Initial conditions [ndim]
+
+Errors
+- No additional error checking
+
+Logging
+- Emits `@debug` logs when function is entered or when forwarding to
+    `adjustInitialConditions`
+
+Notes
+- This is a common special case of `adjustInitialConditions` and forwards to
+    that method
+
+Example
+```
+q0_full::Vector{Float64} = appendExtraInitialConditions(dynamicsModel, q0_simple, FULL)
+```
+"""
+function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)::Vector{Float64}
+    Logging.@debug "Entered appendExtraInitialConditions" dynamicsModel outputEquationType
+
+    Logging.@debug "Forwarding to adjustInitialConditions" dynamicsModel outputEquationType
+    return adjustInitialConditions(dynamicsModel, q0_simple, SIMPLE, outputEquationType)
+end
 
 """
     getCharLengths(dynamicsModel::CR3BPDynamicsModel)
@@ -255,4 +531,44 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
     Logging.@debug "Returning characteristic time" charTime=tstar
 
     return tstar
+end
+
+"""
+    getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationType)
+
+Return state vector size for CR3BP equations of motion type
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `equationType::EquationType`: Equations of motion type
+
+Returns
+- `Int64`: State vector size
+
+Errors
+- Throws `ArgumentError` if equationType is not found in mapping
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered or when state size is returned
+
+Example
+```
+n_full::Int64 = getStateSize(dynamicsModel, FULL)
+```
+"""
+function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationType)::Int64
+    Logging.@debug "Entered getStateSize (CR3BP)" dynamicsModel equationType
+
+    # Guard against enumerated values not present in mapping
+    if !haskey(_CR3BP_state_sizes, equationType)
+        Logging.@error "Unsupported EquationType for CR3BPDynamicsModel" equationType supported=keys(_CR3BP_state_sizes)
+        throw(ArgumentError("Unsupported EquationType: $equationType"))
+    end
+
+    n_states::Int64 = _CR3BP_state_sizes[equationType]
+
+    Logging.@debug "Returning state size" equationType stateSize=n_states
+
+    return n_states
 end

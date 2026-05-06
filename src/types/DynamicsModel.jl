@@ -3,7 +3,7 @@ Dynamics model types
 
 Author: Jonathan LeFevre Richmond
 C: 5/1/26
-U: 5/2/26
+U: 5/6/26
 """
 
 
@@ -170,6 +170,16 @@ function build_dynamicsModel(::Type{CR3BPDynamicsModel}, primaryData::Vector{Bod
 
     return CR3BPDynamicsModel(primaryData)
 end
+
+
+# Fixed mapping from EquationType to state vector size
+const _CR3BP_state_sizes = Dict{EquationType, Int64}(
+    SIMPLE      => 6,
+    STM         => 42,
+    ARCLENGTH   => 7,
+    MOMENTUM    => 7,
+    FULL        => 44
+)
 
 
 # Base functions
