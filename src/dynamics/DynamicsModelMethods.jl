@@ -3,7 +3,15 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 5/6/26
+U: 5/28/26
+
+QUEUE:
+    checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
+    evaluateEquations() needs EquationsOfMotion, getEquationsOfMotion(), computeDerivatives!()
+    getEpochDependencies() needs isEpochIndependent()
+    getEquationsOfMotion() needs EquationsOfMotion
+
+TO DO:
 """
 
 
@@ -188,6 +196,47 @@ function getCharTimes(dynamicsModel::AbstractDynamicsModel)
     throw(MethodError(getCharTimes, (dynamicsModel,)))
 end
 
+# function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
+#     Logging.@debug "Entered generic getEquilibrumPoint" dynamicsModel
+
+#     Logging.@error "getEquilibriumPoint is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+#     throw(MethodError(getEquilibriumPoint, (dynamicsModel, point)))
+# end
+
+"""
+    getMassRatios(dynamicsModel::AbstractDynamicsModel)
+
+Return dynamics model mass ratios
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+
+Returns
+- Variable
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns ratio between secondary and total mass
+
+Example
+```
+μs = getMassRatios(dynamicsModel)
+```
+"""
+function getMassRatios(dynamicsModel::AbstractDynamicsModel)
+    Logging.@debug "Entered generic getMassRatios" dynamicsModel
+
+    Logging.@error "getMassRatios is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getMassRatios, (dynamicsModel,)))
+end
+
 """
     getNumPrimaries(dynamicsModel::AbstractDynamicswModel) -> Int64
 
@@ -338,7 +387,7 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{F
         # Copy simple states into leading portion of output vector
         q0_out[1:n_simple] .= q0[1:n_simple]
 
-        # Intiialize STM block as flattened identity matrix only when input doesn't already contain STM block but output does
+        # Initialize STM block as flattened identity matrix only when input doesn't already contain STM block but output does
         if (n_in < n_STM) && (n_out >= n_STM)
             Logging.@debug "Constructing STM initial conditions" inputSize=n_in outputSize=n_out
             for j in n_simple+1:n_simple+1:n_STM
@@ -460,7 +509,7 @@ mstar::Float64 = getCharMasses(dynamicsModel)
 function getCharMasses(dynamicsModel::CR3BPDynamicsModel)::Float64
     Logging.@debug "Entered getCharMasses (CR3BP)" dynamicsModel
 
-    # Extract gravitational parameterts for both primaries
+    # Extract gravitational parameters for both primaries
     μ_1::Float64 = dynamicsModel.primaryData[1].μ
     μ_2::Float64 = dynamicsModel.primaryData[2].μ
     for (label, μ) in (("μ_1", μ_1), ("μ_2", μ_2))
@@ -510,7 +559,7 @@ tstar::Float64 = getCharTimes(dynamicsModel)
 function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
     Logging.@debug "Entered getCharTimes (CR3BP)" dynamicsModel
 
-    # Extract characteristic length and gravitational parameter
+    # Extract characteristic length and gravitational parameters
     lstar::Float64 = getCharLengths(dynamicsModel)
     μ_1::Float64 = dynamicsModel.primaryData[1].μ
     μ_2::Float64 = dynamicsModel.primaryData[2].μ
@@ -531,6 +580,69 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
     Logging.@debug "Returning characteristic time" charTime=tstar
 
     return tstar
+end
+
+# function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::Vector{Float64}
+#     Logging.@debug "Entered getEquilibriumPoint (CR3BP)" dynamicsModel point
+
+#     # Validate equilibrium point index
+#     if !(1 <= point <= 5)
+#         Logging.@error "Invalid equilibrium point index" point
+#         throw(ArgumentError("Equilibrium point must be between 1 and 5, got $point"))
+#     end
+
+#     # Validate mass ratio
+#     μ::Float64 = getMassRatio(dynamicsModel)
+
+# end
+
+"""
+    getMassRatios(dynamicsModel::CR3BPDynamicsModel)
+    
+Return CR3BP mass ratio
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+
+Returns
+- `Float64`: Ratio of secondary to total mass
+
+Errors
+- Throws `DomainError` if gravitational parameters are not finite or
+    non-positive
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered or when mass ratio is returned
+
+Example
+```
+μ::Float64 = getMassRatios(dynamicsModel)
+```
+"""
+function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
+    Logging.@debug "Entered getMassRatios (CR3BP)" dynamicsModel
+
+    # Extract gravitational parameters for both primaries
+    μ_1::Float64 = dynamicsModel.primaryData[1].μ
+    μ_2::Float64 = dynamicsModel.primaryData[2].μ
+    for (label, μ) in (("μ_1", μ_1), ("μ_2", μ_2))
+        if !isfinite(μ)
+            Logging.@error "Gravitational parameter is not finite" param=label value=μ
+            throw(DomainError(μ, "$label must be finite"))
+        end
+        if μ <= 0.0
+            Logging.@error "Gravitational parameter is non-positive" param=label value=μ
+            throw(DomainError(μ, "$label must be positive"))
+        end
+    end
+
+    # Calculate mass ratio
+    μ::Float64 = μ_2/(μ_1+μ_2)
+
+    Logging.@debug "Returning mass ratio" massRatio=μ
+
+    return μ
 end
 
 """
