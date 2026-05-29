@@ -16,7 +16,7 @@ TO DO:
 
 
 """
-    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)
+    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for output equations of motion type
 
@@ -54,7 +54,7 @@ function adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vecto
 end
 
 """
-    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for output equations of motion type
 
@@ -90,6 +90,59 @@ function appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_s
 
     Logging.@error "appendExtraInitialConditions is not implemented for this dynamics model type" type=typeof(dynamicsModel)
     throw(MethodError(appendExtraInitialConditions, (dynamicsModel, q0_simple, outputEquationType)))
+end
+
+"""
+    extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Matrix{Float64}
+
+Return STM
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q::Vector{Float64}`: State vector [ndim]
+
+Returns
+- `Matrix{Float64}`: State transition matrix [ndim]
+
+Errors
+- Throws `ArgumentError` if state vector is non-finite or too short
+- Throws `DomainError` if STM Frobenius norm is not finite
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when extracting STM, or when
+    STM is returned
+
+Example
+```
+Φ::matrix{Float64} = extractStateTransitionMatrix(dynamicsModel, q)
+```
+"""
+function extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Matrix{Float64}
+    Logging.@debug "Entered extractStateTransitionMatrix" dynamicsModel q
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    n_in::Int64 = length(q)
+    n_STM::Int64 = getStateSize(dynamicsModel, STM)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+
+    # Validate that state vector is long enough to contain full STM block
+    if n_in < n_STM
+        Logging.@error "State vector is too short to contain STM block" required=n_STM actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_STM to extract STM"))
+    end
+
+    # Extract and reshape flattened STM block into matrix
+    Φ::Matrix{Float64} = reshape(q[n_simple+1:n_STM], n_simple, n_simple)
+        
+    Logging.@debug "Returning STM" frobeniusNorm=frobenius
+
+    return Φ
 end
 
 """
@@ -197,7 +250,7 @@ function getCharTimes(dynamicsModel::AbstractDynamicsModel)
 end
 
 """
-    getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
+    getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64) -> Vector{Float64}
 
 Return equilibrium point state
 
@@ -206,7 +259,7 @@ Arguments
 - `point::Int64`: Equilibrium point index
 
 Returns
-- Vector{Float64}: Equilibrium point state
+- `Vector{Float64}`: Equilibrium point state
 
 Errors
 - Throws `MethodError` if not implemented for the dynamics model type
@@ -224,7 +277,7 @@ Example
 q_L1 = getEquilibriumPoint(dynamicsModel, 1)
 ```
 """
-function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
+function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)::Vector{Float64}
     Logging.@debug "Entered generic getEquilibrumPoint" dynamicsModel
 
     Logging.@error "getEquilibriumPoint is not implemented for this dynamics model type" type=typeof(dynamicsModel)
@@ -303,7 +356,7 @@ function getNumPrimaries(dynamicsModel::AbstractDynamicsModel)::Int64
 end
 
 """
-    getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::EquationType)
+    getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::EquationType) -> Int64
 
 Return state vector size for equations of motion type
 
@@ -338,7 +391,7 @@ end
 
 
 """
-    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)
+    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for CR3BP output equations of motion type
 
@@ -374,6 +427,12 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{F
     if length(q0) != n_in
         Logging.@error "Input state vector has incorrect length" expected=n_in actual=length(q0)
         throw(ArgumentError("State vector length is $(length(q0)), but should be $n_in"))
+    end
+
+    # Validate input state vector
+    if !all(isfinite, q0)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q0)
+        throw(ArgumentError("State vector must contain only finite values"))
     end
 
     n_out::Int64 = getStateSize(dynamicsModel, outputEquationType)
@@ -430,7 +489,7 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{F
 end
 
 """
-    appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+    appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for CR3BP output equations of motion type
 
@@ -466,7 +525,7 @@ function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simp
 end
 
 """
-    getCharLengths(dynamicsModel::CR3BPDynamicsModel)
+    getCharLengths(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP characteristic length scale
 
@@ -509,7 +568,7 @@ function getCharLengths(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getCharMasses(dynamicsModel::CR3BPDynamicsModel)
+    getCharMasses(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP characteristic mass scale
 
@@ -560,7 +619,7 @@ function getCharMasses(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getCharTimes(dynamicsModel::CR3BPDynamicsModel)
+    getCharTimes(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP characteristic time scale
 
@@ -611,7 +670,7 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)
+    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64) -> Vector{Float64}
 
 Return CR3BP equilibrium point state
 
@@ -723,7 +782,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
 end
 
 """
-    getMassRatios(dynamicsModel::CR3BPDynamicsModel)
+    getMassRatios(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP mass ratio
 
@@ -772,7 +831,7 @@ function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationType)
+    getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationType) -> Int64
 
 Return state vector size for CR3BP equations of motion type
 

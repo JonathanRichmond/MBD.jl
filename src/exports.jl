@@ -18,10 +18,9 @@ export
     # SystemData methods
     getNumPrimaries,
     # DynamicsModel methods
-    adjustInitialConditions, appendExtraInitialConditions, getCharLengths,
-    getCharMasses, getCharTimes, getEquilibriumPoint, getMassRatios,
-    getStateSize,
-    # extractStateTransitionMatrix,
+    adjustInitialConditions, appendExtraInitialConditions,
+    extractStateTransitionMatrix, getCharLengths, getCharMasses, getCharTimes,
+    getEquilibriumPoint, getMassRatios, getStateSize,
     # getDistance2Primary, getEnergy, getEpochDependencies, getEquationsOfMotion,
     # getEquilibriumPoint, getLinearVariationState, getMassRatios,
     # getParameterDependencies, getPrimaryState, getPseudopotential, getPseudopotentialGradient,

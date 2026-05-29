@@ -710,6 +710,53 @@ end
             # Throws MethodError for unimplemented type
             @test_throws MethodError appendExtraInitialConditions(stub, collect(Float64, 1:6), MBD.FULL)
         end
+
+        @testset "extractStateTransitionMatrix" begin
+            sd_CR3BP = MBD.SystemData(["Earth", "Moon"])
+            dm_CR3BP = MBD.CR3BPDynamicsModel(sd_CR3BP, [1, 2])
+            n_simple = getStateSize(dm_CR3BP, MBD.SIMPLE)
+            n_STM = getStateSize(dm_CR3BP, MBD.STM)
+            q_simple = collect(Float64, 1:n_simple)
+            q_STM = appendExtraInitialConditions(dm_CR3BP, q_simple, MBD.STM)
+            q_full = appendExtraInitialConditions(dm_CR3BP, q_simple, MBD.FULL)
+            # Return type is Matrix{Float64}
+            Φ = extractStateTransitionMatrix(dm_CR3BP, q_STM)
+            @test Φ isa Matrix{Float64}
+            # Output dimensions are n_simple x n_simple
+            @test size(Φ) == (n_simple,n_simple)
+            # Correctly extracts STM block from STM-length state vector
+            expected = reshape(q_STM[n_simple+1:n_STM], n_simple, n_simple)
+            @test Φ == expected
+            # Correctly extracts STM block from full-length state vector
+            Φ_full = extractStateTransitionMatrix(dm_CR3BP, q_full)
+            @test Φ_full == expected
+            # Trailing elements beyond n_STM do not affect extracted STM
+            @test Φ == Φ_full
+            # Throws ArgumentError for state vector containing NaN in n_simple
+            q_simplenan = copy(q_STM)
+            q_simplenan[5] = NaN
+            err1 = try
+                extractStateTransitionMatrix(dm_CR3BP, q_simplenan)
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa ArgumentError
+            @test occursin("finite", err1.msg)
+            # Throws ArgumentError for state vector containing NaN in n_STM
+            q_STMnan =  copy(q_STM)
+            q_STMnan[17] = NaN
+            @test_throws ArgumentError extractStateTransitionMatrix(dm_CR3BP, q_STMnan)
+            # Throws ArgumentError when state vector is too short
+            err2 = try
+                extractStateTransitionMatrix(dm_CR3BP, q_simple)
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa ArgumentError
+            @test occursin("length", err2.msg)
+        end
         
         @testset "getCharLengths" begin
             # Throws MethodError for unimplemented type
@@ -828,10 +875,28 @@ end
             @test STM_block_STM == expected
             # Throws ArgumentError when q0 is too short for inputEquationType
             q0_short = zeros(Float64, n_simple-1)
-            @test_throws ArgumentError adjustInitialConditions(dm, q0_short, MBD.SIMPLE, MBD.FULL)
+            err1 = try
+                adjustInitialConditions(dm, q0_short, MBD.SIMPLE, MBD.FULL)
+                nothing
+            catch e
+                e
+            end
+            @test err1 isa ArgumentError
+            @test occursin("length", err1.msg)
             # Throws ArgumentError when q0 is too long for inputEquationType
             q0_long = zeros(Float64, n_simple+1)
             @test_throws ArgumentError adjustInitialConditions(dm, q0_long, MBD.SIMPLE, MBD.FULL)
+            # Throws ArgumentError when q0 has non-finite values
+            q0_nan = zeros(Float64, n_simple)
+            q0_nan[4] = NaN
+            err2 = try
+                adjustInitialConditions(dm, q0_nan, MBD.SIMPLE, MBD.FULL)
+                nothing
+            catch e
+                e
+            end
+            @test err2 isa ArgumentError
+            @test occursin("finite", err2.msg) 
         end
 
         @testset "appendExtraInitialConditions" begin
@@ -854,6 +919,10 @@ end
             # Propagates ArgumentError from adjustInitialConditions for wrong q0 length
             q0_bad = zeros(Float64, n_simple+1)
             @test_throws ArgumentError appendExtraInitialConditions(dm, q0_bad, MBD.FULL)
+            # Propagates ArgumentError from adjustInitialConditions for non-finite q0 elements
+            q0_nan = zeros(Float64, n_simple)
+            q0_nan[4] = NaN
+            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_nan, MBD.FULL)
         end
 
         @testset "getCharLengths" begin

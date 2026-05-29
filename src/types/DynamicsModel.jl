@@ -3,7 +3,7 @@ Dynamics model types
 
 Author: Jonathan LeFevre Richmond
 C: 5/1/26
-U: 5/6/26
+U: 5/29/26
 """
 
 
@@ -151,7 +151,7 @@ Example
 dynamicsModel_CR3BP = build_dynamicsModel(CR3BPDynamicsModel, [Earth, Moon])
 ```
 """
-function build_dynamicsModel(::Type{CR3BPDynamicsModel}, primaryData::Vector{BodyData})
+function build_dynamicsModel(::Type{CR3BPDynamicsModel}, primaryData::Vector{BodyData})::CR3BPDynamicsModel
     Logging.@debug "Entered build_dynamicsModel for CR3BPDynamicsModel" primaryData
     
     # CR3BP requires exactly two bodies
