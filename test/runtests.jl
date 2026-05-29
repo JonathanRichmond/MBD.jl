@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 5/28/26
+U: 5/29/26
 """
 
 using MBD, Test
@@ -726,6 +726,11 @@ end
             @test_throws MethodError getCharTimes(stub)
         end
 
+        @testset "getEquilibriumPoint" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getEquilibriumPoint(stub, 1)
+        end
+
         @testset "getNumPrimaries" begin
             # Returns correct count for populated dynamics model
             sd_CR3BP = MBD.SystemData(["Earth", "Moon"])
@@ -1046,6 +1051,58 @@ end
             end
             @test err6 isa DomainError
             @test occursin("μ_1", err6.msg)
+        end
+
+        @testset "getEquilibriumPoint" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            μ = getMassRatios(dm)
+            # Return type is Vector{Float64}
+            @test getEquilibriumPoint(dm, 1) isa Vector{Float64}
+            for point in 1:5
+                result = getEquilibriumPoint(dm, point)
+                # Output length is 6 for all valid points
+                @test length(result) == 6
+                # All components are finite for each valid point
+                @test all(isfinite, getEquilibriumPoint(dm, point))
+                # Velocity components are zero for all points
+                @test result[4:6] == zeros(3)
+            end
+            # Throws ArgumentError for index below range
+            @test_throws ArgumentError getEquilibriumPoint(dm, 0)
+            @test_throws ArgumentError getEquilibriumPoint(dm, -1)
+            # Throws ArgumentError for index above range
+            @test_throws ArgumentError getEquilibriumPoint(dm, 6)
+            # L1 lies between two primaries
+            q_L1 = getEquilibriumPoint(dm, 1)
+            @test -μ < q_L1[1] < 1-μ
+            # L1 y and z components are zero
+            @test q_L1[2] == 0.0
+            @test q_L1[3] == 0.0
+            # L2 lies beyond secondary
+            q_L2 = getEquilibriumPoint(dm, 2)
+            @test q_L2[1] > 1-μ
+            # L2 y and z components are zero
+            @test q_L2[2] == 0.0
+            @test q_L2[3] == 0.0
+            # L3 lies beyond primary
+            q_L3 = getEquilibriumPoint(dm, 3)
+            @test q_L3[1] < -μ
+            # L3 y and z components are zero
+            @test q_L3[2] == 0.0
+            @test q_L3[3] == 0.0
+            # L4 closed-form position
+            q_L4 = getEquilibriumPoint(dm, 4)
+            @test q_L4[1] ≈ 0.5-μ
+            @test q_L4[2] ≈ sin(π/3)
+            @test q_L4[2] > 0.0
+            @test q_L4[3] == 0.0
+            # L5 closed-form position
+            q_L5 = getEquilibriumPoint(dm, 5)
+            @test q_L5[1] ≈ 0.5-μ
+            @test q_L5[2] ≈ -sin(π/3)
+            @test q_L5[2] < 0.0
+            @test q_L5[3] == 0.0
         end
 
         @testset "getMassRatios" begin

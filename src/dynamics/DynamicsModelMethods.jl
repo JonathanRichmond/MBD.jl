@@ -3,7 +3,7 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 5/28/26
+U: 5/29/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
@@ -611,9 +611,33 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point:Int64)
+    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)
 
 Return CR3BP equilibrium point state
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `point::Int64`: Equilibrium point index
+
+Returns
+- `Vector{Float64}`: Equilibrium point state [ndim]
+
+Errors
+- Throws `ArgumentError` if `point` is not between 1 and 5
+- Throws `ErrorException` if Newton-Raphson algorithm does not converge within
+    20 iterations
+- Throws `DomainError` if equilibrium point state has non-finite elements
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing equilibrium
+    point state, if using Newton-Raphson iterative process, or when equilibrium
+    point state is returned
+
+Example
+```
+q_L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
+```
 """
 function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::Vector{Float64}
     Logging.@debug "Entered getEquilibriumPoint (CR3BP)" dynamicsModel point
@@ -639,6 +663,8 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
     count::Int64 = 0
 
     if point == 1
+        Logging.@debug "Iterating on L1 position" μ
+
         # L1 point between two primaries
         # Initial guess from Hill's sphere approximation
         γ = cbrt(μ/(3(1-μ)))
@@ -653,6 +679,8 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         end
         q[1] = 1-μ-γ
     elseif point == 2
+        Logging.@debug "Iterating on L2 position" μ
+
         # L2 point beyond secondary
         # Initial guess from Hill's sphere approximation
         γ = cbrt(μ/(3(1-μ)))
@@ -667,6 +695,8 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         end
         q[1] = 1-μ+γ
     elseif point == 3
+        Logging.@debug "Iterating on L3 position" μ
+
         # L3 point beyond primary
         # Initial guess from first-order series approximation
         γ = 1-7*μ/12
@@ -685,12 +715,6 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         # Closed-form solution, each forms equilateral triangle with two primaries
         q[1] = 0.5-μ
         q[2] = (point == 4 ? sin(π/3) : -sin(π/3))
-    end
-
-    # Validate result
-    if !all(isfinite, q)
-        Logging.@error "Computed equilibrium point position contains non-finite values" point q
-        throw(ErrorException("Non-finite position computed for equilibrium point $point"))
     end
 
     Logging.@debug "Returning equilibrium point state" point q
@@ -760,7 +784,7 @@ Returns
 - `Int64`: State vector size
 
 Errors
-- Throws `ArgumentError` if equationType is not found in mapping
+- Throws `ArgumentError` if `equationType` is not found in mapping
 
 Logging
 - Emits `@error` logs for thrown errors
