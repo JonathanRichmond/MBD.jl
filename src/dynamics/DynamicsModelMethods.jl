@@ -196,12 +196,40 @@ function getCharTimes(dynamicsModel::AbstractDynamicsModel)
     throw(MethodError(getCharTimes, (dynamicsModel,)))
 end
 
-# function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
-#     Logging.@debug "Entered generic getEquilibrumPoint" dynamicsModel
+"""
+    getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
 
-#     Logging.@error "getEquilibriumPoint is not implemented for this dynamics model type" type=typeof(dynamicsModel)
-#     throw(MethodError(getEquilibriumPoint, (dynamicsModel, point)))
-# end
+Return equilibrium point state
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `point::Int64`: Equilibrium point index
+
+Returns
+- Vector{Float64}: Equilibrium point state
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns Lagrange point state
+
+Example
+```
+q_L1 = getEquilibriumPoint(dynamicsModel, 1)
+```
+"""
+function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
+    Logging.@debug "Entered generic getEquilibrumPoint" dynamicsModel
+
+    Logging.@error "getEquilibriumPoint is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getEquilibriumPoint, (dynamicsModel, point)))
+end
 
 """
     getMassRatios(dynamicsModel::AbstractDynamicsModel)
@@ -582,19 +610,93 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
     return tstar
 end
 
-# function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::Vector{Float64}
-#     Logging.@debug "Entered getEquilibriumPoint (CR3BP)" dynamicsModel point
+"""
+    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point:Int64)
 
-#     # Validate equilibrium point index
-#     if !(1 <= point <= 5)
-#         Logging.@error "Invalid equilibrium point index" point
-#         throw(ArgumentError("Equilibrium point must be between 1 and 5, got $point"))
-#     end
+Return CR3BP equilibrium point state
+"""
+function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::Vector{Float64}
+    Logging.@debug "Entered getEquilibriumPoint (CR3BP)" dynamicsModel point
 
-#     # Validate mass ratio
-#     μ::Float64 = getMassRatio(dynamicsModel)
+    # Validate equilibrium point index
+    if !(1 <= point <= 5)
+        Logging.@error "Invalid equilibrium point index" point
+        throw(ArgumentError("Equilibrium point must be between 1 and 5, got $point"))
+    end
 
-# end
+    # Validate mass ratio
+    μ::Float64 = getMassRatios(dynamicsModel)
+
+    Logging.@debug "Computing equilibrium point state" point μ
+
+    tol::Float64 = 1E-14
+    maxCount::Int64 = 20
+    q::Vector{Float64} = zeros(Float64, 6)
+
+    # Newton-Raphson state
+    γ::Float64 = 0.0
+    γ_prev::Float64 = Inf
+    count::Int64 = 0
+
+    if point == 1
+        # L1 point between two primaries
+        # Initial guess from Hill's sphere approximation
+        γ = cbrt(μ/(3(1-μ)))
+        while (abs(γ-γ_prev) > tol) && (count < maxCount)
+            γ_prev = γ
+            γ -= (μ/γ^2-(1-μ)/(1-γ)^2-γ-μ+1)/(-2*μ/γ^3-2*(1-μ)/(1-γ)^3-1)
+            count += 1
+        end
+        if count >= maxCount
+            Logging.@error "Newton-Raphson did not converge for L1" μ γ iterations=count
+            throw(ErrorException("Could not converge on L1 location after $mxCount iterations"))
+        end
+        q[1] = 1-μ-γ
+    elseif point == 2
+        # L2 point beyond secondary
+        # Initial guess from Hill's sphere approximation
+        γ = cbrt(μ/(3(1-μ)))
+        while (abs(γ-γ_prev) > tol) && (count < maxCount)
+            γ_prev = γ
+            γ -= (-μ/γ^2-(1-μ)/(1+γ)^2+γ-μ+1)/(2*μ/γ^3+2*(1-μ)/(1+γ)^3+1)
+            count += 1
+        end
+        if count >= maxCount
+            Logging.@error "Newton-Raphson did not converge for L2" μ γ iterations=count
+            throw(ErrorException("Could not converge on L2 location after $mxCount iterations"))
+        end
+        q[1] = 1-μ+γ
+    elseif point == 3
+        # L3 point beyond primary
+        # Initial guess from first-order series approximation
+        γ = 1-7*μ/12
+        while (abs(γ-γ_prev) > tol) && (count < maxCount)
+            γ_prev = γ
+            γ -= (μ/(-1-γ)^2+(1-μ)/γ^2-γ-μ)/(-2*μ/(1+γ)^3-2*(1-μ)/γ^3-1)
+            count += 1
+        end
+        if count >= maxCount
+            Logging.@error "Newton-Raphson did not converge for L3" μ γ iterations=count
+            throw(ErrorException("Could not converge on L3 location after $mxCount iterations"))
+        end
+        q[1] = -μ-γ
+    else
+        # L4/5 triangular points, L4 leads secondary, L5 trails it
+        # Closed-form solution, each forms equilateral triangle with two primaries
+        q[1] = 0.5-μ
+        q[2] = (point == 4 ? sin(π/3) : -sin(π/3))
+    end
+
+    # Validate result
+    if !all(isfinite, q)
+        Logging.@error "Computed equilibrium point position contains non-finite values" point q
+        throw(ErrorException("Non-finite position computed for equilibrium point $point"))
+    end
+
+    Logging.@debug "Returning equilibrium point state" point q
+
+    return q
+end
 
 """
     getMassRatios(dynamicsModel::CR3BPDynamicsModel)
