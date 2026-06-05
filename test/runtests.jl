@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 5/29/26
+U: 6/5/26
 """
 
 using MBD, Test
@@ -707,8 +707,29 @@ end
         end
 
         @testset "appendExtraInitialConditions" begin
-            # Throws MethodError for unimplemented type
-            @test_throws MethodError appendExtraInitialConditions(stub, collect(Float64, 1:6), MBD.FULL)
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            n_STM = getStateSize(dm, MBD.STM)
+            n_full = getStateSize(dm, MBD.FULL)
+            n_arclength = getStateSize(dm, MBD.ARCLENGTH)
+            q0_simple = collect(Float64, 1:n_simple)
+            # Return type is Vector{Float64}
+            @test appendExtraInitialConditions(dm, q0_simple, MBD.FULL) isa Vector{Float64}
+            # Output and length matches adjustInitialConditions with SIMPLE input type
+            for eqOut in [MBD.SIMPLE, MBD.STM, MBD.FULL, MBD.ARCLENGTH]
+                expected = adjustInitialConditions(dm, q0_simple, MBD.SIMPLE, eqOut)
+                result = appendExtraInitialConditions(dm, q0_simple, eqOut)
+                @test result == expected
+                @test length(result) == getStateSize(dm, eqOut)
+            end
+            # Propagates ArgumentError from adjustInitialConditions for wrong q0 length
+            q0_bad = zeros(Float64, n_simple+1)
+            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_bad, MBD.FULL)
+            # Propagates ArgumentError from adjustInitialConditions for non-finite q0 elements
+            q0_nan = zeros(Float64, n_simple)
+            q0_nan[4] = NaN
+            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_nan, MBD.FULL)
         end
 
         @testset "extractStateTransitionMatrix" begin
@@ -778,6 +799,11 @@ end
             @test_throws MethodError getEquilibriumPoint(stub, 1)
         end
 
+        @testset "getHamiltonian" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getHamiltonian(stub, collect(Float64, 1:6))
+        end
+
         @testset "getNumPrimaries" begin
             # Returns correct count for populated dynamics model
             sd_CR3BP = MBD.SystemData(["Earth", "Moon"])
@@ -792,6 +818,11 @@ end
         @testset "getMassRatios" begin
             # Throws MethodError for unimplemented type
             @test_throws MethodError getMassRatios(stub)
+        end
+
+        @testset "getPseudopotential" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getPseudopotential(stub, collect(Float64, 1:6))
         end
 
         @testset "getStateSize" begin
@@ -897,32 +928,6 @@ end
             end
             @test err2 isa ArgumentError
             @test occursin("finite", err2.msg) 
-        end
-
-        @testset "appendExtraInitialConditions" begin
-            sd = MBD.SystemData(["Earth", "Moon"])
-            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
-            n_simple = getStateSize(dm, MBD.SIMPLE)
-            n_STM = getStateSize(dm, MBD.STM)
-            n_full = getStateSize(dm, MBD.FULL)
-            n_arclength = getStateSize(dm, MBD.ARCLENGTH)
-            q0_simple = collect(Float64, 1:n_simple)
-            # Return type is Vector{Float64}
-            @test appendExtraInitialConditions(dm, q0_simple, MBD.FULL) isa Vector{Float64}
-            # Output and length matches adjustInitialConditions with SIMPLE input type
-            for eqOut in [MBD.SIMPLE, MBD.STM, MBD.FULL, MBD.ARCLENGTH]
-                expected = adjustInitialConditions(dm, q0_simple, MBD.SIMPLE, eqOut)
-                result = appendExtraInitialConditions(dm, q0_simple, eqOut)
-                @test result == expected
-                @test length(result) == getStateSize(dm, eqOut)
-            end
-            # Propagates ArgumentError from adjustInitialConditions for wrong q0 length
-            q0_bad = zeros(Float64, n_simple+1)
-            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_bad, MBD.FULL)
-            # Propagates ArgumentError from adjustInitialConditions for non-finite q0 elements
-            q0_nan = zeros(Float64, n_simple)
-            q0_nan[4] = NaN
-            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_nan, MBD.FULL)
         end
 
         @testset "getCharLengths" begin
@@ -1174,6 +1179,61 @@ end
             @test q_L5[3] == 0.0
         end
 
+        @testset "getHamiltonian" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            q_L4 = getEquilibriumPoint(dm, 4)
+            q_L5 = getEquilibriumPoint(dm, 5)
+            # Return type is Float64
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                H = getHamiltonian(dm, q_L)
+                @test H isa Float64
+                @test isfinite(H)
+            end
+            # Hamiltonian at L4 equals L5 by symmetry
+            @test getHamiltonian(dm, q_L4) ≈ getHamiltonian(dm, q_L5)
+            # Hamiltonian decreases with increasing speed
+            q_fast = copy(q_L4)
+            q_fast[4:6] = [0.1, 0.1, 0]
+            @test getHamiltonian(dm, q_fast) < getHamiltonian(dm, q_L4)
+            # Accepts state vector longer than n_simple
+            q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
+            @test getHamiltonian(dm, q_long) ≈ getHamiltonian(dm, q_L4)
+            # Throws ArgumentError when q is too short
+            @test_throws ArgumentError getHamiltonian(dm, zeros(Float64, n_simple-1))
+            # Throws ArgumentError when q has non-finite values
+            q_nan = copy(q_L4)
+            q_nan[1] = NaN
+            @test_throws ArgumentError getHamiltonian(dm, q_nan)
+        end
+
+        @testset "getJacobiConstant" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            q_L4 = getEquilibriumPoint(dm, 4)
+            # Return type is Float64
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                JC = getJacobiConstant(dm, q_L)
+                @test JC isa Float64
+                @test isfinite(JC)
+            end
+            # Output matches getHamiltonian
+            @test getJacobiConstant(dm, q_L4) ≈ getHamiltonian(dm, q_L4)
+            # Accepts state vector longer than n_simple
+            q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
+            @test getJacobiConstant(dm, q_long) ≈ getHamiltonian(dm, q_L4)
+            # Throws ArgumentError when q is too short
+            @test_throws ArgumentError getJacobiConstant(dm, zeros(Float64, n_simple-1))
+            # Propagates ArgumentError from getHamiltonian for non-finite q0 values
+            q_nan = copy(q_L4)
+            q_nan[1] = NaN
+            @test_throws ArgumentError getJacobiConstant(dm, q_nan)
+        end
+
         @testset "getMassRatios" begin
             # Returns ratio of secondary to total mass for valid model
             sd = MBD.SystemData(["Earth", "Moon"])
@@ -1253,6 +1313,41 @@ end
             end
             @test err6 isa DomainError
             @test occursin("μ_1", err6.msg)
+        end
+
+        @testset "getPseudopotential" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            q_L4 = getEquilibriumPoint(dm, 4)
+            q_L5 = getEquilibriumPoint(dm, 5)
+            # Return type is Float64
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                U = getPseudopotential(dm, q_L)
+                @test U isa Float64
+                @test isfinite(U)
+            end
+            # Pseudo-potential at L4 equals L5 by symmetry
+            @test getPseudopotential(dm, q_L4) ≈ getPseudopotential(dm, q_L5)
+            # Pseudo-potential does not change with speed
+            q_fast = copy(q_L4)
+            q_fast[4:6] = [0.1, 0.1, 0]
+            @test getPseudopotential(dm, q_fast) ≈ getPseudopotential(dm, q_L4)
+            # Accepts state vector longer than n_simple
+            q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
+            @test getPseudopotential(dm, q_long) ≈ getPseudopotential(dm, q_L4)
+            # Throws ArgumentError when q is too short
+            @test_throws ArgumentError getPseudopotential(dm, zeros(Float64, n_simple-1))
+            # Throws ArgumentError when q has non-finite values
+            q_nan = copy(q_L4)
+            q_nan[1] = NaN
+            @test_throws ArgumentError getPseudopotential(dm, q_nan)
+            # # Throws DomainError when at primary location
+            # for primary in 1:2
+            #     q_P = getPrimaryState(dm, primary)
+            #     @test_throws DomainError getPseudopotential(dm, q_P)
+            # end
         end
 
         @testset "getStateSize" begin

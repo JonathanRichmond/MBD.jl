@@ -201,9 +201,9 @@ version = "1.11.0"
 
 [[deps.XML2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libiconv_jll", "Zlib_jll"]
-git-tree-sha1 = "5c959b708667b34cb758e8d7c6f8e69b94c32deb"
+git-tree-sha1 = "3f3315d89fc954a28f5b471bce698ed6e27481be"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
-version = "2.15.1+0"
+version = "2.15.3+0"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
