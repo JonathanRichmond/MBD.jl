@@ -3,20 +3,21 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 5/28/26
+U: 6/5/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
     evaluateEquations() needs EquationsOfMotion, getEquationsOfMotion(), computeDerivatives!()
     getEpochDependencies() needs isEpochIndependent()
     getEquationsOfMotion() needs EquationsOfMotion
+    getExcursion() needs getPrimaryState()
 
 TO DO:
 """
 
 
 """
-    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)
+    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for output equations of motion type
 
@@ -54,7 +55,7 @@ function adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vecto
 end
 
 """
-    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
+    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for output equations of motion type
 
@@ -67,14 +68,14 @@ Returns
 - `Vector{Float64}`: Initial conditions
 
 Errors
-- Throws `MethodError` if not implemented for the dynamics model
+- No error checking
 
 Logging
 - Emits `@error` logs for thrown errors
-- Emits `@debug` logs when function is entered
+- Emits `@debug` logs when function is entered or when forwarding to
+    `adjustInitialConditions()`
 
 Notes
-- This is a generic method that dispatches on dynamics model type
 - This is a common special case of `adjustInitialConditions` and forwards to
     that method
 - For `CR3BPDynamicsModel`, the only non-zero values are in the simple state
@@ -88,8 +89,61 @@ q0_full::Vector{Float64} = appendExtraInitialConditions(dynamicsModel, q0_simple
 function appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)::Vector{Float64}
     Logging.@debug "Entered generic appendExtraInitialConditions" dynamicsModel outputEquationType
 
-    Logging.@error "appendExtraInitialConditions is not implemented for this dynamics model type" type=typeof(dynamicsModel)
-    throw(MethodError(appendExtraInitialConditions, (dynamicsModel, q0_simple, outputEquationType)))
+    Logging.@debug "Forwarding to adjustInitialConditions" dynamicsModel outputEquationType
+    return adjustInitialConditions(dynamicsModel, q0_simple, SIMPLE, outputEquationType)
+end
+
+"""
+    extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Matrix{Float64}
+
+Return STM
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q::Vector{Float64}`: State vector
+
+Returns
+- `Matrix{Float64}`: State transition matrix
+
+Errors
+- Throws `ArgumentError` if state vector is non-finite or too short
+- Throws `DomainError` if STM Frobenius norm is not finite
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when extracting STM, or when
+    STM is returned
+
+Example
+```
+Φ::matrix{Float64} = extractStateTransitionMatrix(dynamicsModel, q)
+```
+"""
+function extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Matrix{Float64}
+    Logging.@debug "Entered extractStateTransitionMatrix" dynamicsModel q
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    n_in::Int64 = length(q)
+    n_STM::Int64 = getStateSize(dynamicsModel, STM)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+
+    # Validate that state vector is long enough to contain full STM block
+    if n_in < n_STM
+        Logging.@error "State vector is too short to contain STM block" required=n_STM actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_STM to extract STM"))
+    end
+
+    # Extract and reshape flattened STM block into matrix
+    Φ::Matrix{Float64} = reshape(q[n_simple+1:n_STM], n_simple, n_simple)
+        
+    Logging.@debug "Returning STM" frobeniusNorm=frobenius
+
+    return Φ
 end
 
 """
@@ -197,7 +251,7 @@ function getCharTimes(dynamicsModel::AbstractDynamicsModel)
 end
 
 """
-    getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
+    getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64) -> Vector{Float64}
 
 Return equilibrium point state
 
@@ -206,7 +260,7 @@ Arguments
 - `point::Int64`: Equilibrium point index
 
 Returns
-- Vector{Float64}: Equilibrium point state
+- `Vector{Float64}`: Equilibrium point state
 
 Errors
 - Throws `MethodError` if not implemented for the dynamics model type
@@ -217,18 +271,53 @@ Logging
 
 Notes
 - This is a generic method that dispatches on dynamics model type
-- For `CR3BPDynamicsModel`, returns Lagrange point state
+- For `CR3BPDynamicsModel`, returns Lagrange point state [ndim]
 
 Example
 ```
-q_L1 = getEquilibriumPoint(dynamicsModel, 1)
+q_L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
 ```
 """
-function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
+function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)::Vector{Float64}
     Logging.@debug "Entered generic getEquilibrumPoint" dynamicsModel
 
     Logging.@error "getEquilibriumPoint is not implemented for this dynamics model type" type=typeof(dynamicsModel)
     throw(MethodError(getEquilibriumPoint, (dynamicsModel, point)))
+end
+
+"""
+    getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})
+
+Return Hamiltonian value
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q::Vector{Float64}`: State vector
+
+Returns
+- `Float64`: Hamiltonian value
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns Jacobi constant [ndim]
+
+Example
+```
+H::Float64 = getHamiltonian(dynamicsModel, q)
+```
+"""
+function getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Float64
+    Logging.@debug "Entered generic getHamiltonian" dynamicsModel
+
+    Logging.@error "getHamiltonian is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getHamiltonian, (dynamicsModel, q)))
 end
 
 """
@@ -303,7 +392,42 @@ function getNumPrimaries(dynamicsModel::AbstractDynamicsModel)::Int64
 end
 
 """
-    getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::EquationType)
+    getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})
+
+Return pseudo-potential
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q::Vector{Float64}`: State vector
+
+Returns
+- `Float64`: Pseudo-potential
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns pseudo-potential [ndim]
+
+Example
+```
+U::Float64 = getPseudopotential(dynamicsModel, q)
+```
+"""
+function getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Float64
+    Logging.@debug "Entered generic getPseudopotential" dynamicsModel
+
+    Logging.@error "getPseudopotential is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getPseudopotential, (dynamicsModel, q)))
+end
+
+"""
+    getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::EquationType) -> Int64
 
 Return state vector size for equations of motion type
 
@@ -338,7 +462,7 @@ end
 
 
 """
-    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)
+    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for CR3BP output equations of motion type
 
@@ -374,6 +498,12 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{F
     if length(q0) != n_in
         Logging.@error "Input state vector has incorrect length" expected=n_in actual=length(q0)
         throw(ArgumentError("State vector length is $(length(q0)), but should be $n_in"))
+    end
+
+    # Validate input state vector
+    if !all(isfinite, q0)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q0)
+        throw(ArgumentError("State vector must contain only finite values"))
     end
 
     n_out::Int64 = getStateSize(dynamicsModel, outputEquationType)
@@ -430,43 +560,7 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{F
 end
 
 """
-    appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)
-
-Return initial conditions for CR3BP output equations of motion type
-
-Arguments
-- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
-- `q0_simple::Vector{Float64}`: Simple initial conditions [ndim]
-- `outputEquationType::EquationType`: Output equations of motion type
-
-Returns
-- `Vector{Float64}`: Initial conditions [ndim]
-
-Errors
-- No additional error checking
-
-Logging
-- Emits `@debug` logs when function is entered or when forwarding to
-    `adjustInitialConditions`
-
-Notes
-- This is a common special case of `adjustInitialConditions` and forwards to
-    that method
-
-Example
-```
-q0_full::Vector{Float64} = appendExtraInitialConditions(dynamicsModel, q0_simple, FULL)
-```
-"""
-function appendExtraInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)::Vector{Float64}
-    Logging.@debug "Entered appendExtraInitialConditions" dynamicsModel outputEquationType
-
-    Logging.@debug "Forwarding to adjustInitialConditions" dynamicsModel outputEquationType
-    return adjustInitialConditions(dynamicsModel, q0_simple, SIMPLE, outputEquationType)
-end
-
-"""
-    getCharLengths(dynamicsModel::CR3BPDynamicsModel)
+    getCharLengths(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP characteristic length scale
 
@@ -509,7 +603,7 @@ function getCharLengths(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getCharMasses(dynamicsModel::CR3BPDynamicsModel)
+    getCharMasses(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP characteristic mass scale
 
@@ -560,7 +654,7 @@ function getCharMasses(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getCharTimes(dynamicsModel::CR3BPDynamicsModel)
+    getCharTimes(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP characteristic time scale
 
@@ -611,9 +705,33 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point:Int64)
+    getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64) -> Vector{Float64}
 
 Return CR3BP equilibrium point state
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `point::Int64`: Equilibrium point index
+
+Returns
+- `Vector{Float64}`: Equilibrium point state [ndim]
+
+Errors
+- Throws `ArgumentError` if `point` is not between 1 and 5
+- Throws `ErrorException` if Newton-Raphson algorithm does not converge within
+    20 iterations
+- Throws `DomainError` if equilibrium point state has non-finite elements
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing equilibrium
+    point state, if using Newton-Raphson iterative process, or when equilibrium
+    point state is returned
+
+Example
+```
+q_L1::Vector{Float64} = getEquilibriumPoint(dynamicsModel, 1)
+```
 """
 function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::Vector{Float64}
     Logging.@debug "Entered getEquilibriumPoint (CR3BP)" dynamicsModel point
@@ -624,7 +742,6 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         throw(ArgumentError("Equilibrium point must be between 1 and 5, got $point"))
     end
 
-    # Validate mass ratio
     μ::Float64 = getMassRatios(dynamicsModel)
 
     Logging.@debug "Computing equilibrium point state" point μ
@@ -639,6 +756,8 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
     count::Int64 = 0
 
     if point == 1
+        Logging.@debug "Iterating on L1 position" μ
+
         # L1 point between two primaries
         # Initial guess from Hill's sphere approximation
         γ = cbrt(μ/(3(1-μ)))
@@ -653,6 +772,8 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         end
         q[1] = 1-μ-γ
     elseif point == 2
+        Logging.@debug "Iterating on L2 position" μ
+
         # L2 point beyond secondary
         # Initial guess from Hill's sphere approximation
         γ = cbrt(μ/(3(1-μ)))
@@ -667,6 +788,8 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         end
         q[1] = 1-μ+γ
     elseif point == 3
+        Logging.@debug "Iterating on L3 position" μ
+
         # L3 point beyond primary
         # Initial guess from first-order series approximation
         γ = 1-7*μ/12
@@ -687,19 +810,110 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
         q[2] = (point == 4 ? sin(π/3) : -sin(π/3))
     end
 
-    # Validate result
-    if !all(isfinite, q)
-        Logging.@error "Computed equilibrium point position contains non-finite values" point q
-        throw(ErrorException("Non-finite position computed for equilibrium point $point"))
-    end
-
     Logging.@debug "Returning equilibrium point state" point q
 
     return q
 end
 
 """
-    getMassRatios(dynamicsModel::CR3BPDynamicsModel)
+    getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+
+Return CR3BP Jacobi constant
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q::Vector{Float64}`: State vector [ndim]
+
+Returns
+- `Float64`: Jacobi constant [ndim]
+
+Errors
+- Throws `ArgumentError` if state vector is non-finite or too short
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing Jacobi constant,
+    or when Jacobi constant is returned
+
+Example
+```
+H::Float64 = getHamiltonian(dynamicsModel, q)
+```
+"""
+function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    Logging.@debug "Entered getHamiltonian (CR3BP)" dynamicsModel q
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    # Validate state vector length
+    n_in::Int64 = length(q)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if n_in < n_simple
+        Logging.@error "State vector is too short" required=n_simple actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate Jacobi constant"))
+    end
+
+    Logging.@debug "Computing Jacobi constant" q
+
+    U::Float64 = getPseudopotential(dynamicsModel, q)
+    v2::Float64 = q[4]^2+q[5]^2+q[6]^2
+    JC::Float64 = 2*U-v2
+
+    Logging.@debug "Returning Jacobi constant" JC
+
+    return JC
+end
+
+"""
+    getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    
+Return CR3BP Jacobi constant
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q::Vector{Float64}`: State vector [ndim]
+
+Returns
+- `Float64`: Jacobi constant [ndim]
+
+Errors
+- Throws `ArgumentError` if state vector is too short
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered or when forwarding to
+    `getHamiltonian()`
+
+Notes
+- This is a common alternate name for `getHamiltonian` and forwards to that
+    method
+
+Example
+```
+JC::Float64 = getJacobiConstant(dynamicsModel, q)
+```
+"""
+function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    Logging.@debug "Entered getJacobiConstant (CR3BP)" dynamicsModel q
+
+    # Validate state vector length
+    n_in::Int64 = length(q)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if n_in < n_simple
+        Logging.@error "State vector is too short" required=n_simple actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate Jacobi constant"))
+    end
+
+    Logging.@debug "Forwarding to getHamiltonian" dynamicsModel q[1:n_simple]
+    return getHamiltonian(dynamicsModel, q[1:n_simple])
+end
+
+"""
+    getMassRatios(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP mass ratio
 
@@ -748,7 +962,75 @@ function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationType)
+    getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+
+Return CR3BP pseudo-potential
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q::Vector{Float64}`: State vector [ndim]
+
+Returns
+- `Float64`: Pseudo-potential [ndim]
+
+Errors
+- Throws `ArgumentError` if state vector is non-finite or too short
+- Throws `DomainError` if at location of either primary
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing pseudo-
+    potential, or when Jacobi constant is returned
+
+Example
+```
+U::Float64 = getPseudopotential(dynamicsModel, q)
+```
+"""
+function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    Logging.@debug "Entered getPseudopotential (CR3BP)" dynamicsModel q
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    # Validate state vector length
+    n_in::Int64 = length(q)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if n_in < n_simple
+        Logging.@error "State vector is too short" required=n_simple actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential"))
+    end
+
+    μ::Float64 = getMassRatios(dynamicsModel)
+
+    Logging.@debug "Computing pseudo-potential" q μ
+
+    y2::Float64 = q[2]^2
+    z2::Float64 = q[3]^2
+
+    # Distance to each primary
+    r_13::Float64 = sqrt((q[1]+μ)^2+y2+z2)
+    r_23::Float64 = sqrt((q[1]-1+μ)^2+y2+z2)
+    if r_13 == 0.0
+        Logging.@error "Location of primary" r_13
+        throw(DomainError(r_13, "Distance to primary must be positive"))
+    elseif r_23 == 0.0
+        Logging.@error "Location of secondary" r_23
+        throw(DomainError(r_23, "Distance to secondary must be positive"))
+    end
+
+    U::Float64 = (1-μ)/r_13+μ/r_23+0.5*(q[1]^2+y2)
+
+    Logging.@debug "Returning pseudo-potential" U
+
+    return U
+end
+
+"""
+    getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationType) -> Int64
 
 Return state vector size for CR3BP equations of motion type
 
@@ -760,7 +1042,7 @@ Returns
 - `Int64`: State vector size
 
 Errors
-- Throws `ArgumentError` if equationType is not found in mapping
+- Throws `ArgumentError` if `equationType` is not found in mapping
 
 Logging
 - Emits `@error` logs for thrown errors

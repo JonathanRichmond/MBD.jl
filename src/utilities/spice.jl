@@ -3,7 +3,7 @@ SPICE utility functions
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 4/16/26
+U: 5/29/26
 """
 
 
@@ -42,7 +42,7 @@ Example
 id = getIDCode("Earth")
 ```
 """
-function getIDCode_func(name::String)
+function getIDCode_func(name::String)::Int64
     Logging.@debug "Entered getIDCode_func()" name
 
     # Input validation
