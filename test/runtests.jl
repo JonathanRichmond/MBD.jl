@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 6/5/26
+U: 6/12/26
 """
 
 using MBD, Test
@@ -820,6 +820,11 @@ end
             @test_throws MethodError getMassRatios(stub)
         end
 
+        @testset "getPrimaryState" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getPrimaryState(stub, 1)
+        end
+
         @testset "getPseudopotential" begin
             # Throws MethodError for unimplemented type
             @test_throws MethodError getPseudopotential(stub, collect(Float64, 1:6))
@@ -1315,6 +1320,40 @@ end
             @test occursin("μ_1", err6.msg)
         end
 
+        @testset "getPrimaryState" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            μ = getMassRatios(dm)
+            # Return type is Vector{Float64}
+            @test getPrimaryState(dm, 1) isa Vector{Float64}
+            for primary in 1:2
+                result = getPrimaryState(dm, primary)
+                # Output length is 6 for all valid primaries
+                @test length(result) == 6
+                # All components are finite for each valid primary
+                @test all(isfinite, getPrimaryState(dm, primary))
+                # Velocity components are zero for all primaries
+                @test result[4:6] == zeros(3)
+            end
+            # Throws ArgumentError for index below range
+            @test_throws ArgumentError getPrimaryState(dm, 0)
+            @test_throws ArgumentError getPrimaryState(dm, -1)
+            # Throws ArgumentError for index above range
+            @test_throws ArgumentError getPrimaryState(dm, 3)
+            # P1 lies to the left of barycenter
+            q_1 = getPrimaryState(dm, 1)
+            @test q_1[1] < 0.0
+            # P1 y and z components are zero
+            @test q_1[2] == 0.0
+            @test q_1[3] == 0.0
+            # L2 lies between barycenter and 1
+            q_2 = getPrimaryState(dm, 2)
+            @test 0 < q_2[1] < 1
+            # L2 y and z components are zero
+            @test q_2[2] == 0.0
+            @test q_2[3] == 0.0
+        end
+
         @testset "getPseudopotential" begin
             sd = MBD.SystemData(["Earth", "Moon"])
             dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
@@ -1343,11 +1382,11 @@ end
             q_nan = copy(q_L4)
             q_nan[1] = NaN
             @test_throws ArgumentError getPseudopotential(dm, q_nan)
-            # # Throws DomainError when at primary location
-            # for primary in 1:2
-            #     q_P = getPrimaryState(dm, primary)
-            #     @test_throws DomainError getPseudopotential(dm, q_P)
-            # end
+            # Throws DomainError when at primary location
+            for primary in 1:2
+                q_P = getPrimaryState(dm, primary)
+                @test_throws DomainError getPseudopotential(dm, q_P)
+            end
         end
 
         @testset "getStateSize" begin

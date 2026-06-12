@@ -3,7 +3,7 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 6/5/26
+U: 6/12/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
@@ -286,7 +286,7 @@ function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
 end
 
 """
-    getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})
+    getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Float64
 
 Return Hamiltonian value
 
@@ -392,7 +392,42 @@ function getNumPrimaries(dynamicsModel::AbstractDynamicsModel)::Int64
 end
 
 """
-    getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})
+    getPrimaryState(dynamicsModel::AbstractDynamicsModel, primary::Int64) -> Vector{Float64}
+
+Return primary state
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `primary::Int64`: Primary index
+
+Returns
+- `Vector{Float64}`: Primary state
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns primary state [ndim]
+
+Example
+```
+q_1::Vector{Float64} = getPrimaryState(dynamicsModel, 1)
+```
+"""
+function getPrimaryState(dynamicsModel::AbstractDynamicsModel, primary::Int64)::Vector{Float64}
+    Logging.@debug "Entered generic getPrimaryState" dynamicsModel
+
+    Logging.@error "getPrimaryState is not implemented for this dynamicsModel type" type=typeof(dynamicsModel)
+    throw(MethodError(getPrimaryState, (dynamicsModel, primary)))
+end
+
+"""
+    getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Float64
 
 Return pseudo-potential
 
@@ -816,7 +851,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
 end
 
 """
-    getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}) -> Float64
 
 Return CR3BP Jacobi constant
 
@@ -840,7 +875,7 @@ Example
 H::Float64 = getHamiltonian(dynamicsModel, q)
 ```
 """
-function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::Float64
     Logging.@debug "Entered getHamiltonian (CR3BP)" dynamicsModel q
 
     # Input validation
@@ -869,7 +904,7 @@ function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
 end
 
 """
-    getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}) -> Float64
     
 Return CR3BP Jacobi constant
 
@@ -897,7 +932,7 @@ Example
 JC::Float64 = getJacobiConstant(dynamicsModel, q)
 ```
 """
-function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::Float64
     Logging.@debug "Entered getJacobiConstant (CR3BP)" dynamicsModel q
 
     # Validate state vector length
@@ -962,7 +997,54 @@ function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+    getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64) -> Vector{Float64}
+
+Return CR3BP primary state
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `primary::Int64`: Primary index
+
+Returns
+- `Vector{Float64}`: Primary state [ndim]
+
+Errors
+- Throws `ArgumentError` if `primary` is not between 1 and 2
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing primary state,
+    or when primary state is returned
+
+Example
+```
+q_1::Vector{Float64} = getPrimaryState(dynamicsModel, 1)
+```
+"""
+function getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64)::Vector{Float64}
+    Logging.@debug "Entered getPrimaryState (CR3BP)" dynamicsModel primary
+
+    # Validate primary index
+    if !(1 <= primary <= 2)
+        Logging.@error "Invalid primary index" primary
+        throw(ArgumentError("Primary must be between 1 and 2, got $primary"))
+    end
+
+    μ::Float64 = getMassRatios(dynamicsModel)
+
+    Logging.@debug "Computing primary state" primary μ
+
+    # Both primaries are stationary by definition
+    q::Vector{Float64} = zeros(Float64, 6)
+    q[1] = (primary == 1 ? -μ : 1-μ)
+
+    Logging.@debug "Returning primary state" primary q
+
+    return q
+end
+
+"""
+    getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}) -> Float64
 
 Return CR3BP pseudo-potential
 
@@ -987,7 +1069,7 @@ Example
 U::Float64 = getPseudopotential(dynamicsModel, q)
 ```
 """
-function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})
+function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::Float64
     Logging.@debug "Entered getPseudopotential (CR3BP)" dynamicsModel q
 
     # Input validation
@@ -1014,10 +1096,10 @@ function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64
     # Distance to each primary
     r_13::Float64 = sqrt((q[1]+μ)^2+y2+z2)
     r_23::Float64 = sqrt((q[1]-1+μ)^2+y2+z2)
-    if r_13 == 0.0
+    if r_13 < 1E-14
         Logging.@error "Location of primary" r_13
         throw(DomainError(r_13, "Distance to primary must be positive"))
-    elseif r_23 == 0.0
+    elseif r_23 < 1E-14
         Logging.@error "Location of secondary" r_23
         throw(DomainError(r_23, "Distance to secondary must be positive"))
     end

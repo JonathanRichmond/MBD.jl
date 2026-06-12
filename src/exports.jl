@@ -3,7 +3,7 @@ Package exports
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 6/5/26
+U: 6/12/26
 """
 
 
@@ -21,10 +21,10 @@ export
     adjustInitialConditions, appendExtraInitialConditions,
     extractStateTransitionMatrix, getCharLengths, getCharMasses, getCharTimes,
     getEquilibriumPoint, getHamiltonian, getJacobiConstant, getMassRatios,
-    getPseudopotential, getStateSize,
+    getPrimaryState, getPseudopotential, getStateSize,
     # getDistance2Primary, getEnergy, getEpochDependencies, getEquationsOfMotion,
     # getEquilibriumPoint, getLinearVariationState, getMassRatios,
-    # getParameterDependencies, getPrimaryState, getPseudopotentialGradient,
+    # getParameterDependencies, getPseudopotentialGradient,
     # getPseudopotentialHessian, isEpochIndependent,
 
     # Utilities
