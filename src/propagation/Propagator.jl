@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 11/12/25
+U: 6/16/26
 """
 
 import DifferentialEquations
@@ -12,6 +12,7 @@ import MBD: Propagator
 export propagate, propagateWithEvent, propagateWithEvents, propagateWithPeriodicEvent
 
 mutable struct Event
+    count::Int64
     flag::Symbol
 end
 
@@ -325,7 +326,7 @@ function propagateWithEvents(propagator::Propagator, callbackEvent::Differential
         append!(arcOut.times, sol.t)
     end
 
-    return (arcOut, event.flag)
+    return (arcOut, event.flag, event.count)
 end
 
 """
