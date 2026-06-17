@@ -309,10 +309,9 @@ Return propagated arc
 - `dynamicsModel::CR3BPDynamicsModel`: CR3BP dynamics model object
 - `params::Vector{Any}`: Propagation parameters (optional)
 """
-function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.CR3BPDynamicsModel, params = [])    
+function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.CR3BPDynamicsModel, eventTracker, params = [])    
     arcOut = MBD.CR3BPArc(dynamicsModel)
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
-    event = Event(0, :none)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
             q0 = copy(getStateByIndex(arcOut, -1))
@@ -320,13 +319,13 @@ function propagateWithEvents(propagator::Propagator, callbackEvent::Differential
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, event, params...))
+        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, eventTracker, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         append!(arcOut.states, sol.u)
         append!(arcOut.times, sol.t)
     end
 
-    return (arcOut, event.flag, event.count)
+    return (arcOut, eventTracker)
 end
 
 """
