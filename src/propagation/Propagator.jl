@@ -312,7 +312,7 @@ Return propagated arc
 function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.CR3BPDynamicsModel, params = [])    
     arcOut = MBD.CR3BPArc(dynamicsModel)
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
-    event = Event(:none)
+    event = Event(0, :none)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
             q0 = copy(getStateByIndex(arcOut, -1))
