@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 6/16/26
+U: 6/17/26
 """
 
 import DifferentialEquations
@@ -313,6 +313,7 @@ function propagateWithEvents(propagator::Propagator, callbackEvent::Differential
     arcOut = MBD.CR3BPArc(dynamicsModel)
     EOMs::MBD.CR3BPEquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
     event = Event(0, :none)
+    eventRef = Ref(event)
     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
         if tIndex > Int16(2)
             q0 = copy(getStateByIndex(arcOut, -1))
@@ -320,13 +321,13 @@ function propagateWithEvents(propagator::Propagator, callbackEvent::Differential
         end
         t0::Float64 = tSpan[tIndex-1]
         tf::Float64 = tSpan[tIndex]
-        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), [EOMs, event, params...])
+        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, eventRef, params...))
         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
         append!(arcOut.states, sol.u)
         append!(arcOut.times, sol.t)
     end
 
-    return (arcOut, event.flag, event.count)
+    return (arcOut, eventRef[].flag, eventRef[].count)
 end
 
 """
