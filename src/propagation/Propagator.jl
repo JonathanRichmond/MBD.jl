@@ -9,9 +9,10 @@ U: 6/17/26
 import DifferentialEquations
 import MBD: Propagator
 
+export EventTracker
 export propagate, propagateWithEvent, propagateWithEvents, propagateWithPeriodicEvent
 
-mutable struct Event
+mutable struct EventTracker
     count::Int64
     flag::Symbol
     states::Vector{Vector{Float64}}
@@ -343,25 +344,25 @@ Return propagated arc
 - `dynamicsModel::BCR4BP12DynamicsModel`: BCR4BP P1-P2 dynamics model object
 - `params::Vector{Any}`: Propagation parameters (optional)
 """
-function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP12DynamicsModel, params = [])    
-    arcOut = MBD.BCR4BP12Arc(dynamicsModel)
-    EOMs::MBD.BCR4BP12EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
-    event = Event(0, :none)
-    for tIndex::Int16 in Int16(2):Int16(length(tSpan))
-        if tIndex > Int16(2)
-            q0 = copy(getStateByIndex(arcOut, -1))
-            deleteStateAndTime!(arcOut, -1)
-        end
-        t0::Float64 = tSpan[tIndex-1]
-        tf::Float64 = tSpan[tIndex]
-        problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, event, params...))
-        sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
-        append!(arcOut.states, sol.u)
-        append!(arcOut.times, sol.t)
-    end
+# function propagateWithEvents(propagator::Propagator, callbackEvent::DifferentialEquations.VectorContinuousCallback, q0::Vector{Float64}, tSpan::Vector{Float64}, dynamicsModel::MBD.BCR4BP12DynamicsModel, params = [])    
+#     arcOut = MBD.BCR4BP12Arc(dynamicsModel)
+#     EOMs::MBD.BCR4BP12EquationsOfMotion = getEquationsOfMotion(dynamicsModel, propagator.equationType)
+#     event = Event(0, :none)
+#     for tIndex::Int16 in Int16(2):Int16(length(tSpan))
+#         if tIndex > Int16(2)
+#             q0 = copy(getStateByIndex(arcOut, -1))
+#             deleteStateAndTime!(arcOut, -1)
+#         end
+#         t0::Float64 = tSpan[tIndex-1]
+#         tf::Float64 = tSpan[tIndex]
+#         problem = DifferentialEquations.ODEProblem(computeDerivatives!, q0, (t0, tf), (EOMs, event, params...))
+#         sol::DifferentialEquations.ODESolution = DifferentialEquations.solve(problem, propagator.integratorFactory.integrator, callback = callbackEvent, abstol = propagator.absTol, reltol = propagator.relTol, dtmax = propagator.maxStep, maxiters = propagator.maxEvaluationCount)
+#         append!(arcOut.states, sol.u)
+#         append!(arcOut.times, sol.t)
+#     end
 
-    return (arcOut, event.flag, event.count)
-end
+#     return (arcOut, event.flag, event.count)
+# end
 
 """
     propagateWithPeriodicEvent(propagator, callbackEvent, q0, tspan, dynamicsModel, params)
