@@ -10,7 +10,6 @@ QUEUE:
     evaluateEquations() needs EquationsOfMotion, getEquationsOfMotion(), computeDerivatives!()
     getEpochDependencies() needs isEpochIndependent()
     getEquationsOfMotion() needs EquationsOfMotion
-    getExcursion() needs getPrimaryState()
 
 TO DO:
 """
@@ -283,6 +282,66 @@ function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
 
     Logging.@error "getEquilibriumPoint is not implemented for this dynamics model type" type=typeof(dynamicsModel)
     throw(MethodError(getEquilibriumPoint, (dynamicsModel, point)))
+end
+
+"""
+    getExcursion(dynamicsModel::AbstractDynamicsModel, primary::Int64, q::AbstractVector{Float64}) -> Float64
+
+Return excursion from primary
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `primary::Int64`: Primary index
+- `q::AbstractVector{Float64}`: State vector
+
+Returns
+- `Float64`: Excursion distance
+
+Errors
+- Throws `ArgumentError` if primary index is invlaid or if state vector is
+    non-finite or too short
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered or when excursion is returned
+
+Example
+```
+d::Float64 = getExcursion(dynamicsModel, 1, q)
+```
+"""
+function getExcursion(dynamicsModel::AbstractDynamicsModel, primary::Int64, q::AbstractVector{Float64})::Float64
+    Logging.@debug "Entered getExcursion" dynamicsModel primary q
+
+    # Validate primary index
+    if !(1 <= primary <= getNumPrimaries(dynamicsModel))
+        Logging.@error "Invalid primary index" primary=primary nPrimaries=getNumPrimaries(dynamicsModel)
+        throw(ArgumentError("Primary must be between 1 and $(getNumPrimaries(dynamicsModel)), got $primary"))
+    end
+    
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+  
+    # Validate that q contains at least position components
+    if length(q) < 3
+        Logging.@error "State vector is too short to contain position components" rquired=3 actual=length(q)
+        throw(ArgumentError("State vector length $(length(q)) is insufficient; need at least 3"))
+    end
+
+    q_P::Vector{Float64} = getPrimaryState(dynamicsModel, primary)
+
+    # Compute Euclidean distance directly
+    dx::Float64 = q[1]-q_P[1]
+    dy::Float64 = q[2]-q_P[2]
+    dz::Float64 = q[3]-q_P[3]
+    d::Float64 = sqrt(dx^2+dy^2+dz^2)
+
+    Logging.@debug "Returning excursion" primary=primary excursion=d
+
+    return d
 end
 
 """

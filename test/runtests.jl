@@ -707,29 +707,29 @@ end
         end
 
         @testset "appendExtraInitialConditions" begin
-            sd = MBD.SystemData(["Earth", "Moon"])
-            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
-            n_simple = getStateSize(dm, MBD.SIMPLE)
-            n_STM = getStateSize(dm, MBD.STM)
-            n_full = getStateSize(dm, MBD.FULL)
-            n_arclength = getStateSize(dm, MBD.ARCLENGTH)
+            sd_CR3BP = MBD.SystemData(["Earth", "Moon"])
+            dm_CR3BP = MBD.CR3BPDynamicsModel(sd_CR3BP, [1, 2])
+            n_simple = getStateSize(dm_CR3BP, MBD.SIMPLE)
+            n_STM = getStateSize(dm_CR3BP, MBD.STM)
+            n_full = getStateSize(dm_CR3BP, MBD.FULL)
+            n_arclength = getStateSize(dm_CR3BP, MBD.ARCLENGTH)
             q0_simple = collect(Float64, 1:n_simple)
             # Return type is Vector{Float64}
-            @test appendExtraInitialConditions(dm, q0_simple, MBD.FULL) isa Vector{Float64}
+            @test appendExtraInitialConditions(dm_CR3BP, q0_simple, MBD.FULL) isa Vector{Float64}
             # Output and length matches adjustInitialConditions with SIMPLE input type
             for eqOut in [MBD.SIMPLE, MBD.STM, MBD.FULL, MBD.ARCLENGTH]
-                expected = adjustInitialConditions(dm, q0_simple, MBD.SIMPLE, eqOut)
-                result = appendExtraInitialConditions(dm, q0_simple, eqOut)
+                expected = adjustInitialConditions(dm_CR3BP, q0_simple, MBD.SIMPLE, eqOut)
+                result = appendExtraInitialConditions(dm_CR3BP, q0_simple, eqOut)
                 @test result == expected
-                @test length(result) == getStateSize(dm, eqOut)
+                @test length(result) == getStateSize(dm_CR3BP, eqOut)
             end
             # Propagates ArgumentError from adjustInitialConditions for wrong q0 length
             q0_bad = zeros(Float64, n_simple+1)
-            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_bad, MBD.FULL)
+            @test_throws ArgumentError appendExtraInitialConditions(dm_CR3BP, q0_bad, MBD.FULL)
             # Propagates ArgumentError from adjustInitialConditions for non-finite q0 elements
             q0_nan = zeros(Float64, n_simple)
             q0_nan[4] = NaN
-            @test_throws ArgumentError appendExtraInitialConditions(dm, q0_nan, MBD.FULL)
+            @test_throws ArgumentError appendExtraInitialConditions(dm_CR3BP, q0_nan, MBD.FULL)
         end
 
         @testset "extractStateTransitionMatrix" begin
@@ -797,6 +797,44 @@ end
         @testset "getEquilibriumPoint" begin
             # Throws MethodError for unimplemented type
             @test_throws MethodError getEquilibriumPoint(stub, 1)
+        end
+
+        @testset "getExcursion" begin
+            sd_CR3BP = MBD.SystemData(["Earth", "Moon"])
+            dm_CR3BP = MBD.CR3BPDynamicsModel(sd_CR3BP, [1, 2])
+            n_simple = getStateSize(dm_CR3BP, MBD.SIMPLE)
+            q = zeros(Float64, n_simple)
+            q_P1 = getPrimaryState(dm_CR3BP, 1)
+            q_P2 = getPrimaryState(dm_CR3BP, 2)
+            # Return type is Float64
+            d_1 = getExcursion(dm_CR3BP, 1, q)
+            @test d_1 isa Float64
+            # Computes correct Euclidean distance from primary
+            expected1 = LinearAlgebra.norm(q[1:3]-q_P1[1:3])
+            @test d_1 ≈ expected1
+            # Computes correct Euclidean distance from secondary
+            expected2 = LinearAlgebra.norm(q[1:3]-q_P2[1:3])
+            @test getExcursion(dm_CR3BP, 2, q) ≈ expected2
+            # Excursion s zero when spacecraft is exactly at primary location
+            @test getExcursion(dm_CR3BP, 1, getPrimaryState(dm_CR3BP, 1)) ≈ 0.0
+            # Excursion is non-negative
+            @test getExcursion(dm_CR3BP, 1, q) >= 0.0
+            @test getExcursion(dm_CR3BP, 2, q) >= 0.0
+            # Excursion is invariant to velocity components
+            q_v = copy(q)
+            q_v[4:6] .= [0.1, -0.2, 0.05]
+            @test getExcursion(dm_CR3BP, 1, q) ≈ getExcursion(dm_CR3BP, 1, q_v)
+            # Throws ArgumentError for index below range
+            @test_throws ArgumentError getExcursion(dm_CR3BP, 0, q)
+            @test_throws ArgumentError getExcursion(dm_CR3BP, -1, q)
+            # Throws ArgumentError for index above range
+            @test_throws ArgumentError getExcursion(dm_CR3BP, 3, q)
+            # Throws ArgumentError for state vector containing nan
+            q_nan = copy(q)
+            q_nan[1] = NaN
+            @test_throws ArgumentError getExcursion(dm_CR3BP, 1, q_nan)
+            # Throws ArgumentError when state vector has fewer than 3 elements
+            @test_throws ArgumentError getExcursion(dm_CR3BP, 1, q[1:2])
         end
 
         @testset "getHamiltonian" begin

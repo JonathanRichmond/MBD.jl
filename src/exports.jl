@@ -3,7 +3,7 @@ Package exports
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 6/12/26
+U: 6/19/26
 """
 
 
@@ -20,8 +20,8 @@ export
     # DynamicsModel methods
     adjustInitialConditions, appendExtraInitialConditions,
     extractStateTransitionMatrix, getCharLengths, getCharMasses, getCharTimes,
-    getEquilibriumPoint, getHamiltonian, getJacobiConstant, getMassRatios,
-    getPrimaryState, getPseudopotential, getStateSize,
+    getEquilibriumPoint, getExcursion, getHamiltonian, getJacobiConstant,
+    getMassRatios, getPrimaryState, getPseudopotential, getStateSize,
     # getDistance2Primary, getEnergy, getEpochDependencies, getEquationsOfMotion,
     # getEquilibriumPoint, getLinearVariationState, getMassRatios,
     # getParameterDependencies, getPseudopotentialGradient,
