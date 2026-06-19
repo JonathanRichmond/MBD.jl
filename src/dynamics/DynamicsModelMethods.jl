@@ -3,7 +3,7 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 6/12/26
+U: 6/19/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
@@ -17,18 +17,18 @@ TO DO:
 
 
 """
-    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
+    adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::AbstractVector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for output equations of motion type
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `q0::Vector{Float64}`: Initial conditions
+- `q0::AbstractVector{Float64}`: Initial conditions
 - `inputEquationType::EquationType`: Equations of motion type for `q0`
 - `outputEquationType::EquationType`: Output equations of motion type
 
 Returns
-- `Vector::Float64`: Initial conditions
+- `Vector{Float64}`: Initial conditions
 
 Errors
 - Throws `MethodError` if not implemented for the dynamics model
@@ -47,7 +47,7 @@ Example
 q0_full::Vector{Float64} = adjustInitialConditions(dynamicsModel, q0_STM, STM, FULL)
 ```
 """
-function adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)::Vector{Float64}
+function adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::AbstractVector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)::Vector{Float64}
     Logging.@debug "Entered generic adjustInitialConditions" dynamicsModel inputEquationType outputEquationType
 
     Logging.@error "adjustInitialConditions is not implemented for this dynamics model type" type=typeof(dynamicsModel)
@@ -55,13 +55,13 @@ function adjustInitialConditions(dynamicsModel::AbstractDynamicsModel, q0::Vecto
 end
 
 """
-    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType) -> Vector{Float64}
+    appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::AbstractVector{Float64}, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for output equations of motion type
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `q0_simple::Vector{Float64}`: Simple initial conditions
+- `q0_simple::AbstractVector{Float64}`: Simple initial conditions
 - `outputEquationType::EquationType`: Output equations of motion type
 
 Returns
@@ -86,7 +86,7 @@ Example
 q0_full::Vector{Float64} = appendExtraInitialConditions(dynamicsModel, q0_simple, FULL)
 ```
 """
-function appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::Vector{Float64}, outputEquationType::EquationType)::Vector{Float64}
+function appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_simple::AbstractVector{Float64}, outputEquationType::EquationType)::Vector{Float64}
     Logging.@debug "Entered generic appendExtraInitialConditions" dynamicsModel outputEquationType
 
     Logging.@debug "Forwarding to adjustInitialConditions" dynamicsModel outputEquationType
@@ -94,13 +94,13 @@ function appendExtraInitialConditions(dynamicsModel::AbstractDynamicsModel, q0_s
 end
 
 """
-    extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Matrix{Float64}
+    extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64}) -> Matrix{Float64}
 
 Return STM
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `q::Vector{Float64}`: State vector
+- `q::AbstractVector{Float64}`: State vector
 
 Returns
 - `Matrix{Float64}`: State transition matrix
@@ -119,7 +119,7 @@ Example
 Φ::matrix{Float64} = extractStateTransitionMatrix(dynamicsModel, q)
 ```
 """
-function extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Matrix{Float64}
+function extractStateTransitionMatrix(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64})::Matrix{Float64}
     Logging.@debug "Entered extractStateTransitionMatrix" dynamicsModel q
 
     # Input validation
@@ -286,13 +286,13 @@ function getEquilibriumPoint(dynamicsModel::AbstractDynamicsModel, point::Int64)
 end
 
 """
-    getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Float64
+    getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64}) -> Float64
 
 Return Hamiltonian value
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `q::Vector{Float64}`: State vector
+- `q::AbstractVector{Float64}`: State vector
 
 Returns
 - `Float64`: Hamiltonian value
@@ -313,7 +313,7 @@ Example
 H::Float64 = getHamiltonian(dynamicsModel, q)
 ```
 """
-function getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Float64
+function getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64})::Float64
     Logging.@debug "Entered generic getHamiltonian" dynamicsModel
 
     Logging.@error "getHamiltonian is not implemented for this dynamics model type" type=typeof(dynamicsModel)
@@ -427,13 +427,13 @@ function getPrimaryState(dynamicsModel::AbstractDynamicsModel, primary::Int64)::
 end
 
 """
-    getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64}) -> Float64
+    getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64}) -> Float64
 
 Return pseudo-potential
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `q::Vector{Float64}`: State vector
+- `q::AbstractVector{Float64}`: State vector
 
 Returns
 - `Float64`: Pseudo-potential
@@ -454,7 +454,7 @@ Example
 U::Float64 = getPseudopotential(dynamicsModel, q)
 ```
 """
-function getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::Vector{Float64})::Float64
+function getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64})::Float64
     Logging.@debug "Entered generic getPseudopotential" dynamicsModel
 
     Logging.@error "getPseudopotential is not implemented for this dynamics model type" type=typeof(dynamicsModel)
@@ -497,18 +497,18 @@ end
 
 
 """
-    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
+    adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::AbstractVector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType) -> Vector{Float64}
 
 Return initial conditions for CR3BP output equations of motion type
 
 Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
-- `q0::Vector{Float64}`: Initial conditions [ndim]
+- `q0::AbstractVector{Float64}`: Initial conditions [ndim]
 - `inputEquationType::EquationType`: Equations of motion type for `q0`
 - `outputEquationType::EquationType`: Output equations of motion type
 
 Returns
-- `Vector::Float64`: Initial conditions [ndim]
+- `Vector{Float64}`: Initial conditions [ndim]
 
 Errors
 - Throws `ArgumentError` if length of `q0` does not match that expected for
@@ -525,7 +525,7 @@ Example
 q0_full::Vector{Float64} = adjustInitialConditions(dynamicsModel, q0_STM, STM, FULL)
 ```
 """
-function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Vector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)::Vector{Float64}
+function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::AbstractVector{Float64}, inputEquationType::EquationType, outputEquationType::EquationType)::Vector{Float64}
     Logging.@debug "Entered appendExtraInitialConditions" dynamicsModel inputEquationType outputEquationType
 
     # Validate input state vector length against expected size for inputEquationType
@@ -851,13 +851,13 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
 end
 
 """
-    getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}) -> Float64
+    getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64}) -> Float64
 
 Return CR3BP Jacobi constant
 
 Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
-- `q::Vector{Float64}`: State vector [ndim]
+- `q::AbstractVector{Float64}`: State vector [ndim]
 
 Returns
 - `Float64`: Jacobi constant [ndim]
@@ -875,7 +875,7 @@ Example
 H::Float64 = getHamiltonian(dynamicsModel, q)
 ```
 """
-function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::Float64
+function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Float64
     Logging.@debug "Entered getHamiltonian (CR3BP)" dynamicsModel q
 
     # Input validation
@@ -904,13 +904,13 @@ function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::
 end
 
 """
-    getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}) -> Float64
+    getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64}) -> Float64
     
 Return CR3BP Jacobi constant
 
 Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
-- `q::Vector{Float64}`: State vector [ndim]
+- `q::AbstractVector{Float64}`: State vector [ndim]
 
 Returns
 - `Float64`: Jacobi constant [ndim]
@@ -932,7 +932,7 @@ Example
 JC::Float64 = getJacobiConstant(dynamicsModel, q)
 ```
 """
-function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::Float64
+function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Float64
     Logging.@debug "Entered getJacobiConstant (CR3BP)" dynamicsModel q
 
     # Validate state vector length
@@ -1044,13 +1044,13 @@ function getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64)::Vec
 end
 
 """
-    getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64}) -> Float64
+    getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64}) -> Float64
 
 Return CR3BP pseudo-potential
 
 Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
-- `q::Vector{Float64}`: State vector [ndim]
+- `q::AbstractVector{Float64}`: State vector [ndim]
 
 Returns
 - `Float64`: Pseudo-potential [ndim]
@@ -1069,7 +1069,7 @@ Example
 U::Float64 = getPseudopotential(dynamicsModel, q)
 ```
 """
-function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::Vector{Float64})::Float64
+function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Float64
     Logging.@debug "Entered getPseudopotential (CR3BP)" dynamicsModel q
 
     # Input validation
