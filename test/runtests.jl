@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 6/12/26
+U: 6/26/26
 """
 
 using MBD, Test
@@ -858,6 +858,11 @@ end
             @test_throws MethodError getMassRatios(stub)
         end
 
+        @testset "getParameterDependencies" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getParameterDependencies(stub, collect(Float64, 1:6))
+        end
+
         @testset "getPrimaryState" begin
             # Throws MethodError for unimplemented type
             @test_throws MethodError getPrimaryState(stub, 1)
@@ -866,6 +871,16 @@ end
         @testset "getPseudopotential" begin
             # Throws MethodError for unimplemented type
             @test_throws MethodError getPseudopotential(stub, collect(Float64, 1:6))
+        end
+
+        @testset "getPseudopotentialHessian" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getPseudopotentialHessian(stub, collect(Float64, 1:6))
+        end
+
+        @testset "getPseudopotentialJacobian" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getPseudopotentialJacobian(stub, collect(Float64, 1:6))
         end
 
         @testset "getStateSize" begin
@@ -1358,6 +1373,25 @@ end
             @test occursin("μ_1", err6.msg)
         end
 
+        @testset "getParameterDependencies" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            n_full = getStateSize(dm, MBD.FULL)
+            q0_full = collect(Float64, 1:n_full)
+            # Return type is Matrix{Float64}
+            dqdp = getParameterDependencies(dm, q0_full)
+            @test dqdp isa Matrix{Float64}
+            # Returns matrix of n_simplex0
+            @test size(dqdp) == (n_simple,0)
+            # Returns matrix of all zeros
+            @test all(dqdp .== 0.0)
+            # Throws ArgumentError when state vector is too short
+            @test_throws ArgumentError getParameterDependencies(dm, collect(Float64, 1:n_simple))
+            # Throws ArgumentError when state vector is too long
+            @test_throws ArgumentError getParameterDependencies(dm, collect(Float64, 1:n_full+1))
+        end
+
         @testset "getPrimaryState" begin
             sd = MBD.SystemData(["Earth", "Moon"])
             dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
@@ -1424,6 +1458,101 @@ end
             for primary in 1:2
                 q_P = getPrimaryState(dm, primary)
                 @test_throws DomainError getPseudopotential(dm, q_P)
+            end
+        end
+
+        @testset "getPseudopotentialHessian" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            q_L1 = getEquilibriumPoint(dm, 1)
+            q_L4 = getEquilibriumPoint(dm, 4)
+            q_L5 = getEquilibriumPoint(dm, 5)
+            # Return type is Vector{Float64} of length 6
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                d2Udr2 = getPseudopotentialHessian(dm, q_L)
+                @test d2Udr2 isa Vector{Float64}
+                @test length(d2Udr2) == 6
+                @test all(isfinite, d2Udr2)
+            end
+            # Pseudo-potential Hessian off-diagonal is zero on x-axis
+            @test getPseudopotentialHessian(dm, q_L1)[4:6] ≈ zeros(Float64, 3) atol=1E-12
+            # Pseudo-potential z-cross terms are zero in xy-plane
+            @test getPseudopotentialHessian(dm, q_L1)[5:6] ≈ zeros(Float64, 2) atol=1E-12
+            # Pseudo-potential Hessian diagonal at L4 equals L5 by symmetry
+            @test getPseudopotentialHessian(dm, q_L4)[1:3] ≈ getPseudopotentialHessian(dm, q_L5)[1:3]
+            # Pseudo-potential Hessian off-diagonal at L4 equals magnitude of L5
+            @test abs(getPseudopotentialHessian(dm, q_L4)[4]) ≈ abs(getPseudopotentialHessian(dm, q_L5)[4])
+            # Pseudo-potential does not change with speed
+            q_fast = copy(q_L4)
+            q_fast[4:6] = [0.1, 0.1, 0]
+            @test getPseudopotentialHessian(dm, q_fast) ≈ getPseudopotentialHessian(dm, q_L4)
+            # Accepts state vector longer than n_simple
+            q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
+            @test getPseudopotentialHessian(dm, q_long) ≈ getPseudopotentialHessian(dm, q_L4)
+            # Throws ArgumentError when q is too short
+            @test_throws ArgumentError getPseudopotentialHessian(dm, zeros(Float64, n_simple-1))
+            # Throws ArgumentError when q has non-finite values
+            q_nan = copy(q_L4)
+            q_nan[1] = NaN
+            @test_throws ArgumentError getPseudopotentialHessian(dm, q_nan)
+            # Throws DomainError when at primary location
+            for primary in 1:2
+                q_P = getPrimaryState(dm, primary)
+                @test_throws DomainError getPseudopotentialHessian(dm, q_P)
+            end
+        end
+
+        @testset "getPseudopotentialJacobian" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            q_L1 = getEquilibriumPoint(dm, 1)
+            q_L4 = getEquilibriumPoint(dm, 4)
+            # Return type is Vector{Float64} of length 3
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                dUdr = getPseudopotentialJacobian(dm, q_L)
+                @test dUdr isa Vector{Float64}
+                @test length(dUdr) == 3
+                @test all(isfinite, dUdr)
+            end
+            # Pseudo-potential Jacobian is zero at Lagrange points
+            @test getPseudopotentialJacobian(dm, q_L1) ≈ zeros(Float64, 3) atol=1E-12
+            @test getPseudopotentialJacobian(dm, q_L4) ≈ zeros(Float64, 3) atol=1E-12
+            # Pseudo-potential Jacobian y-term is zero on x-axis
+            q_bary = zeros(Float64, 6)
+            @test getPseudopotentialJacobian(dm, q_bary)[2] ≈ 0.0
+            # Pseudo-potential Jacobian z-term is zero in xy-plane
+            q_plane = copy(q_L1)
+            q_plane[2] = 0.1
+            @test getPseudopotentialJacobian(dm, q_plane)[3] ≈ 0.0
+            # Pseudo-potential Jacobian has opposite sign across symmetries
+            q_plane2 = copy(q_plane)
+            q_plane2[2] *= -1
+            @test getPseudopotentialJacobian(dm, q_plane2)[2] ≈ -getPseudopotentialJacobian(dm, q_plane)[2]
+            q_plane2[3] = 0.1
+            q_plane3 = copy(q_plane2)
+            q_plane3[3] *= -1
+            @test getPseudopotentialJacobian(dm, q_plane3)[3] ≈ -getPseudopotentialJacobian(dm, q_plane2)[3]
+            # Pseudo-potential Jacobian does not change with speed
+            q_fast = copy(q_L4)
+            q_fast[4:6] = [0.1, 0.1, 0]
+            @test getPseudopotentialJacobian(dm, q_fast) ≈ getPseudopotentialJacobian(dm, q_L4)
+            # Accepts state vector longer than n_simple
+            q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
+            @test getPseudopotentialJacobian(dm, q_long) ≈ getPseudopotentialJacobian(dm, q_L4)
+            # Throws ArgumentError when q is too short
+            @test_throws ArgumentError getPseudopotentialJacobian(dm, zeros(Float64, n_simple-1))
+            # Throws ArgumentError when q has non-finite values
+            q_nan = copy(q_L4)
+            q_nan[1] = NaN
+            @test_throws ArgumentError getPseudopotentialJacobian(dm, q_nan)
+            # Throws DomainError when at primary location
+            for primary in 1:2
+                q_P = getPrimaryState(dm, primary)
+                @test_throws DomainError getPseudopotentialJacobian(dm, q_P)
             end
         end
 

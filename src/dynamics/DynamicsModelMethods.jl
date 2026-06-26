@@ -3,13 +3,14 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 6/19/26
+U: 6/26/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
     evaluateEquations() needs EquationsOfMotion, getEquationsOfMotion(), computeDerivatives!()
     getEpochDependencies() needs isEpochIndependent()
     getEquationsOfMotion() needs EquationsOfMotion
+    getLinearVariation() needs getPseudopotentialJacobian
 
 TO DO:
 """
@@ -451,6 +452,41 @@ function getNumPrimaries(dynamicsModel::AbstractDynamicsModel)::Int64
 end
 
 """
+    getParameterDependencies(dynamicsModel::AbstractDynamicsModel, q_full::Vector{Float64}) -> Matrix{Float64}
+
+Return derivative of state with respect to parameters
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q_full::Vector{Float64}`: Full state vector
+
+Returns
+- `Matrix{Float64}`: Derivative of state with respect to parameters
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns empty matrix
+
+Example
+```
+dqdp::Matrix{Float64} = getParameterDependencies(dynamicsModel, q_full)
+```
+"""
+function getParameterDependencies(dynamicsModel::AbstractDynamicsModel, q_full::Vector{Float64})::Matrix{Float64}
+    Logging.@debug "Entered generic getParameterDependencies" dynamicsModel
+
+    Logging.@error "getParameterDependencies is not implemented for this dynamicsModel type" type=typeof(dynamicsModel)
+    throw(MethodError(getParameterDependencies, (dynamicsModel, q_full)))
+end
+
+"""
     getPrimaryState(dynamicsModel::AbstractDynamicsModel, primary::Int64) -> Vector{Float64}
 
 Return primary state
@@ -518,6 +554,76 @@ function getPseudopotential(dynamicsModel::AbstractDynamicsModel, q::AbstractVec
 
     Logging.@error "getPseudopotential is not implemented for this dynamics model type" type=typeof(dynamicsModel)
     throw(MethodError(getPseudopotential, (dynamicsModel, q)))
+end
+
+"""
+    getPseudopotentialHessian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64}) -> Vector{Float64}
+
+Return pseudo-potential Hessian
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q::AbstractVector{Float64}`: State vector
+
+Returns
+- `Vector{Float64}`: Pseudo-potential Hessian elements
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns pseudo-potential Hessian elements [ndim]
+
+Example
+```
+d2Udr2::Float64 = getPseudopotentialHessian(dynamicsModel, q)
+```
+"""
+function getPseudopotentialHessian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64})::Vector{Float64}
+    Logging.@debug "Entered generic getPseudopotentialHessian" dynamicsModel
+
+    Logging.@error "getPseudopotentialHessian is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getPseudopotentialHessian, (dynamicsModel, q)))
+end
+
+"""
+    getPseudopotentialJacobian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64}) -> Vector{Float64}
+
+Return pseudo-potential Jacobian
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `q::AbstractVector{Float64}`: State vector
+
+Returns
+- `Vector{Float64}`: Pseudo-potential Jacobian
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns pseudo-potential jacobian [ndim]
+
+Example
+```
+dUdr::Float64 = getPseudopotentialJacobian(dynamicsModel, q)
+```
+"""
+function getPseudopotentialJacobian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{Float64})::Vector{Float64}
+    Logging.@debug "Entered generic getPseudopotentialJacobian" dynamicsModel
+
+    Logging.@error "getPseudopotentialJacobian is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getPseudopotentialJacobian, (dynamicsModel, q)))
 end
 
 """
@@ -1056,6 +1162,49 @@ function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
+    getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64}) -> Matrix{Float64}
+
+Return derivative of state with respect to parameters
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q_full::Vector{Float64}`: Full state vector [ndim]
+
+Returns
+- `Matrix{Float64}`: Derivative of state with respect to parameters [ndim]
+
+Errors
+- Throws `ArgumentError` if length of `q_full` is incorrect
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@info` logs when empty matrix is returned
+- Emits `@debug` logs when parameter dependency matrix is returned
+
+Example
+```
+dqdp::Matrix{Float64} = getParameterDependencies(dynamicsModel, q_full)
+```
+"""
+function getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})::Matrix{Float64}
+    Logging.@debug "Entered getParameterDependencies (CR3BP)" dynamicsModel
+
+    # Validate state vector length
+    n_full::Int64 = getStateSize(dynamicsModel, FULL)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if length(q_full) != n_full
+        Logging.@error "Input state vector has incorrect length" expected=n_full actual=length(q_full)
+        throw(ArgumentError("State vector length is $(length(q_full)), but should be $n_full"))
+    end
+
+    # CR3BP has no free parameters
+    Logging.@info "Returning empty parameter dependency matrix"
+    Logging.@debug "Returning parameter dependency matrix" rows=n_simple cols=0
+    
+    return zeros(Float64, (n_simple,0))
+end
+
+"""
     getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64) -> Vector{Float64}
 
 Return CR3BP primary state
@@ -1121,7 +1270,7 @@ Errors
 Logging
 - Emits `@error` logs for thrown errors
 - Emits `@debug` logs when function is entered, when computing pseudo-
-    potential, or when Jacobi constant is returned
+    potential, or when pseudo-potential is returned
 
 Example
 ```
@@ -1168,6 +1317,183 @@ function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector
     Logging.@debug "Returning pseudo-potential" U
 
     return U
+end
+
+"""
+    getPseudopotentialHessian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64}) -> Vector{Float64}
+
+Return pseudo-potential Hessian
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q::AbstractVector{Float64}`: State vector [ndim]
+
+Returns
+- `Vector{Float64}`: Pseudo-potential Hessian elements [ndim]
+
+Errors
+- Throws `ArgumentError` if state vector is non-finite or too short
+- Throws `DomainError` if at location of either primary
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing pseudo-
+    potential Hessian, or when pseudo-potential Hessian is returned
+
+Example
+```
+d2Udr2::Float64 = getPseudopotentialHessian(dynamicsModel, q)
+```
+"""
+function getPseudopotentialHessian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Vector{Float64}
+    Logging.@debug "Entered getPseudopotentialHessian (CR3BP)" dynamicsModel
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    # Validate state vector length
+    n_in::Int64 = length(q)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if n_in < n_simple
+        Logging.@error "State vector is too short" required=n_simple actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential"))
+    end
+
+    μ::Float64 = getMassRatios(dynamicsModel)
+
+    Logging.@debug "Computing pseudo-potential Hessian" q μ
+
+    # x-displacements from eacjh primary
+    x_1::Float64 = q[1]+μ
+    x_2::Float64 = q[1]-1+μ
+
+    y2::Float64 = q[2]^2
+    z2::Float64 = q[3]^2
+
+    # Distance to each primary
+    r_13::Float64 = sqrt(x_1^2+y2+z2)
+    r_23::Float64 = sqrt(x_2^2+y2+z2)
+    if r_13 < 1E-14
+        Logging.@error "Location of primary" r_13
+        throw(DomainError(r_13, "Distance to primary must be positive"))
+    elseif r_23 < 1E-14
+        Logging.@error "Location of secondary" r_23
+        throw(DomainError(r_23, "Distance to secondary must be positive"))
+    end
+
+    r3_13::Float64 = r_13^3
+    r3_23::Float64 = r_23^3
+    r5_13::Float64 = r3_13*r_13^2
+    r5_23::Float64 = r3_23*r_23^2
+
+    # Factor out repeated composite terms
+    A_13::Float64 = (1-μ)/r3_13
+    A_23::Float64 = μ/r3_23
+    B_13::Float64 = 3*(1-μ)/r5_13
+    B_23::Float64 = 3*μ/r5_23
+    A::Float64 = A_13+A_23
+    B::Float64 = B_13+B_23
+    Bx::Float64 = B_13*x_1+B_23*x_2
+
+    # Unique elements of pseudo-potential Hessian
+    d2Udr2::Vector{Float64} = Vector{Float64}(undef, 6)
+    d2Udr2[1] = 1-A+B_13*x_1^2+B_23*x_2^2
+    d2Udr2[2] = 1-A+B*y2
+    d2Udr2[3] = -A+B*z2
+    d2Udr2[4] = Bx*q[2]
+    d2Udr2[5] = Bx*q[3]
+    d2Udr2[6]=B*q[2]*q[3]
+
+    Logging.@debug "Returning pseudo-potential Hessian" d2Udr2
+
+    return d2Udr2
+end
+
+"""
+    getPseudopotentialJacobian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64}) -> Vector{Float64}
+
+Return pseudo-potential Jacobian
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `q::AbstractVector{Float64}`: State vector [ndim]
+
+Returns
+- `Vector{Float64}`: Pseudo-potential Jacobian [ndim]
+
+Errors
+- Throws `ArgumentError` if state vector is non-finite or too short
+- Throws `DomainError` if at location of either primary
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing pseudo-
+    potential Jacobian, or when pseudo-potential Jacobianis returned
+
+Example
+```
+dUdr::Float64 = getPseudopotentialJacobian(dynamicsModel, q)
+```
+"""
+function getPseudopotentialJacobian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Vector{Float64}
+    Logging.@debug "Entered getPseudopotentialJacobian (CR3BP)" dynamicsModel
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    # Validate state vector length
+    n_in::Int64 = length(q)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if n_in < n_simple
+        Logging.@error "State vector is too short" required=n_simple actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential"))
+    end
+
+    μ::Float64 = getMassRatios(dynamicsModel)
+
+    Logging.@debug "Computing pseudo-potential Jacobian" q μ
+
+    # x-displacements from eacjh primary
+    x_1::Float64 = q[1]+μ
+    x_2::Float64 = q[1]-1+μ
+
+    y2::Float64 = q[2]^2
+    z2::Float64 = q[3]^2
+
+    # Distance to each primary
+    r_13::Float64 = sqrt(x_1^2+y2+z2)
+    r_23::Float64 = sqrt(x_2^2+y2+z2)
+    if r_13 < 1E-14
+        Logging.@error "Location of primary" r_13
+        throw(DomainError(r_13, "Distance to primary must be positive"))
+    elseif r_23 < 1E-14
+        Logging.@error "Location of secondary" r_23
+        throw(DomainError(r_23, "Distance to secondary must be positive"))
+    end
+
+    r3_13::Float64 = r_13^3
+    r3_23::Float64 = r_23^3
+
+    # Factor out repeated composite terms
+    A_13::Float64 = (1-μ)/r3_13
+    A_23::Float64 = μ/r3_23
+    A::Float64 = A_13+A_23
+
+    # Pseudo-potential Jacobian
+    dUdr::Vector{Float64} = Vector{Float64}(undef, 3)
+    dUdr[1] = q[1]-A_13*x_1-A_23*x_2
+    dUdr[2] = q[2]*(1-A)
+    dUdr[3] = -q[3]*A
+
+    Logging.@debug "Returning pseudo-potential Jacobian" dUdr
+
+    return dUdr
 end
 
 """
