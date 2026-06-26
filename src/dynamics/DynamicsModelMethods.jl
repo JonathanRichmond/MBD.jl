@@ -1329,7 +1329,7 @@ Arguments
 - `q::AbstractVector{Float64}`: State vector [ndim]
 
 Returns
-- `Vector{Float64}`: Pseudo-potential Hessian elements [ndim]
+- `Vector{Float64}`: Pseudo-potential Hessian elements, [Uxx, Uyy, Uzz, Uxy, Uxz, Uyz] [ndim]
 
 Errors
 - Throws `ArgumentError` if state vector is non-finite or too short
@@ -1398,7 +1398,7 @@ function getPseudopotentialHessian(dynamicsModel::CR3BPDynamicsModel, q::Abstrac
     B::Float64 = B_13+B_23
     Bx::Float64 = B_13*x_1+B_23*x_2
 
-    # Unique elements of pseudo-potential Hessian
+    # Unique elements of pseudo-potential Hessian, [Uxx, Uyy, Uzz, Uxy, Uxz, Uyz]
     d2Udr2::Vector{Float64} = Vector{Float64}(undef, 6)
     d2Udr2[1] = 1-A+B_13*x_1^2+B_23*x_2^2
     d2Udr2[2] = 1-A+B*y2
