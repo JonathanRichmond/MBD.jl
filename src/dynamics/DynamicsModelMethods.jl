@@ -3,14 +3,13 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 6/26/26
+U: 7/3/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
     evaluateEquations() needs EquationsOfMotion, getEquationsOfMotion(), computeDerivatives!()
     getEpochDependencies() needs isEpochIndependent()
     getEquationsOfMotion() needs EquationsOfMotion
-    getLinearVariation() needs getPseudopotentialJacobian
 
 TO DO:
 """
@@ -315,7 +314,7 @@ function getExcursion(dynamicsModel::AbstractDynamicsModel, primary::Int64, q::A
     Logging.@debug "Entered getExcursion" dynamicsModel primary q
 
     # Validate primary index
-    if !(1 <= primary <= getNumPrimaries(dynamicsModel))
+    if !(1 ≤ primary ≤ getNumPrimaries(dynamicsModel))
         Logging.@error "Invalid primary index" primary=primary nPrimaries=getNumPrimaries(dynamicsModel)
         throw(ArgumentError("Primary must be between 1 and $(getNumPrimaries(dynamicsModel)), got $primary"))
     end
@@ -378,6 +377,46 @@ function getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{
 
     Logging.@error "getHamiltonian is not implemented for this dynamics model type" type=typeof(dynamicsModel)
     throw(MethodError(getHamiltonian, (dynamicsModel, q)))
+end
+
+"""
+    getLinearVariation(dynamicsModel::AbstractDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short) -> Tuple{Vector{Float64}, Float64}
+
+Return linear variational state and period
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `point::Int64`: Equilibrium point index
+- `variation::Vector{Float64}`: Variational position about equilibrium point
+- `period::Symbol`: Stable equilibrium linearization period (:short, :long)
+
+Returns
+- `Vector{Float64}`: Linear variational state
+- `Float64`: Linear variational period
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- `period` defaults to "short"
+- For `CR3BPDynamicsModel`, returns Lagrange point linear variational state and
+    period [ndim]
+
+Example
+```
+(q::Vector{Float64}, P::Float64) = getLinearVariation(dynamicsModel, 4, q_var, period = :long)
+```
+"""
+function getLinearVariation(dynamicsModel::AbstractDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short)::Tuple{Vector{Float64}, Float64}
+    Logging.@debug "Entered generic getLinearVariation" dynamicsModel
+
+    Logging.@error "getLinearVariation is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getLinearVariation, (dynamicsModel, point, variation, period)))
 end
 
 """
@@ -725,7 +764,7 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Abstract
         # Copy simple states from leading portion of input
         q0_out[1:n_simple] .= q0[1:n_simple]
 
-        if n_in >= n_STM
+        if n_in ≥ n_STM
             # Input already contains full STM block - copy it directly
             q0_out[n_simple+1:n_STM] .= q0[n_simple+1:n_STM]
         else
@@ -734,7 +773,7 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Abstract
                 q0_out[j] = 1.0
             end
         end
-    elseif n_in >= n_out
+    elseif n_in ≥ n_out
         # Output is no larger than input - strip to SIMPLE, then build up
         Logging.@debug "Truncating state vector indirectly" inputType=inputEquationType outputType=outputEquationType inputSize=n_in outputSize=n_out
         q0_out[1:n_simple] .= q0[1:n_simple]
@@ -746,7 +785,7 @@ function adjustInitialConditions(dynamicsModel::CR3BPDynamicsModel, q0::Abstract
         q0_out[1:n_simple] .= q0[1:n_simple]
 
         # Initialize STM block as flattened identity matrix only when input doesn't already contain STM block but output does
-        if (n_in < n_STM) && (n_out >= n_STM)
+        if (n_in < n_STM) && (n_out ≥ n_STM)
             Logging.@debug "Constructing STM initial conditions" inputSize=n_in outputSize=n_out
             for j in n_simple+1:n_simple+1:n_STM
                 q0_out[j] = 1.0
@@ -792,7 +831,7 @@ function getCharLengths(dynamicsModel::CR3BPDynamicsModel)::Float64
         Logging.@error "Characteristic length is not finite" charLength=lstar
         throw(DomainError(lstar, "Characteristic length must be finite"))
     end
-    if lstar <= 0.0
+    if lstar ≤ 0.0
         Logging.@error "Characteristic length is non-positive" charLength=lstar
         throw(DomainError(lstar, "Characteristic length must be positive"))
     end
@@ -839,7 +878,7 @@ function getCharMasses(dynamicsModel::CR3BPDynamicsModel)::Float64
             Logging.@error "Gravitational parameter is not finite" param=label value=μ
             throw(DomainError(μ, "$label must be finite"))
         end
-        if μ <= 0.0
+        if μ ≤ 0.0
             Logging.@error "Gravitational parameter is non-positive" param=label value=μ
             throw(DomainError(μ, "$label must be positive"))
         end
@@ -890,7 +929,7 @@ function getCharTimes(dynamicsModel::CR3BPDynamicsModel)::Float64
             Logging.@error "Gravitational parameter is not finite" param=label value=μ
             throw(DomainError(μ, "$label must be finite"))
         end
-        if μ <= 0.0
+        if μ ≤ 0.0
             Logging.@error "Gravitational parameter is non-positive" param=label value=μ
             throw(DomainError(μ, "$label must be positive"))
         end
@@ -937,7 +976,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
     Logging.@debug "Entered getEquilibriumPoint (CR3BP)" dynamicsModel point
 
     # Validate equilibrium point index
-    if !(1 <= point <= 5)
+    if !(1 ≤ point ≤ 5)
         Logging.@error "Invalid equilibrium point index" point
         throw(ArgumentError("Equilibrium point must be between 1 and 5, got $point"))
     end
@@ -966,7 +1005,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
             γ -= (μ/γ^2-(1-μ)/(1-γ)^2-γ-μ+1)/(-2*μ/γ^3-2*(1-μ)/(1-γ)^3-1)
             count += 1
         end
-        if count >= maxCount
+        if count ≥ maxCount
             Logging.@error "Newton-Raphson did not converge for L1" μ γ iterations=count
             throw(ErrorException("Could not converge on L1 location after $mxCount iterations"))
         end
@@ -982,7 +1021,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
             γ -= (-μ/γ^2-(1-μ)/(1+γ)^2+γ-μ+1)/(2*μ/γ^3+2*(1-μ)/(1+γ)^3+1)
             count += 1
         end
-        if count >= maxCount
+        if count ≥ maxCount
             Logging.@error "Newton-Raphson did not converge for L2" μ γ iterations=count
             throw(ErrorException("Could not converge on L2 location after $mxCount iterations"))
         end
@@ -998,7 +1037,7 @@ function getEquilibriumPoint(dynamicsModel::CR3BPDynamicsModel, point::Int64)::V
             γ -= (μ/(-1-γ)^2+(1-μ)/γ^2-γ-μ)/(-2*μ/(1+γ)^3-2*(1-μ)/γ^3-1)
             count += 1
         end
-        if count >= maxCount
+        if count ≥ maxCount
             Logging.@error "Newton-Raphson did not converge for L3" μ γ iterations=count
             throw(ErrorException("Could not converge on L3 location after $mxCount iterations"))
         end
@@ -1113,6 +1152,114 @@ function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{
 end
 
 """
+    getLinearVariation(dynamicsModel::CR3BPDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short) -> Tuple{Vector{Float64}, Float64}
+
+Return linear variational state and period
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `point::Int64`: Equilibrium point index
+- `variation::Vector{Float64}`: Variational position about equilibrium point [ndim]
+- `period::Symbol`: Stable equilibrium linearization period (:short, :long)
+
+Returns
+- `Vector{Float64}`: Linear variational state [ndim]
+- `Float64`: Linear variational period [ndim]
+
+Errors
+- Throws `ArgumentError` if `point` is not between 1 and 5, if period type is
+    not "short" or "long", if length of `variation` is not 3, or if `variation`
+    is non-finite
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing velocity
+    variation or period, or when linear variational state and period are
+    returned
+
+Example
+```
+(q::Vector{Float64}, P::Float64) = getLinearVariation(dynamicsModel, 4, q_var, period = :long)
+```
+"""
+function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short)::Tuple{Vector{Float64}, Float64}
+    Logging.@debug "Entered getLinearVariation (CR3BP)" dynamicsModel point variation period
+    
+    # Validate equilibrium point index
+    if !(1 ≤ point ≤ 5)
+        Logging.@error "Invalid equilibrium point index" point
+        throw(ArgumentError("Equilibrium point must be between 1 and 5, got $point"))
+    end
+
+    # Validate period type for equilateral points
+    if (point ≥ 4) && !(period in (:short, :long))
+        Logging.@error "Invalid period type for equilateral equilibrium point" period
+        throw(ArgumentError("Period must be :short or :long for L4/L5, got $period"))
+    end
+
+    # Input validation
+    if length(variation) != 3
+        Logging.@error "Position variation vector has incorrect length" expected=3 actual=length(variation)
+        throw(ArgumentError("Position variation vector length is $(length(variation)), but should be 3"))
+    end
+    if !all(isfinite, variation)
+        Logging.@error "Position variation vector contains non-finite values" non_finite_count=count(!isfinite, variation)
+        throw(ArgumentError("Position variation vector must contain only finite values"))
+    end
+
+    μ::Float64 = getMassRatios(dynamicsModel)
+    
+    # Compute equilibrium position
+    q_L::Vector{Float64} = getEquilibriumPoint(dynamicsModel, point)
+    
+    Logging.@debug "Computing velocity variation" point q_L variation
+
+    # Compute pseudo-potential Hessian at equilibrium position
+    d2Udr2::Vector{Float64} = getPseudopotentialHessian(dynamicsModel, q_L)
+
+    q::Vector{Float64} = Vector{Float64}(undef, 6)
+    q[1:3] .= q_L[1:3] .+ variation
+    q[6] = 0.0
+
+    # Orbital frequency
+    s::Float64 = 0.0
+
+    if point ≤ 3
+        # Collinear points
+        β_1::Float64 = 2-(d2Udr2[1]+d2Udr2[2])/2
+        β2_2::Float64 = -d2Udr2[1]*d2Udr2[2]
+        s = sqrt(β_1+sqrt(β_1^2+β2_2))
+        β_3::Float64 = (s^2+d2Udr2[1])/(2*s)
+
+        # Initial velocity
+        q[4] = variation[2]*s/β_3
+        q[5] = -β_3*variation[1]*s
+    else
+        # Equilateral points
+        discriminant::Complex{Float64} = sqrt(complex(1-27*μ*(1-μ)))
+        λ::Complex{Float64} = (period == :short) ? sqrt(-0.5-0.5*discriminant) : sqrt(-0.5+0.5*discriminant)
+        s = abs(imag(λ))
+        α_1::Float64 = variation[1]
+        β_1_45::Float64 = variation[2]
+        α_2::Float64 = (d2Udr2[4]*α_1+(d2Udr2[2]+s^2)*β_1_45)/(2*s)
+        β_2_45::Float64 = ((d2Udr2[1]+s^2)*α_1+d2Udr2[4]*β_1_45)/(-2*s)
+
+        # Initial velocity
+        q[4] = α_2*s
+        q[5] = β_2_45*s
+    end
+
+    Logging.@debug "Computing period" s
+
+    # Linear orbital period
+    P::Float64 = 2*pi/s
+
+    Logging.@debug "Returning linear variational state and period" equilibriumPoint=point orbitalFrequency=s
+
+    return (q, P)
+end
+
+"""
     getMassRatios(dynamicsModel::CR3BPDynamicsModel) -> Float64
     
 Return CR3BP mass ratio
@@ -1147,7 +1294,7 @@ function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
             Logging.@error "Gravitational parameter is not finite" param=label value=μ
             throw(DomainError(μ, "$label must be finite"))
         end
-        if μ <= 0.0
+        if μ ≤ 0.0
             Logging.@error "Gravitational parameter is non-positive" param=label value=μ
             throw(DomainError(μ, "$label must be positive"))
         end
@@ -1233,7 +1380,7 @@ function getPrimaryState(dynamicsModel::CR3BPDynamicsModel, primary::Int64)::Vec
     Logging.@debug "Entered getPrimaryState (CR3BP)" dynamicsModel primary
 
     # Validate primary index
-    if !(1 <= primary <= 2)
+    if !(1 ≤ primary ≤ 2)
         Logging.@error "Invalid primary index" primary
         throw(ArgumentError("Primary must be between 1 and 2, got $primary"))
     end

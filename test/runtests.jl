@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 6/26/26
+U: 7/3/26
 """
 
 using MBD, Test
@@ -818,8 +818,8 @@ end
             # Excursion s zero when spacecraft is exactly at primary location
             @test getExcursion(dm_CR3BP, 1, getPrimaryState(dm_CR3BP, 1)) ≈ 0.0
             # Excursion is non-negative
-            @test getExcursion(dm_CR3BP, 1, q) >= 0.0
-            @test getExcursion(dm_CR3BP, 2, q) >= 0.0
+            @test getExcursion(dm_CR3BP, 1, q) ≥ 0.0
+            @test getExcursion(dm_CR3BP, 2, q) ≥ 0.0
             # Excursion is invariant to velocity components
             q_v = copy(q)
             q_v[4:6] .= [0.1, -0.2, 0.05]
@@ -851,6 +851,11 @@ end
             @test nPrimaries isa Int64
             # Returns 0 for empty dynamics model
             @test getNumPrimaries(stub) == 0
+        end
+
+        @testset "getLinearVariation" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getLinearVariation(stub, 1, collect(Float64, 1:3))
         end
 
         @testset "getMassRatios" begin
@@ -1290,6 +1295,92 @@ end
             q_nan = copy(q_L4)
             q_nan[1] = NaN
             @test_throws ArgumentError getJacobiConstant(dm, q_nan)
+        end
+
+        @testset "getLinearVariation" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            var = [0.001, 0, 0]
+            varxy = [0.001, 0.001, 0]
+            # Return type is Tuple{Vector{Float64}, Float64}
+            (q, P) = getLinearVariation(dm, 1, var)
+            @test q isa Vector{Float64}
+            @test P isa Float64
+            # State vector has length 6
+            @test length(q) == 6
+            # Period is positive and finite for all valid points
+            for point in 1:3
+                (_, P) = getLinearVariation(dm, point, var)
+                @test isfinite(P)
+                @test P > 0.0
+            end
+            for point in 4:5, per in [:short, :long]
+                (_, P) = getLinearVariation(dm, point, varxy, period=per)
+                @test isfinite(P)
+                @test P > 0.0
+            end
+            # Position components equal equilibrium position plus variation and
+            # z-component equals 0
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                (q, _) = getLinearVariation(dm, point, var)
+                @test q[1:3] ≈ q_L[1:3] .+ var
+                @test q[6] == 0.0
+            end
+            # Zero variation produces position equal to equilibrium point
+            for point in 1:5
+                q_L = getEquilibriumPoint(dm, point)
+                (q, _) = getLinearVariation(dm, point, zeros(Float64, 3))
+                @test q[1:3] ≈ q_L[1:3]
+            end
+            # All state components are finite for all valid points
+            for point in 1:3
+                (q, _) = getLinearVariation(dm, point, var)
+                @test all(isfinite, q)
+            end
+            for point in 4:5, per in [:short, :long]
+                (q, _) = getLinearVariation(dm, point, varxy, period=per)
+                @test all(isfinite, q)
+            end
+            # Collinear - invalid period type does not throw
+            @test_nowarn getLinearVariation(dm, 1, var, period=:invalid)
+            # Collinear - period is independent of period type
+            (_, P_short) = getLinearVariation(dm, 1, var, period=:short)
+            (_, P_long) = getLinearVariation(dm, 1, var, period=:long)
+            @test P_short == P_long
+            # Equilateral - short period is less than long period
+            for point in 4:5
+                (_, P_short) = getLinearVariation(dm, point, varxy; period=:short)
+                (_, P_long) = getLinearVariation(dm, point, varxy; period=:long)
+                @test P_short ≤ P_long
+            end
+            # Equilateral - L4 and L5 produce equal periods by symmetry
+            for per in [:short, :long]
+                (_, P_4) = getLinearVariation(dm, 4, varxy, period=per)
+                (_, P_5) = getLinearVariation(dm, 5, varxy, period=per)
+                @test P_4 ≈ P_5
+            end
+            # Default period type is short
+            (q_default, P_default) = getLinearVariation(dm, 4, varxy)
+            (q_4, P_4) = getLinearVariation(dm, 4, varxy, period=:short)
+            @test q_default == q_4
+            @test P_default == P_4
+            # Throws ArgumentError for point index below range
+            @test_throws ArgumentError getLinearVariation(dm, 0, var)
+            @test_throws ArgumentError getLinearVariation(dm, -1, var)
+            # Throws ArgumentError for point index above range
+            @test_throws ArgumentError getLinearVariation(dm, 6, var)
+            # Throws ArgumentError for invalid period type at equilateral point
+            @test_throws ArgumentError getLinearVariation(dm, 4, varxy, period=:invalid)
+            # Throws ArgumentError when variation length is not 3
+            @test_throws ArgumentError getLinearVariation(dm, 1, zeros(Float64, 2))
+            @test_throws ArgumentError getLinearVariation(dm, 1, zeros(Float64, 4))
+            # Throws ArgumentError when variation contains NaN
+            var_nan = [NaN, 0.0, 0.0]
+            @test_throws ArgumentError getLinearVariation(dm, 1, var_nan)
+            # Throws ArgumentError when variation contains Inf
+            var_inf = [Inf, 0.0, 0.0]
+            @test_throws ArgumentError getLinearVariation(dm, 1, var_inf)
         end
 
         @testset "getMassRatios" begin
