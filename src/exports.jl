@@ -3,7 +3,7 @@ Package exports
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 7/3/26
+U: 8/7/26
 """
 
 
@@ -23,11 +23,8 @@ export
     getEquilibriumPoint, getExcursion, getHamiltonian, getJacobiConstant,
     getLinearVariation, getMassRatios, getParameterDependencies,
     getPrimaryState, getPseudopotential, getPseudopotentialHessian,
-    getPseudopotentialJacobian, getStateSize,
-    # getDistance2Primary, getEnergy, getEpochDependencies, getEquationsOfMotion,
-    # getEquilibriumPoint, getLinearVariationState, getMassRatios,
-    # getParameterDependencies, getPseudopotentialGradient,
-    # getPseudopotentialHessian, isEpochIndependent,
+    getPseudopotentialJacobian, getStateSize, getTidalAcceleration,
+    # getEpochDependencies, getEquationsOfMotion, isEpochIndependent
 
     # Utilities
     # SPICE methods

@@ -3,7 +3,7 @@ DynamicsModel methods
 
 Author: Jonathan LeFevre Richmond
 C: 5/4/26
-U: 7/3/26
+U: 8/7/26
 
 QUEUE:
     checkSTM() needs Propagator, propagate(), getStateTransitionMatrix(), Arc, getStateByIndex()
@@ -12,6 +12,7 @@ QUEUE:
     getEquationsOfMotion() needs EquationsOfMotion
 
 TO DO:
+    Frame transformations in a utility file
 """
 
 
@@ -380,14 +381,14 @@ function getHamiltonian(dynamicsModel::AbstractDynamicsModel, q::AbstractVector{
 end
 
 """
-    getLinearVariation(dynamicsModel::AbstractDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short) -> Tuple{Vector{Float64}, Float64}
+    getLinearVariation(dynamicsModel::AbstractDynamicsModel, point::Int64, variation::AbstractVector{Float64}; period::Symbol = :short) -> Tuple{Vector{Float64}, Float64}
 
 Return linear variational state and period
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
 - `point::Int64`: Equilibrium point index
-- `variation::Vector{Float64}`: Variational position about equilibrium point
+- `variation::AbstractVector{Float64}`: Variational position about equilibrium point
 - `period::Symbol`: Stable equilibrium linearization period (:short, :long)
 
 Returns
@@ -412,7 +413,7 @@ Example
 (q::Vector{Float64}, P::Float64) = getLinearVariation(dynamicsModel, 4, q_var, period = :long)
 ```
 """
-function getLinearVariation(dynamicsModel::AbstractDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short)::Tuple{Vector{Float64}, Float64}
+function getLinearVariation(dynamicsModel::AbstractDynamicsModel, point::Int64, variation::AbstractVector{Float64}; period::Symbol = :short)::Tuple{Vector{Float64}, Float64}
     Logging.@debug "Entered generic getLinearVariation" dynamicsModel
 
     Logging.@error "getLinearVariation is not implemented for this dynamics model type" type=typeof(dynamicsModel)
@@ -491,13 +492,13 @@ function getNumPrimaries(dynamicsModel::AbstractDynamicsModel)::Int64
 end
 
 """
-    getParameterDependencies(dynamicsModel::AbstractDynamicsModel, q_full::Vector{Float64}) -> Matrix{Float64}
+    getParameterDependencies(dynamicsModel::AbstractDynamicsModel, q_full::AbstractVector{Float64}) -> Matrix{Float64}
 
 Return derivative of state with respect to parameters
 
 Arguments
 - `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
-- `q_full::Vector{Float64}`: Full state vector
+- `q_full::AbstractVector{Float64}`: Full state vector
 
 Returns
 - `Matrix{Float64}`: Derivative of state with respect to parameters
@@ -518,7 +519,7 @@ Example
 dqdp::Matrix{Float64} = getParameterDependencies(dynamicsModel, q_full)
 ```
 """
-function getParameterDependencies(dynamicsModel::AbstractDynamicsModel, q_full::Vector{Float64})::Matrix{Float64}
+function getParameterDependencies(dynamicsModel::AbstractDynamicsModel, q_full::AbstractVector{Float64})::Matrix{Float64}
     Logging.@debug "Entered generic getParameterDependencies" dynamicsModel
 
     Logging.@error "getParameterDependencies is not implemented for this dynamicsModel type" type=typeof(dynamicsModel)
@@ -686,6 +687,7 @@ Logging
 
 Notes
 - This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns CR3BP state size
 
 Example
 ```
@@ -697,6 +699,42 @@ function getStateSize(dynamicsModel::AbstractDynamicsModel, equationType::Equati
 
     Logging.@error "getStateSize is not implemented for this dynamics model type" type=typeof(dynamicsModel)
     throw(MethodError(getStateSize, (dynamicsModel, equationType)))
+end
+
+"""
+    getTidalAcceleration(dynamicsModel::AbstractDynamicsModel, primary::Int64, q::AbstractVector{Float64}) -> Vector{Float64}
+
+Return tidal acceleration vector due to primary
+
+Arguments
+- `dynamicsModel::AbstractDynamicsModel`: Dynamics model object
+- `primary::Int64`: Primary index
+- `q::AbstractVector{Float64}`: State vector
+
+Returns
+- `Vector{Float64}`: Tidal acceleration vector
+
+Errors
+- Throws `MethodError` if not implemented for the dynamics model type
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered
+
+Notes
+- This is a generic method that dispatches on dynamics model type
+- For `CR3BPDynamicsModel`, returns tidal acceleration vector [ndim]
+
+Example
+```
+a_t::Vector{Float64} = getTidalAcceleration(dynamicsModel, 1, q)
+```
+"""
+function getTidalAcceleration(dynamicsModel::AbstractDynamicsModel, primary::Int64, q::AbstractVector{Float64})::Vector{Float64}
+    Logging.@debug "Entered generic getTidalAcceleration" dynamicsModel
+
+    Logging.@error "getTidalAcceleration is not implemented for this dynamics model type" type=typeof(dynamicsModel)
+    throw(MethodError(getTidalAcceleration, (dynamicsModel, primary, q)))
 end
 
 
@@ -1080,7 +1118,7 @@ H::Float64 = getHamiltonian(dynamicsModel, q)
 ```
 """
 function getHamiltonian(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Float64
-    Logging.@debug "Entered getHamiltonian (CR3BP)" dynamicsModel q
+    Logging.@debug "Entered getHamiltonian (CR3BP)" dynamicsModel
 
     # Input validation
     if !all(isfinite, q)
@@ -1137,7 +1175,7 @@ JC::Float64 = getJacobiConstant(dynamicsModel, q)
 ```
 """
 function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Float64
-    Logging.@debug "Entered getJacobiConstant (CR3BP)" dynamicsModel q
+    Logging.@debug "Entered getJacobiConstant (CR3BP)" dynamicsModel
 
     # Validate state vector length
     n_in::Int64 = length(q)
@@ -1152,14 +1190,14 @@ function getJacobiConstant(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{
 end
 
 """
-    getLinearVariation(dynamicsModel::CR3BPDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short) -> Tuple{Vector{Float64}, Float64}
+    getLinearVariation(dynamicsModel::CR3BPDynamicsModel, point::Int64, variation::AbstractVector{Float64}; period::Symbol = :short) -> Tuple{Vector{Float64}, Float64}
 
 Return linear variational state and period
 
 Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
 - `point::Int64`: Equilibrium point index
-- `variation::Vector{Float64}`: Variational position about equilibrium point [ndim]
+- `variation::AbstractVector{Float64}`: Variational position about equilibrium point [ndim]
 - `period::Symbol`: Stable equilibrium linearization period (:short, :long)
 
 Returns
@@ -1182,8 +1220,8 @@ Example
 (q::Vector{Float64}, P::Float64) = getLinearVariation(dynamicsModel, 4, q_var, period = :long)
 ```
 """
-function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, point::Int64, variation::Vector{Float64}; period::Symbol = :short)::Tuple{Vector{Float64}, Float64}
-    Logging.@debug "Entered getLinearVariation (CR3BP)" dynamicsModel point variation period
+function getLinearVariation(dynamicsModel::CR3BPDynamicsModel, point::Int64, variation::AbstractVector{Float64}; period::Symbol = :short)::Tuple{Vector{Float64}, Float64}
+    Logging.@debug "Entered getLinearVariation (CR3BP)" dynamicsModel point period
     
     # Validate equilibrium point index
     if !(1 ≤ point ≤ 5)
@@ -1309,13 +1347,13 @@ function getMassRatios(dynamicsModel::CR3BPDynamicsModel)::Float64
 end
 
 """
-    getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64}) -> Matrix{Float64}
+    getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::AbstractVector{Float64}) -> Matrix{Float64}
 
 Return derivative of state with respect to parameters
 
 Arguments
 - `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
-- `q_full::Vector{Float64}`: Full state vector [ndim]
+- `q_full::AbstractVector{Float64}`: Full state vector [ndim]
 
 Returns
 - `Matrix{Float64}`: Derivative of state with respect to parameters [ndim]
@@ -1333,7 +1371,7 @@ Example
 dqdp::Matrix{Float64} = getParameterDependencies(dynamicsModel, q_full)
 ```
 """
-function getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::Vector{Float64})::Matrix{Float64}
+function getParameterDependencies(dynamicsModel::CR3BPDynamicsModel, q_full::AbstractVector{Float64})::Matrix{Float64}
     Logging.@debug "Entered getParameterDependencies (CR3BP)" dynamicsModel
 
     # Validate state vector length
@@ -1425,7 +1463,7 @@ U::Float64 = getPseudopotential(dynamicsModel, q)
 ```
 """
 function getPseudopotential(dynamicsModel::CR3BPDynamicsModel, q::AbstractVector{Float64})::Float64
-    Logging.@debug "Entered getPseudopotential (CR3BP)" dynamicsModel q
+    Logging.@debug "Entered getPseudopotential (CR3BP)" dynamicsModel
 
     # Input validation
     if !all(isfinite, q)
@@ -1506,14 +1544,14 @@ function getPseudopotentialHessian(dynamicsModel::CR3BPDynamicsModel, q::Abstrac
     n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
     if n_in < n_simple
         Logging.@error "State vector is too short" required=n_simple actual=n_in
-        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential"))
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential Hessian"))
     end
 
     μ::Float64 = getMassRatios(dynamicsModel)
 
     Logging.@debug "Computing pseudo-potential Hessian" q μ
 
-    # x-displacements from eacjh primary
+    # x-displacements from each primary
     x_1::Float64 = q[1]+μ
     x_2::Float64 = q[1]-1+μ
 
@@ -1578,7 +1616,7 @@ Errors
 Logging
 - Emits `@error` logs for thrown errors
 - Emits `@debug` logs when function is entered, when computing pseudo-
-    potential Jacobian, or when pseudo-potential Jacobianis returned
+    potential Jacobian, or when pseudo-potential Jacobian is returned
 
 Example
 ```
@@ -1599,14 +1637,14 @@ function getPseudopotentialJacobian(dynamicsModel::CR3BPDynamicsModel, q::Abstra
     n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
     if n_in < n_simple
         Logging.@error "State vector is too short" required=n_simple actual=n_in
-        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential"))
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate pseudo-potential Jacobian"))
     end
 
     μ::Float64 = getMassRatios(dynamicsModel)
 
     Logging.@debug "Computing pseudo-potential Jacobian" q μ
 
-    # x-displacements from eacjh primary
+    # x-displacements from each primary
     x_1::Float64 = q[1]+μ
     x_2::Float64 = q[1]-1+μ
 
@@ -1681,4 +1719,84 @@ function getStateSize(dynamicsModel::CR3BPDynamicsModel, equationType::EquationT
     Logging.@debug "Returning state size" equationType stateSize=n_states
 
     return n_states
+end
+
+"""
+    getTidalAcceleration(dynamicsModel::CR3BPDynamicsModel, primary::Int64, q::AbstractVector{Float64}) -> Vector{Float64}
+
+Return tidal acceleration vector due to primary [ndim]
+
+Arguments
+- `dynamicsModel::CR3BPDynamicsModel`: `CR3BPDynamicsModel` object
+- `primary::Int64`: Primary index
+- `q::AbstractVector{Float64}`: State vector [ndim]
+
+Returns
+- `Vector{Float64}`: Tidal acceleration vector [ndim]
+
+Errors
+- Throws `ArgumentError` if `primary` is not between 1 and 2 or if state vector
+    is non-finite or too short
+- Throws `DomainError` if at location of either primary
+
+Logging
+- Emits `@error` logs for thrown errors
+- Emits `@debug` logs when function is entered, when computing tidal
+    acceleration, or when tidal acceleration is returned
+
+Example
+```
+a_t::Vector{Float64} = getTidalAcceleration(dynamicsModel, 1, q)
+```
+"""
+function getTidalAcceleration(dynamicsModel::CR3BPDynamicsModel, primary::Int64, q::AbstractVector{Float64})::Vector{Float64}
+    Logging.@debug "Entered getTidalAcceleration (CR3BP)" dynamicsModel primary
+
+    # Validate primary index
+    if !(1 ≤ primary ≤ 2)
+        Logging.@error "Invalid primary index" primary
+        throw(ArgumentError("Primary must be between 1 and 2, got $primary"))
+    end
+
+    # Input validation
+    if !all(isfinite, q)
+        Logging.@error "Input state vector contains non-finite values" non_finite_count=count(!isfinite, q)
+        throw(ArgumentError("State vector must contain only finite values"))
+    end
+
+    # Validate state vector length
+    n_in::Int64 = length(q)
+    n_simple::Int64 = getStateSize(dynamicsModel, SIMPLE)
+    if n_in < n_simple
+        Logging.@error "State vector is too short" required=n_simple actual=n_in
+        throw(ArgumentError("State vector length $n_in is insufficient; need at least $n_simple to calculate tidal acceleration"))
+    end
+
+    μ::Float64 = getMassRatios(dynamicsModel)
+
+    Logging.@debug "Computing tidal acceleration" primary μ q
+
+    # x-displacement from selected primary
+    r_x::Float64 = (primary == 1) ? q[1]+μ : q[1]-1+μ
+
+    # Scalar distance from spacecraft to selected primary
+    r::Float64 = sqrt(r_x^2+q[2]^2+q[3]^2)
+    if r < 1E-14
+        Logging.@error "Location of primary" r
+        throw(DomainError(r, "Distance to primary must be positive"))
+    end
+    r3::Float64 = r^3
+
+    # Gravitational acceleration multiplier
+    aMult::Float64 = (primary == 1) ? -(1-μ)/r3 : -μ/r3
+
+    # Tidal acceleration
+    a::Vector{Float64} = Vector{Float64}(undef, 3)
+    a[1] = aMult*r_x+q[1]
+    a[2] = q[2]*(1+aMult)
+    a[3] = aMult*q[3]
+
+    Logging.@debug "Returning tidal acceleration vector" primary a
+
+    return a
 end

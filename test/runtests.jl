@@ -3,7 +3,7 @@ Multi-Body Dynamics astrodynamics package tests
 
 Author: Jonathan LeFevre Richmond
 C: 4/14/26
-U: 7/3/26
+U: 8/7/26
 """
 
 using MBD, Test
@@ -892,6 +892,11 @@ end
             # Throws MethodError for unimplemented type
             @test_throws MethodError getStateSize(stub, MBD.FULL)
         end
+
+        @testset "getTidalAcceleration" begin
+            # Throws MethodError for unimplemented type
+            @test_throws MethodError getTidalAcceleration(stub, 1, collect(Float64, 1:6))
+        end
     end
 
     @testset "CR3BP" begin
@@ -1264,9 +1269,9 @@ end
             # Accepts state vector longer than n_simple
             q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
             @test getHamiltonian(dm, q_long) ≈ getHamiltonian(dm, q_L4)
-            # Throws ArgumentError when q is too short
+            # Throws ArgumentError when state vector is too short
             @test_throws ArgumentError getHamiltonian(dm, zeros(Float64, n_simple-1))
-            # Throws ArgumentError when q has non-finite values
+            # Throws ArgumentError when state vector has non-finite values
             q_nan = copy(q_L4)
             q_nan[1] = NaN
             @test_throws ArgumentError getHamiltonian(dm, q_nan)
@@ -1289,7 +1294,7 @@ end
             # Accepts state vector longer than n_simple
             q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
             @test getJacobiConstant(dm, q_long) ≈ getHamiltonian(dm, q_L4)
-            # Throws ArgumentError when q is too short
+            # Throws ArgumentError when state vector is too short
             @test_throws ArgumentError getJacobiConstant(dm, zeros(Float64, n_simple-1))
             # Propagates ArgumentError from getHamiltonian for non-finite q0 values
             q_nan = copy(q_L4)
@@ -1539,9 +1544,9 @@ end
             # Accepts state vector longer than n_simple
             q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
             @test getPseudopotential(dm, q_long) ≈ getPseudopotential(dm, q_L4)
-            # Throws ArgumentError when q is too short
+            # Throws ArgumentError when state vector is too short
             @test_throws ArgumentError getPseudopotential(dm, zeros(Float64, n_simple-1))
-            # Throws ArgumentError when q has non-finite values
+            # Throws ArgumentError when state vector has non-finite values
             q_nan = copy(q_L4)
             q_nan[1] = NaN
             @test_throws ArgumentError getPseudopotential(dm, q_nan)
@@ -1582,9 +1587,9 @@ end
             # Accepts state vector longer than n_simple
             q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
             @test getPseudopotentialHessian(dm, q_long) ≈ getPseudopotentialHessian(dm, q_L4)
-            # Throws ArgumentError when q is too short
+            # Throws ArgumentError when state vector is too short
             @test_throws ArgumentError getPseudopotentialHessian(dm, zeros(Float64, n_simple-1))
-            # Throws ArgumentError when q has non-finite values
+            # Throws ArgumentError when state vector has non-finite values
             q_nan = copy(q_L4)
             q_nan[1] = NaN
             @test_throws ArgumentError getPseudopotentialHessian(dm, q_nan)
@@ -1634,9 +1639,9 @@ end
             # Accepts state vector longer than n_simple
             q_long = appendExtraInitialConditions(dm, q_L4, MBD.FULL)
             @test getPseudopotentialJacobian(dm, q_long) ≈ getPseudopotentialJacobian(dm, q_L4)
-            # Throws ArgumentError when q is too short
+            # Throws ArgumentError when state vector is too short
             @test_throws ArgumentError getPseudopotentialJacobian(dm, zeros(Float64, n_simple-1))
-            # Throws ArgumentError when q has non-finite values
+            # Throws ArgumentError when state vector has non-finite values
             q_nan = copy(q_L4)
             q_nan[1] = NaN
             @test_throws ArgumentError getPseudopotentialJacobian(dm, q_nan)
@@ -1671,6 +1676,77 @@ end
             end
             # Throws ArgumentError for unsupported EquationType
             @test_throws ArgumentError getStateSize(dm, MBD.TEST)
+        end
+
+        @testset "getTidalAcceleration" begin
+            sd = MBD.SystemData(["Earth", "Moon"])
+            dm = MBD.CR3BPDynamicsModel(sd, [1, 2])
+            n_simple = getStateSize(dm, MBD.SIMPLE)
+            q = [0.9, 0.1, 0.1, 0, 0, 0]
+            # Return type is Vector{Float64} of length 3
+            for primary in 1:2
+                a_t = getTidalAcceleration(dm, primary, q)
+                @test a_t isa Vector{Float64}
+                @test length(a_t) == 3
+                @test all(isfinite, a_t)
+            end
+            # Tidal acceleration y-term is zero on x-axis
+            q_bary = zeros(Float64, 6)
+            for primary in 1:2
+                @test getTidalAcceleration(dm, primary, q_bary)[2] ≈ 0.0
+            end
+            # Tidal acceleration z-term is zero in xy-plane
+            q_plane = copy(q)
+            q_plane[3] = 0
+            for primary in 1:2
+                @test getTidalAcceleration(dm, primary, q_plane)[3] ≈ 0.0
+            end
+            # Tidal acceleration has opposite sign across symmetries
+            q_plane2 = copy(q_plane)
+            q_plane2[2] *= -1
+            for primary in 1:2
+                @test getTidalAcceleration(dm, primary, q_plane2)[2] ≈ -getTidalAcceleration(dm, primary, q_plane)[2]
+            end
+            q_plane2[3] = 0.1
+            q_plane3 = copy(q_plane2)
+            q_plane3[3] *= -1
+            for primary in 1:2
+                @test getTidalAcceleration(dm, primary, q_plane3)[3] ≈ -getTidalAcceleration(dm, primary, q_plane2)[3]
+            end
+            # Tidal acceleration does not change with speed
+            q_fast = copy(q)
+            q[4:6] = [0.1, 0.1, 0]
+            for primary in 1:2
+                @test getTidalAcceleration(dm, primary, q_fast) ≈ getTidalAcceleration(dm, primary, q)
+            end
+            # Accepts state vector longer than n_simple
+            q_long = appendExtraInitialConditions(dm, q, MBD.FULL)
+            for primary in 1:2
+                @test getTidalAcceleration(dm, primary, q_long) ≈ getTidalAcceleration(dm, primary, q)
+            end
+            # Throws ArgumentError when state vector is too short
+            for primary in 1:2
+                @test_throws ArgumentError getTidalAcceleration(dm, primary, zeros(Float64, n_simple-1))
+            end
+            # Throws ArgumentError when state vector has non-finite values
+            q_nan = copy(q)
+            q_nan[1] = NaN
+            for primary in 1:2
+                @test_throws ArgumentError getTidalAcceleration(dm, primary, q_nan)
+            end
+            # Throws ArgumentError for index below range
+            @test_throws ArgumentError getTidalAcceleration(dm, 0, q)
+            @test_throws ArgumentError getTidalAcceleration(dm, -1, q)
+            # Throws ArgumentError for index above range
+            @test_throws ArgumentError getTidalAcceleration(dm, 3, q)
+            # Throws DomainError when at primary location
+            for primary in 1:2
+                q_P = getPrimaryState(dm, primary)
+                @test_throws DomainError getTidalAcceleration(dm, primary, q_P)
+            end
+            # Does not throw DomainError when at other primary location
+            q_P = getPrimaryState(dm, 2)
+            @test_nowarn getTidalAcceleration(dm, 1, q_P)
         end
     end
 end
