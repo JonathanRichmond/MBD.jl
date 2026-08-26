@@ -3,7 +3,7 @@ Propagator wrapper
 
 Author: Jonathan Richmond
 C: 9/2/22
-U: 8/19/26
+U: 8/26/26
 """
 
 import DifferentialEquations
@@ -16,6 +16,7 @@ mutable struct EventTracker
     count::Int64
     flag::Symbol
     states::Vector{Vector{Float64}}
+    times::Vector{Float64}
 end
 
 """
