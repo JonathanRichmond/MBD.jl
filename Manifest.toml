@@ -55,10 +55,10 @@ version = "0.1.45"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "7c2c19b5a26e601634bf718490b89d59685f122e"
+git-tree-sha1 = "dee8388a9bec89c8713ad176f96960ae2f98598a"
 registries = "General"
 uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-version = "4.7.1"
+version = "4.7.4"
 weakdeps = ["SparseArrays", "StaticArrays"]
 
     [deps.Adapt.extensions]
@@ -415,10 +415,10 @@ uuid = "4e289a0a-7415-4d19-859d-a7e5c4648b56"
 version = "1.0.7"
 
 [[deps.EnzymeCore]]
-git-tree-sha1 = "90ab232666984c3eafa9d14cc85f8ff51cf6c353"
+git-tree-sha1 = "156ede9181d50b3b21b74d98a7edb08bc7bbdbf1"
 registries = "General"
 uuid = "f151be2c-9106-41f4-ab19-57ee4f262869"
-version = "0.8.22"
+version = "0.8.23"
 
     [deps.EnzymeCore.extensions]
     AdaptExt = "Adapt"
@@ -657,10 +657,10 @@ version = "1.12.0"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
-git-tree-sha1 = "909890a0d1486c392128cf4bd6e038ee0c6a7af4"
+git-tree-sha1 = "e0574e7e2cd5c40d9a6ae444511fbadd51afbf30"
 registries = "General"
 uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
-version = "0.10.10"
+version = "0.10.11"
 
 [[deps.LHLFactorization]]
 deps = ["LinearAlgebra", "PrecompileTools"]
@@ -1552,10 +1552,10 @@ version = "2.9.0"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "39e70e0ab5d7f89833a62ab7c79df15d4fc417c1"
+git-tree-sha1 = "de349d5585559b692f518b6d3fc7c179d64b2364"
 registries = "General"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.22"
+version = "1.9.23"
 
     [deps.StaticArrays.extensions]
     StaticArraysChainRulesCoreExt = "ChainRulesCore"
@@ -1724,10 +1724,10 @@ version = "1.67.1+0"
 
 [[deps.oneTBB_jll]]
 deps = ["Artifacts", "JLLWrappers", "LazyArtifacts", "Libdl"]
-git-tree-sha1 = "da8c1f6eee04831f14edcfa5dae611d309807e57"
+git-tree-sha1 = "ed2d8d4ad96c03d3abe3382cdbbdea9489b63636"
 registries = "General"
 uuid = "1317d2d5-d96f-522e-a858-c73665f53c3e"
-version = "2022.3.0+0"
+version = "2023.1.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
