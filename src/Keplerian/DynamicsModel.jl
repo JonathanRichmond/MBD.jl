@@ -3,7 +3,7 @@ Keplerian dynamics model wrapper
 
 Author: Jonathan Richmond
 C: 9/18/25
-U: 2/7/26
+U: 10/19/26
 """
 
 import LinearAlgebra, SPICE, StaticArrays
@@ -308,7 +308,8 @@ function getOrbitalElements(dynamicsModel::KDynamicsModel, state_dim::Vector{Flo
     e::Float64 = LinearAlgebra.norm(evec)
     a::Float64 = h^2/(getMassParameter(dynamicsModel)*(1-e^2))
     omega::Float64 = (evec[3] < 0) ? 2*pi-acos(LinearAlgebra.dot(n, evec)/(LinearAlgebra.norm(n)*e)) : acos(LinearAlgebra.dot(n, evec)/(LinearAlgebra.norm(n)*e))
-    theta::Float64 = (v_r < 0) ? 2*pi-acos(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r)) : acos(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r))
+    dottheta::Float64 = clamp(LinearAlgebra.dot(evec, state_dim[1:3])/(e*r), -1.0, 1.0)
+    theta::Float64 = (v_r < 0) ? 2*pi-acos(dottheta) : acos(dottheta)
 
     return [a, e, i, Omega, omega, theta]
 end
